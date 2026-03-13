@@ -1,5 +1,12 @@
-import { AVAILABLE_TILES, BUILD_TIME, BUILDINGS, BuildingType, Hex } from "../lib/map_data.js";
-import { Nation, NATION_NAMES } from "../lib/nations.js";
+import {
+  AVAILABLE_TILES,
+  BUILD_TIME,
+  BUILDINGS,
+  BuildingType,
+  Hex,
+  Nation,
+  NATION_NAMES,
+} from "@repo/shared";
 import { memoryStore } from "../server/memoryStore.js";
 import { getHexById, randomNationColor } from "./map.js";
 
@@ -26,7 +33,6 @@ export function generateNations() {
     availableTiles.splice(randomTileIdx, 1);
     nations.push({
       id: nationIdx,
-      tiles: [tileIdx],
       capitalTileIdx: tileIdx,
       color: randomNationColor(),
       aggression: agression,
@@ -70,14 +76,14 @@ export function buildNationBuildings({
   const arr = newBuildings.map((obj) => obj.hexId);
   if (arr.length !== new Set(arr).size)
     throw new Error("Duplicate hex ids in buildings are not allowed!");
-  const ownerTiles = mapHexes.filter((hex) => nation.tiles.includes(hex.id));
+  const ownerTiles = mapHexes.filter((hex) => hex.owner === nation.id);
   const buildHexes = mapHexes.filter((hex) => arr.includes(hex.id)); // hexes that we will be queueing build on
 
   // make building map so that we don't have to O(n^2)
   const buildingMap = new Map(newBuildings.map((obj) => [obj.hexId, obj.building]));
 
   for (const hex of buildHexes) {
-    if (!nation.tiles.includes(hex.id) || hex.build_queue || !hex.owner) continue;
+    if (hex.owner !== nation.id || hex.build_queue || !hex.owner) continue;
 
     const building = buildingMap.get(hex.id); // find building type
 

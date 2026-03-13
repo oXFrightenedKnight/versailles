@@ -1,5 +1,4 @@
-import { Hex } from "../lib/map_data.js";
-import { Nation } from "../lib/nations.js";
+import { Hex, Nation } from "@repo/shared";
 export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
   {
     ctx: {
@@ -33,19 +32,14 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
             dr: number;
           };
         }[];
+        buildRoads: {
+          hexId: number;
+          id: string[];
+        }[];
       };
       output: {
         turn: number;
       };
-      meta: object;
-    }>;
-    readNations: import("@trpc/server").TRPCQueryProcedure<{
-      input: void;
-      output:
-        | {
-            [k: string]: string;
-          }
-        | undefined;
       meta: object;
     }>;
   }>

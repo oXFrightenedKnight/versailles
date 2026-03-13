@@ -4,11 +4,12 @@ import {
   BIOME_MOD,
   BIOMES,
   CreatedHexes,
+  findNeighbors,
   Hex,
   HEX_DIRECTIONS,
   POPULATION_CAPS,
   WOOD_MOD,
-} from "../lib/map_data.js";
+} from "@repo/shared";
 import { memoryStore } from "../server/memoryStore.js";
 
 // generates the mathematical map & coordinates
@@ -32,6 +33,7 @@ export function generateHexMap(radius: number) {
           build_queue: null,
           army: [],
           wood: 0,
+          road: null,
         });
       }
     }
@@ -89,7 +91,8 @@ export function generateHexMap(radius: number) {
     };
 
     for (const n of neighbors) {
-      counts[n.biome!] += 1;
+      if (!n.biome) continue;
+      counts[n.biome] += 1;
     }
 
     // превращаем в "мешок шансов"
@@ -121,15 +124,20 @@ export function generateHexMap(radius: number) {
   // assign starting population & urban
   for (const hex of hexes) {
     let randomPopulation = 0;
-    if (hex.biome === "plains") {
-      randomPopulation = 150 + Math.floor(1 + Math.random() * 300);
-    } else if (hex.biome === "forest") {
-      randomPopulation = 75 + Math.floor(1 + Math.random() * 225);
-    } else if (hex.biome === "desert") {
-      randomPopulation = 35 + Math.floor(1 + Math.random() * 100);
-    } else if (hex.biome === "mountains") {
-      randomPopulation = 0 + Math.floor(1 + Math.random() * 50);
+    if (hex.building) {
+      if (hex.biome === "plains") {
+        randomPopulation = 150 + Math.floor(1 + Math.random() * 300);
+      } else if (hex.biome === "forest") {
+        randomPopulation = 75 + Math.floor(1 + Math.random() * 225);
+      } else if (hex.biome === "desert") {
+        randomPopulation = 35 + Math.floor(1 + Math.random() * 100);
+      } else if (hex.biome === "mountains") {
+        randomPopulation = 0 + Math.floor(1 + Math.random() * 50);
+      }
+    } else {
+      randomPopulation = 0 + Math.floor(1 + Math.random() * 10);
     }
+
     hex.population = randomPopulation;
   }
 
@@ -140,19 +148,7 @@ export function generateHexMap(radius: number) {
   }
   return hexes;
 }
-function findNeighbors(hex: Hex, hexes: Hex[]) {
-  const neighbors = [];
 
-  for (const dir of HEX_DIRECTIONS) {
-    const q = hex.q + dir.dq;
-    const r = hex.r + dir.dr;
-
-    const neighbor = hexes.find((n) => n.q === q && n.r === r);
-    if (neighbor) neighbors.push(neighbor);
-  }
-
-  return neighbors;
-}
 export function randomNationColor(): string {
   const hue = Math.floor(Math.random() * 360); // оттенок
   const saturation = 40 + Math.random() * 30; // 40–70%
@@ -208,3 +204,5 @@ function randomLengthArray(array: Hex[], min: number, max: number) {
 
   return arr.slice(0, count);
 }
+
+// CHANGE STARTING POPULATION FOR EMPTY REGIONS

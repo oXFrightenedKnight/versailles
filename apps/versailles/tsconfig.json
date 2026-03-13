@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2017",
+    "baseUrl": ".",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -19,7 +20,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@repo/shared": ["../../packages/shared/src/index.ts"],
+      "@repo/shared/*": ["../../packages/shared/src/*"]
     }
   },
   "include": [
@@ -31,5 +34,6 @@
     "**/*.mts",
     "src/canvas/render.js"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
+  "extends": "../../tsconfig.base.json"
 }

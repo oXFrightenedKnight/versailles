@@ -1,12 +1,11 @@
 import z from "zod";
 import { authedProcedure, router } from "./trpc.js";
 import { calculatePopulationChange, generateHexMap } from "../services/map.js";
-import { BUILDINGS, Hex, MAP_RADIUS } from "../lib/map_data.js";
 import { memoryStore } from "../server/memoryStore.js";
-import { Nation, NATION_NAMES } from "../lib/nations.js";
 import { buildNationBuildings, generateNations, newBuildings } from "../services/genNations.js";
 import { TRPCError } from "@trpc/server";
 import { moveArmy } from "../services/army.js";
+import { BUILDINGS, Hex, MAP_RADIUS, Nation } from "@repo/shared";
 
 export const appRouter = router({
   // Init game
@@ -56,6 +55,12 @@ export const appRouter = router({
             }),
           })
         ),
+        buildRoads: z.array(
+          z.object({
+            hexId: z.number(),
+            id: z.array(z.number()),
+          })
+        ),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -63,8 +68,7 @@ export const appRouter = router({
       const nations: Nation[] = memoryStore.maps.get("nations");
       let turn: number = memoryStore.maps.get("turn");
       const playerNationId = nations.find((nation) => nation.isPlayer)?.id;
-
-      console.log(mapHexes, nations, turn);
+      const buildRoads = input.buildRoads;
 
       // checks
       if (
@@ -122,25 +126,7 @@ export const appRouter = router({
       memoryStore.maps.set("mapHexes", mapHexes);
       return { turn };
     }),
-  readNations: authedProcedure.query(async () => {
-    const nations: Nation[] = memoryStore.maps.get("nations");
-
-    if (!nations) {
-      throw new TRPCError({ code: "NOT_FOUND" });
-    }
-
-    if (memoryStore.maps.has("nations")) {
-      const allIds = nations.map((nation: Nation) => nation.id);
-
-      const filtered_nations = Object.fromEntries(
-        Object.entries(NATION_NAMES).filter(([_, value]) => allIds.includes(value))
-      );
-
-      return filtered_nations;
-    }
-  }),
 });
-
 // Export type router type signature,
 // NOT the router itself.
 export type AppRouter = typeof appRouter;

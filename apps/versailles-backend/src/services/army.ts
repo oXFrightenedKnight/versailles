@@ -1,4 +1,4 @@
-import { Hex } from "../lib/map_data.js";
+import { Hex } from "@repo/shared";
 import { getNationById } from "./genNations.js";
 import { getHexById } from "./map.js";
 
@@ -24,6 +24,7 @@ export function moveArmy({
   const hexToMove = mapHexes.find(
     (h) => h.q === hex.q + direction.dq && h.r === hex.r + direction.dr
   );
+  // find army of nation in hex from where it is moving
   let nationArmyInTile = hex.army?.find((obj) => obj.nationId === nationId);
   if (!nationArmyInTile || !hexToMove) return;
 
