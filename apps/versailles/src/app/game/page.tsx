@@ -26,6 +26,7 @@ export type armyIntent = {
 export type buildRoads = {
   hexId: number;
   id: string[];
+  place: number;
 }[];
 
 export default function Home() {
@@ -294,10 +295,21 @@ export default function Home() {
           tempRoadArray.splice(idx);
         } else {
           // add hex to temp array
+
+          // find roads in temp with the same id and find their current max place
+          const sameIdRoads = tempRoadArray.filter((obj) =>
+            obj.id.includes(randomIdRef.current ?? "")
+          );
+          let max = 0;
+          if (sameIdRoads.length > 0) {
+            max = sameIdRoads.reduce((acc, n) => (n.place > acc.place ? n : acc)).place;
+          }
+
           if (!randomIdRef.current) return;
           tempRoadArray.push({
             id: [randomIdRef.current],
             hexId: hex.id,
+            place: max + 1,
           });
         }
         redraw();

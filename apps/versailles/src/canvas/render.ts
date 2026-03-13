@@ -339,7 +339,7 @@ function drawAllRoads({
   mapHexes,
   ctx,
 }: {
-  roadArray: roadArray;
+  roadArray: buildRoads;
   mapHexes: Hex[];
   ctx: CanvasRenderingContext2D;
 }) {
@@ -364,12 +364,20 @@ function drawAllRoads({
     if (!neighbors) continue;
 
     for (const neighbor of neighbors) {
+      // check if neighbor's id exists in set of hex ids that have a queued road on them
+      // and if we already mapped over this pair
       const hasDuplicate =
         queuedRoadsMap.has([hex.id, neighbor.id]) || queuedRoadsMap.has([neighbor.id, hex.id]);
       if (!roadHexIdSet.has(neighbor.id) || hasDuplicate) continue;
 
+      // check if there is neighbor object and if at least one if its id matches with current road
       const neighborObj = roadArray.find((obj) => obj.hexId === neighbor.id);
-      if (!neighborObj || neighborObj.id.some((id) => roadObject.id.includes(id))) continue;
+      if (!neighborObj || !neighborObj.id.some((id) => roadObject.id.includes(id))) continue;
+
+      // if neighbor road place is not previous or next, we don't connect them
+      const isPrevOrNext =
+        neighborObj.place - 1 === roadObject.place || neighborObj.place + 1 === roadObject.place;
+      if (!isPrevOrNext) continue;
 
       queuedRoadsMap.add([hex.id, neighbor.id]);
 
