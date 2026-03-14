@@ -1,6 +1,7 @@
 import { findNeighbors, Hex, Nation, NATION_NAMES } from "@repo/shared";
 import { Biome, BIOME_COLOR, HEX_SIZE } from "./map_data";
 import { armyIntent, buildRoads } from "@/app/game/page";
+import { isLastElement } from "@/lib/utils";
 
 export type roadArray = {
   id: string[];
@@ -294,7 +295,7 @@ export function drawRoad({
   y2,
   opacity = 1,
   pattern,
-  roadWidth = 18,
+  roadWidth = 12,
 }: {
   ctx: CanvasRenderingContext2D;
   x1: number;
@@ -311,25 +312,82 @@ export function drawRoad({
   const length = Math.hypot(dx, dy);
   const angle = Math.atan2(dy, dx);
 
+  const ux = dx / length;
+  const uy = dy / length;
+
+  // prependicular
+  const px1 = -uy;
+  const py1 = ux;
+
+  const px2 = uy;
+  const py2 = -ux;
+
+  // offset points
+  const cx = (x1 + x2) / 2;
+  const cy = (y1 + y2) / 2;
+  const half = length / 3;
+
+  const p1x = cx - ux * half;
+  const p1y = cy - uy * half;
+
+  const p2x = cx + ux * half;
+  const p2y = cy + uy * half;
+
+  // offset
+  const d = 10;
+  const p1xOff = p1x + px1 * d;
+  const p1yOff = p1y + py1 * d;
+
+  const p2xOff = p2x + px2 * d;
+  const p2yOff = p2y + py2 * d;
+
+  const points = [
+    { x: x1, y: y1 },
+    { x: p1xOff, y: p1yOff },
+    { x: p2xOff, y: p2yOff },
+    { x: x2, y: y2 },
+  ];
+
   ctx.save();
 
   ctx.globalAlpha = opacity;
 
-  // переносим начало координат в центр первого хекса
-  ctx.translate(x1, y1);
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
 
-  // поворачиваем систему координат по направлению дороги
-  ctx.rotate(angle);
+  for (let i = 1; i < points.length - 2; i++) {
+    const midX = (points[i].x + points[i + 1].x) / 2;
+    const midY = (points[i].y + points[i + 1].y) / 2;
+
+    ctx.quadraticCurveTo(points[i].x, points[i].y, midX, midY);
+  }
+
+  ctx.quadraticCurveTo(
+    points[points.length - 2].x,
+    points[points.length - 2].y,
+    points[points.length - 1].x,
+    points[points.length - 1].y
+  );
+
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawRoadNode(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  pattern: CanvasPattern,
+  roadWidth: number
+) {
+  ctx.save();
 
   ctx.fillStyle = pattern;
 
-  // рисуем прямоугольник дороги
-  ctx.fillRect(
-    0, // начало дороги
-    -roadWidth / 2, // центрируем по линии
-    length, // длина дороги
-    roadWidth // ширина дороги
-  );
+  ctx.beginPath();
+  ctx.arc(x, y, roadWidth / 2, 0, Math.PI * 2);
+  ctx.fill();
 
   ctx.restore();
 }
@@ -384,7 +442,16 @@ function drawAllRoads({
       const { x: x1, y: y1 } = hexToPixel(hex.q, hex.r);
       const { x: x2, y: y2 } = hexToPixel(neighbor.q, neighbor.r);
 
-      drawRoad({ ctx, x1, x2, y1, y2, opacity: 0.7, pattern: pattern });
+      drawRoad({ ctx, x1, x2, y1, y2, opacity: 0.4, pattern: pattern });
+
+      // Draw nodes
+      // draw nodes if both elements are not last and first
+      const isFirstElement = roadArray[0] === roadObject;
+      const isFirstNeighbor = roadArray[0] === neighborObj;
+      if (!isFirstElement && !isLastElement(roadArray, roadObject)) {
+        // draw node at x1 y1
+        drawRoadNode(ctx, x1, y1, pattern, 12);
+      }
     }
   }
 

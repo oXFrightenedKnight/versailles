@@ -11,9 +11,10 @@ import {
   renderMap,
   initTextures,
 } from "../../canvas/render";
-import { HEX_DIRECTIONS, type Hex, type Nation } from "@repo/shared";
+import { findNeighbors, HEX_DIRECTIONS, type Hex, type Nation } from "@repo/shared";
 import { Button } from "@/components/ui/button";
-import { isLastElement } from "@/lib/utils";
+import { getHexById, isLastElement } from "@/lib/utils";
+import { findHexPathBetween } from "@/canvas/pathfinding";
 
 export type armyIntent = {
   hexId: number;
@@ -207,6 +208,13 @@ export default function Home() {
           if (!roadStartRef.current) {
             roadStartRef.current = hex;
             randomIdRef.current = crypto.randomUUID();
+
+            // push starting roadObject to array
+            tempRoadRef.current.push({
+              id: [randomIdRef.current!],
+              place: 0,
+              hexId: roadStartRef.current.id,
+            });
           } else {
             // add logic to submit the road from temp to actual array and clean up
             if (tempRoadRef.current.length > 1) {
@@ -271,6 +279,8 @@ export default function Home() {
         const hitCanvas = hitCanvasRef.current;
         const map = mapHexesRef.current;
         if (!hitCanvas || !map) return;
+        if (!mapHexes) return;
+        if (!randomIdRef.current) return;
 
         const rect = hitCanvas.getBoundingClientRect();
         const mouseX = event.clientX - rect.left;
@@ -297,23 +307,51 @@ export default function Home() {
           // add hex to temp array
 
           // find roads in temp with the same id and find their current max place
-          const sameIdRoads = tempRoadArray.filter((obj) =>
-            obj.id.includes(randomIdRef.current ?? "")
-          );
+          const sameIdRoads = tempRoadArray.filter((obj) => obj.id.includes(randomIdRef.current!));
           let max = 0;
           if (sameIdRoads.length > 0) {
             max = sameIdRoads.reduce((acc, n) => (n.place > acc.place ? n : acc)).place;
           }
 
-          if (!randomIdRef.current) return;
+          // check for gaps
+          const neighborIds = findNeighbors(hex, mapHexes).map((n) => n.id);
+          if (tempRoadArray.length >= 2) {
+            // check if last added hex does not border with current hex
+            if (!neighborIds.includes(tempRoadArray[tempRoadArray.length - 1].hexId)) {
+              // fill distance with hex path
+              const lastHex = getHexById(tempRoadArray[tempRoadArray.length - 1].hexId, mapHexes)!;
+              const path = findHexPathBetween(
+                { q: lastHex.q, r: lastHex.r },
+                { q: hex.q, r: hex.r }
+              ).slice(1, -1);
+              const missingHexes: Hex[] = [];
+              path.forEach((axialObj) => {
+                const missingHex = mapHexes.find((h) => h.q === axialObj.q && h.r === axialObj.r);
+                if (!missingHex) return;
+                missingHexes.push(missingHex);
+
+                // add missing hex to tempRoadArray
+                tempRoadArray.push({
+                  id: [randomIdRef.current!],
+                  hexId: missingHex.id,
+                  place: max + 1,
+                });
+                max++;
+              });
+            }
+          }
+
           tempRoadArray.push({
             id: [randomIdRef.current],
             hexId: hex.id,
             place: max + 1,
           });
+          max++;
         }
         redraw();
       }
+
+      // Dragging map
       if (!mouseDownRef.current) return;
 
       const start = startPosRef.current;
@@ -331,7 +369,7 @@ export default function Home() {
 
       redraw();
     },
-    [redraw, buildMode]
+    [redraw, buildMode, mapHexes]
   );
 
   const handleMouseUp = useCallback(
