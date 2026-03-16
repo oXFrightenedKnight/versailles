@@ -8,3 +8,8 @@ export const BIOME_COLOR = {
   mountains: "#9E825A",
 };
 export type Urban = "nomadic_camp" | "village" | "settlement" | "city" | "imperial_city";
+
+export const d = {
+  a: 0,
+  b: 10,
+};

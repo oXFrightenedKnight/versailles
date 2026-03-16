@@ -28,3 +28,11 @@ export function getHexById(id: number, mapHexes: Hex[]) {
 export function lerp(a: number, b: number, t: number) {
   return a * (1 - t) + b * t;
 }
+
+export function getHexByAxial(q: number, r: number, mapHexes: Hex[]) {
+  return mapHexes.find((hex) => hex.q === q && hex.r === r);
+}
+
+export function randomNumber(a: number, b: number) {
+  return Math.floor(Math.random() * (b - a + 1)) + a;
+}

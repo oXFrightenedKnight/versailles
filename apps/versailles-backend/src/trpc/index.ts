@@ -57,8 +57,13 @@ export const appRouter = router({
         ),
         buildRoads: z.array(
           z.object({
-            hexId: z.number(),
-            id: z.array(z.number()),
+            id: z.string(),
+            points: z.array(
+              z.object({
+                q: z.number(),
+                r: z.number(),
+              })
+            ),
           })
         ),
       })

@@ -1,12 +1,7 @@
 import { findNeighbors, Hex, Nation, NATION_NAMES } from "@repo/shared";
 import { Biome, BIOME_COLOR, HEX_SIZE } from "./map_data";
-import { armyIntent, buildRoads } from "@/app/game/page";
+import { armyIntent, roadObject } from "@/app/game/page";
 import { isLastElement } from "@/lib/utils";
-
-export type roadArray = {
-  id: string[];
-  hexId: number;
-}[];
 
 const biomePatterns: Partial<Record<Biome, CanvasPattern>> = {};
 const texturePatterns: Partial<Record<string, CanvasPattern>> = {};
@@ -293,24 +288,29 @@ export function drawRoad({
   y1,
   x2,
   y2,
+  cenX,
+  cenY,
+  d1,
+  d2,
   opacity = 1,
-  pattern,
-  roadWidth = 12,
+  roadWidth = 2,
 }: {
   ctx: CanvasRenderingContext2D;
   x1: number;
   y1: number;
   x2: number;
   y2: number;
+  cenX?: number;
+  cenY?: number;
+  d1: number;
+  d2: number;
   opacity?: number;
-  pattern: CanvasPattern;
   roadWidth?: number;
 }) {
   const dx = x2 - x1;
   const dy = y2 - y1;
 
   const length = Math.hypot(dx, dy);
-  const angle = Math.atan2(dy, dx);
 
   const ux = dx / length;
   const uy = dy / length;
@@ -333,13 +333,12 @@ export function drawRoad({
   const p2x = cx + ux * half;
   const p2y = cy + uy * half;
 
-  // offset
-  const d = 10;
-  const p1xOff = p1x + px1 * d;
-  const p1yOff = p1y + py1 * d;
+  // random offset
+  const p1xOff = p1x + px1 * d1;
+  const p1yOff = p1y + py1 * d1;
 
-  const p2xOff = p2x + px2 * d;
-  const p2yOff = p2y + py2 * d;
+  const p2xOff = p2x + px2 * d2;
+  const p2yOff = p2y + py2 * d2;
 
   const points = [
     { x: x1, y: y1 },
@@ -348,9 +347,15 @@ export function drawRoad({
     { x: x2, y: y2 },
   ];
 
+  if (cenX && cenY) {
+    points.splice(2, 0, { x: cenX, y: cenY });
+  }
+
   ctx.save();
 
   ctx.globalAlpha = opacity;
+  ctx.lineWidth = roadWidth;
+  ctx.strokeStyle = "brown";
 
   ctx.beginPath();
   ctx.moveTo(points[0].x, points[0].y);
@@ -374,89 +379,94 @@ export function drawRoad({
   ctx.restore();
 }
 
-function drawRoadNode(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  pattern: CanvasPattern,
-  roadWidth: number
-) {
-  ctx.save();
-
-  ctx.fillStyle = pattern;
-
-  ctx.beginPath();
-  ctx.arc(x, y, roadWidth / 2, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.restore();
-}
-
 function drawAllRoads({
-  roadArray,
+  roadObjectArray,
   mapHexes,
   ctx,
 }: {
-  roadArray: buildRoads;
+  roadObjectArray: roadObject[];
   mapHexes: Hex[];
   ctx: CanvasRenderingContext2D;
 }) {
-  // draw queued roads
-  const roadHexIdSet = new Set<number>();
-  const queuedRoadsMap = new Set<number[]>();
-
-  const pattern = texturePatterns["road"];
-  if (!pattern) {
-    console.log("No pattern!");
-    return;
-  }
-
-  roadArray.forEach((obj) => roadHexIdSet.add(obj.hexId));
-  for (const roadObject of roadArray) {
+  for (const roadObject of roadObjectArray) {
     // change to hexes with roads (df to remove duplicates)
+    const points: { q: number; r: number; d1: number; d2: number }[] = [];
+    roadObject.points.forEach((point) => points.push(point));
+    if (points.length <= 1) continue;
 
-    const hex = mapHexes.find((h) => h.id === roadObject.hexId);
-    if (!hex) continue;
+    for (let idx = 0; idx < points.length; idx++) {
+      const point = points[idx];
+      const d1 = point.d1;
+      const d2 = point.d2;
+      const nextPoint = points[idx + 1];
+      const prevPoint = points[idx - 1];
 
-    const neighbors = findNeighbors(hex, mapHexes);
-    if (!neighbors) continue;
+      if (idx !== 0 && idx !== points.length - 1) {
+        if (!nextPoint || !prevPoint) continue;
 
-    for (const neighbor of neighbors) {
-      // check if neighbor's id exists in set of hex ids that have a queued road on them
-      // and if we already mapped over this pair
-      const hasDuplicate =
-        queuedRoadsMap.has([hex.id, neighbor.id]) || queuedRoadsMap.has([neighbor.id, hex.id]);
-      if (!roadHexIdSet.has(neighbor.id) || hasDuplicate) continue;
+        const { x: x2, y: y2 } = hexToPixel(point.q, point.r);
+        const { x: x3, y: y3 } = hexToPixel(nextPoint.q, nextPoint.r);
+        const { x: x1, y: y1 } = hexToPixel(prevPoint.q, prevPoint.r);
 
-      // check if there is neighbor object and if at least one if its id matches with current road
-      const neighborObj = roadArray.find((obj) => obj.hexId === neighbor.id);
-      if (!neighborObj || !neighborObj.id.some((id) => roadObject.id.includes(id))) continue;
+        const midX1 = (x2 + x1) / 2;
+        const midY1 = (y2 + y1) / 2;
 
-      // if neighbor road place is not previous or next, we don't connect them
-      const isPrevOrNext =
-        neighborObj.place - 1 === roadObject.place || neighborObj.place + 1 === roadObject.place;
-      if (!isPrevOrNext) continue;
+        const midX2 = (x3 + x2) / 2;
+        const midY2 = (y3 + y2) / 2;
 
-      queuedRoadsMap.add([hex.id, neighbor.id]);
+        drawRoad({
+          ctx,
+          x1: midX1,
+          y1: midY1,
+          x2: midX2,
+          y2: midY2,
+          cenX: x2,
+          cenY: y2,
+          d1,
+          d2,
+          opacity: 1,
+        });
+      } else if (idx === 0) {
+        const { x: x1, y: y1 } = hexToPixel(point.q, point.r);
+        const { x: x2, y: y2 } = hexToPixel(nextPoint.q, nextPoint.r);
 
-      const { x: x1, y: y1 } = hexToPixel(hex.q, hex.r);
-      const { x: x2, y: y2 } = hexToPixel(neighbor.q, neighbor.r);
+        const midX = (x2 + x1) / 2;
+        const midY = (y2 + y1) / 2;
 
-      drawRoad({ ctx, x1, x2, y1, y2, opacity: 0.4, pattern: pattern });
+        drawRoad({
+          ctx,
+          x1,
+          y1,
+          x2: midX,
+          y2: midY,
+          d1,
+          d2,
+          opacity: 1,
+        });
+      } else if (idx === points.length - 1) {
+        const { x: x2, y: y2 } = hexToPixel(point.q, point.r);
+        const { x: x1, y: y1 } = hexToPixel(prevPoint.q, prevPoint.r);
 
-      // Draw nodes
-      // draw nodes if both elements are not last and first
-      const isFirstElement = roadArray[0] === roadObject;
-      const isFirstNeighbor = roadArray[0] === neighborObj;
-      if (!isFirstElement && !isLastElement(roadArray, roadObject)) {
-        // draw node at x1 y1
-        drawRoadNode(ctx, x1, y1, pattern, 12);
+        const midX = (x2 + x1) / 2;
+        const midY = (y2 + y1) / 2;
+
+        drawRoad({
+          ctx,
+          x1: midX,
+          y1: midY,
+          x2,
+          y2,
+          d1,
+          d2,
+          opacity: 1,
+        });
       }
     }
   }
 
-  // draw real roads
-  const allRoadHexes = mapHexes.filter((hex) => hex.road);
+  // draw real roads || CHANGE THIS
+  {
+    /*const allRoadHexes = mapHexes.filter((hex) => hex.road);
   const drawnRoadsMap = new Set<number[]>();
   for (const hex of allRoadHexes) {
     const neighbors = findNeighbors(hex, mapHexes);
@@ -477,12 +487,13 @@ function drawAllRoads({
       const { x: x1, y: y1 } = hexToPixel(hex.q, hex.r);
       const { x: x2, y: y2 } = hexToPixel(neighbor.q, neighbor.r);
 
-      drawRoad({ ctx, x1, x2, y1, y2, opacity: 1, pattern: pattern });
+      drawRoad({ ctx, x1, x2, y1, y2, opacity: 1 });
     }
+  }*/
   }
 }
 
-function hexToPixel(q: number, r: number) {
+export function hexToPixel(q: number, r: number) {
   const x = HEX_SIZE * Math.sqrt(3) * (q + r / 2);
   const y = ((HEX_SIZE * 3) / 2) * r;
 
@@ -526,7 +537,7 @@ export function renderMap(
   mapHexes: Hex[],
   nations: Nation[],
   armyMove: armyIntent[],
-  buildRoads: buildRoads
+  buildRoads: roadObject[]
 ) {
   // set of neighbor ids
   const neighbors = new Set<number>();
@@ -614,7 +625,7 @@ export function renderMap(
     });
   });
 
-  drawAllRoads({ ctx: clickCtx, mapHexes, roadArray: buildRoads });
+  drawAllRoads({ ctx: clickCtx, mapHexes, roadObjectArray: buildRoads });
 }
 
 export function getNationName({ id }: { id: string }) {

@@ -13,8 +13,9 @@ import {
 } from "../../canvas/render";
 import { findNeighbors, HEX_DIRECTIONS, type Hex, type Nation } from "@repo/shared";
 import { Button } from "@/components/ui/button";
-import { getHexById, isLastElement } from "@/lib/utils";
+import { getHexByAxial, getHexById, isLastElement, randomNumber } from "@/lib/utils";
 import { findHexPathBetween } from "@/canvas/pathfinding";
+import { d } from "@/canvas/map_data";
 
 export type armyIntent = {
   hexId: number;
@@ -24,11 +25,10 @@ export type armyIntent = {
     dr: number;
   };
 };
-export type buildRoads = {
-  hexId: number;
-  id: string[];
-  place: number;
-}[];
+export type roadObject = {
+  id: string;
+  points: { q: number; r: number; d1: number; d2: number }[];
+};
 
 export default function Home() {
   const [mapHexes, setMapHexes] = useState<Hex[] | null>(null);
@@ -40,7 +40,7 @@ export default function Home() {
   const [armyMove, setArmyMove] = useState<armyIntent[]>([]);
 
   // build road array
-  const [buildRoads, setBuildRoads] = useState<buildRoads>([]);
+  const [buildRoads, setBuildRoads] = useState<roadObject[]>([]);
   const [buildMode, setBuildMode] = useState<"none" | "road">("road");
 
   // DATA FETCH
@@ -80,7 +80,7 @@ export default function Home() {
   // first hex to that road building starts from
   const roadStartRef = useRef<Hex | null>(null);
   // add temporary road path tracker
-  const tempRoadRef = useRef<buildRoads>([]);
+  const tempRoadRef = useRef<roadObject | null>(null);
   const randomIdRef = useRef<string | null>(null);
 
   const cameraRef = useRef({
@@ -210,21 +210,20 @@ export default function Home() {
             randomIdRef.current = crypto.randomUUID();
 
             // push starting roadObject to array
-            tempRoadRef.current.push({
-              id: [randomIdRef.current!],
-              place: 0,
-              hexId: roadStartRef.current.id,
-            });
+            tempRoadRef.current = {
+              id: randomIdRef.current!,
+              points: [
+                { q: hex.q, r: hex.r, d1: randomNumber(d.a, d.b), d2: randomNumber(d.a, d.b) },
+              ],
+            };
           } else {
             // add logic to submit the road from temp to actual array and clean up
-            if (tempRoadRef.current.length > 1) {
-              tempRoadRef.current.forEach((obj) => {
-                buildRoads.push(obj);
-              });
+            if (tempRoadRef.current) {
+              buildRoads.push(tempRoadRef.current);
             }
 
             // cleanup
-            tempRoadRef.current = [];
+            tempRoadRef.current = null;
             roadStartRef.current = null;
             randomIdRef.current = null;
             setBuildMode("none");
@@ -281,6 +280,7 @@ export default function Home() {
         if (!hitCanvas || !map) return;
         if (!mapHexes) return;
         if (!randomIdRef.current) return;
+        if (!tempRoadRef.current) return;
 
         const rect = hitCanvas.getBoundingClientRect();
         const mouseX = event.clientX - rect.left;
@@ -295,58 +295,60 @@ export default function Home() {
 
         // add hex to temporary array
         const tempRoadArray = tempRoadRef.current;
-        const tempArrayHexIds = tempRoadArray.map((obj) => obj.hexId);
+
+        const pointSet = new Set<string>();
+        tempRoadArray?.points.forEach((point) => pointSet.add(`${point.q},${point.r}`));
+
+        const tempArrayHexes = mapHexes.filter((h) => pointSet.has(`${h.q},${h.r}`));
+        const tempArrayHexIds = tempArrayHexes.map((h) => h.id);
         const hasHexId = tempArrayHexIds.includes(hex.id);
         if (hasHexId && isLastElement(tempArrayHexIds, hex.id)) return;
 
         // reset back to that hex
         if (hasHexId) {
-          const idx = tempArrayHexIds.indexOf(hex.id) + 1;
-          tempRoadArray.splice(idx);
+          const idx = tempRoadArray.points.findIndex((p) => p.q === hex.q && p.r === hex.r) + 1;
+          tempRoadArray?.points.splice(idx);
         } else {
           // add hex to temp array
 
-          // find roads in temp with the same id and find their current max place
-          const sameIdRoads = tempRoadArray.filter((obj) => obj.id.includes(randomIdRef.current!));
-          let max = 0;
-          if (sameIdRoads.length > 0) {
-            max = sameIdRoads.reduce((acc, n) => (n.place > acc.place ? n : acc)).place;
-          }
-
           // check for gaps
           const neighborIds = findNeighbors(hex, mapHexes).map((n) => n.id);
-          if (tempRoadArray.length >= 2) {
+          if (tempRoadArray) {
             // check if last added hex does not border with current hex
-            if (!neighborIds.includes(tempRoadArray[tempRoadArray.length - 1].hexId)) {
+            const lastPoint = tempRoadArray.points[tempRoadArray.points.length - 1];
+            const lastHexOfRoad = getHexByAxial(lastPoint.q, lastPoint.r, mapHexes);
+            if (!lastHexOfRoad) return;
+
+            if (!neighborIds.includes(lastHexOfRoad.id)) {
               // fill distance with hex path
-              const lastHex = getHexById(tempRoadArray[tempRoadArray.length - 1].hexId, mapHexes)!;
+
               const path = findHexPathBetween(
-                { q: lastHex.q, r: lastHex.r },
+                { q: lastHexOfRoad.q, r: lastHexOfRoad.r },
                 { q: hex.q, r: hex.r }
               ).slice(1, -1);
               const missingHexes: Hex[] = [];
               path.forEach((axialObj) => {
-                const missingHex = mapHexes.find((h) => h.q === axialObj.q && h.r === axialObj.r);
+                const missingHex = getHexByAxial(axialObj.q, axialObj.r, mapHexes);
                 if (!missingHex) return;
                 missingHexes.push(missingHex);
 
-                // add missing hex to tempRoadArray
-                tempRoadArray.push({
-                  id: [randomIdRef.current!],
-                  hexId: missingHex.id,
-                  place: max + 1,
+                // add missing hex coordinates to road object
+                tempRoadArray.points.push({
+                  q: missingHex.q,
+                  r: missingHex.r,
+                  d1: randomNumber(d.a, d.b),
+                  d2: randomNumber(d.a, d.b),
                 });
-                max++;
               });
             }
           }
 
-          tempRoadArray.push({
-            id: [randomIdRef.current],
-            hexId: hex.id,
-            place: max + 1,
+          tempRoadArray.points.push({
+            q: hex.q,
+            r: hex.r,
+            d1: randomNumber(d.a, d.b),
+            d2: randomNumber(d.a, d.b),
           });
-          max++;
         }
         redraw();
       }

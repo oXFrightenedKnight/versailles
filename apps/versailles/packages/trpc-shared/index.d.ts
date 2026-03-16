@@ -33,8 +33,8 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
           };
         }[];
         buildRoads: {
-          hexId: number;
-          id: string[];
+          id: string;
+          points: { q: number; r: number }[];
         }[];
       };
       output: {
