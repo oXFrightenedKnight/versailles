@@ -2,7 +2,7 @@
   "name": "versailles-backend",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch src/index.ts --trace-uncaught",
     "build": "tsc",
     "start": "node dist/index.js"
   },

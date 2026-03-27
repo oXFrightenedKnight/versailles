@@ -1,7 +1,7 @@
-import { findNeighbors, Hex, Nation, NATION_NAMES } from "@repo/shared";
+import { findNeighbors, Hex, Nation, NATION_NAMES, Road } from "@repo/shared";
 import { Biome, BIOME_COLOR, HEX_SIZE } from "./map_data";
 import { armyIntent, roadObject } from "@/app/game/page";
-import { isLastElement } from "@/lib/utils";
+import { buildMergedRoadsIterative, buildRoadsByPoint, drawAllRoads } from "./roads";
 
 const biomePatterns: Partial<Record<Biome, CanvasPattern>> = {};
 const texturePatterns: Partial<Record<string, CanvasPattern>> = {};
@@ -282,217 +282,6 @@ function drawArrow(
   ctx.fill();
 }
 
-export function drawRoad({
-  ctx,
-  x1,
-  y1,
-  x2,
-  y2,
-  cenX,
-  cenY,
-  d1,
-  d2,
-  opacity = 1,
-  roadWidth = 2,
-}: {
-  ctx: CanvasRenderingContext2D;
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  cenX?: number;
-  cenY?: number;
-  d1: number;
-  d2: number;
-  opacity?: number;
-  roadWidth?: number;
-}) {
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-
-  const length = Math.hypot(dx, dy);
-
-  const ux = dx / length;
-  const uy = dy / length;
-
-  // prependicular
-  const px1 = -uy;
-  const py1 = ux;
-
-  const px2 = uy;
-  const py2 = -ux;
-
-  // offset points
-  const cx = (x1 + x2) / 2;
-  const cy = (y1 + y2) / 2;
-  const half = length / 3;
-
-  const p1x = cx - ux * half;
-  const p1y = cy - uy * half;
-
-  const p2x = cx + ux * half;
-  const p2y = cy + uy * half;
-
-  // random offset
-  const p1xOff = p1x + px1 * d1;
-  const p1yOff = p1y + py1 * d1;
-
-  const p2xOff = p2x + px2 * d2;
-  const p2yOff = p2y + py2 * d2;
-
-  const points = [
-    { x: x1, y: y1 },
-    { x: p1xOff, y: p1yOff },
-    { x: p2xOff, y: p2yOff },
-    { x: x2, y: y2 },
-  ];
-
-  if (cenX && cenY) {
-    points.splice(2, 0, { x: cenX, y: cenY });
-  }
-
-  ctx.save();
-
-  ctx.globalAlpha = opacity;
-  ctx.lineWidth = roadWidth;
-  ctx.strokeStyle = "brown";
-
-  ctx.beginPath();
-  ctx.moveTo(points[0].x, points[0].y);
-
-  for (let i = 1; i < points.length - 2; i++) {
-    const midX = (points[i].x + points[i + 1].x) / 2;
-    const midY = (points[i].y + points[i + 1].y) / 2;
-
-    ctx.quadraticCurveTo(points[i].x, points[i].y, midX, midY);
-  }
-
-  ctx.quadraticCurveTo(
-    points[points.length - 2].x,
-    points[points.length - 2].y,
-    points[points.length - 1].x,
-    points[points.length - 1].y
-  );
-
-  ctx.stroke();
-
-  ctx.restore();
-}
-
-function drawAllRoads({
-  roadObjectArray,
-  mapHexes,
-  ctx,
-}: {
-  roadObjectArray: roadObject[];
-  mapHexes: Hex[];
-  ctx: CanvasRenderingContext2D;
-}) {
-  for (const roadObject of roadObjectArray) {
-    // change to hexes with roads (df to remove duplicates)
-    const points: { q: number; r: number; d1: number; d2: number }[] = [];
-    roadObject.points.forEach((point) => points.push(point));
-    if (points.length <= 1) continue;
-
-    for (let idx = 0; idx < points.length; idx++) {
-      const point = points[idx];
-      const d1 = point.d1;
-      const d2 = point.d2;
-      const nextPoint = points[idx + 1];
-      const prevPoint = points[idx - 1];
-
-      if (idx !== 0 && idx !== points.length - 1) {
-        if (!nextPoint || !prevPoint) continue;
-
-        const { x: x2, y: y2 } = hexToPixel(point.q, point.r);
-        const { x: x3, y: y3 } = hexToPixel(nextPoint.q, nextPoint.r);
-        const { x: x1, y: y1 } = hexToPixel(prevPoint.q, prevPoint.r);
-
-        const midX1 = (x2 + x1) / 2;
-        const midY1 = (y2 + y1) / 2;
-
-        const midX2 = (x3 + x2) / 2;
-        const midY2 = (y3 + y2) / 2;
-
-        drawRoad({
-          ctx,
-          x1: midX1,
-          y1: midY1,
-          x2: midX2,
-          y2: midY2,
-          cenX: x2,
-          cenY: y2,
-          d1,
-          d2,
-          opacity: 1,
-        });
-      } else if (idx === 0) {
-        const { x: x1, y: y1 } = hexToPixel(point.q, point.r);
-        const { x: x2, y: y2 } = hexToPixel(nextPoint.q, nextPoint.r);
-
-        const midX = (x2 + x1) / 2;
-        const midY = (y2 + y1) / 2;
-
-        drawRoad({
-          ctx,
-          x1,
-          y1,
-          x2: midX,
-          y2: midY,
-          d1,
-          d2,
-          opacity: 1,
-        });
-      } else if (idx === points.length - 1) {
-        const { x: x2, y: y2 } = hexToPixel(point.q, point.r);
-        const { x: x1, y: y1 } = hexToPixel(prevPoint.q, prevPoint.r);
-
-        const midX = (x2 + x1) / 2;
-        const midY = (y2 + y1) / 2;
-
-        drawRoad({
-          ctx,
-          x1: midX,
-          y1: midY,
-          x2,
-          y2,
-          d1,
-          d2,
-          opacity: 1,
-        });
-      }
-    }
-  }
-
-  // draw real roads || CHANGE THIS
-  {
-    /*const allRoadHexes = mapHexes.filter((hex) => hex.road);
-  const drawnRoadsMap = new Set<number[]>();
-  for (const hex of allRoadHexes) {
-    const neighbors = findNeighbors(hex, mapHexes);
-    if (neighbors.length === 0) continue;
-
-    // draw roads if neighbor id matches
-    for (const neighbor of neighbors) {
-      if (
-        drawnRoadsMap.has([hex.id, neighbor.id]) ||
-        drawnRoadsMap.has([neighbor.id, hex.id]) ||
-        !hex.road
-      )
-        continue;
-      drawnRoadsMap.add([hex.id, neighbor.id]);
-      const includesNeighborId = hex.road.id.some((id) => neighbor.road?.id.includes(id));
-      if (!neighbor.road || !includesNeighborId) continue;
-
-      const { x: x1, y: y1 } = hexToPixel(hex.q, hex.r);
-      const { x: x2, y: y2 } = hexToPixel(neighbor.q, neighbor.r);
-
-      drawRoad({ ctx, x1, x2, y1, y2, opacity: 1 });
-    }
-  }*/
-  }
-}
-
 export function hexToPixel(q: number, r: number) {
   const x = HEX_SIZE * Math.sqrt(3) * (q + r / 2);
   const y = ((HEX_SIZE * 3) / 2) * r;
@@ -537,7 +326,9 @@ export function renderMap(
   mapHexes: Hex[],
   nations: Nation[],
   armyMove: armyIntent[],
-  buildRoads: roadObject[]
+  buildRoads: roadObject[],
+  tempRoad: roadObject | null,
+  roads: Road[]
 ) {
   // set of neighbor ids
   const neighbors = new Set<number>();
@@ -625,7 +416,13 @@ export function renderMap(
     });
   });
 
-  drawAllRoads({ ctx: clickCtx, mapHexes, roadObjectArray: buildRoads });
+  drawAllRoads({
+    ctx: clickCtx,
+    mapHexes,
+    roadObjectArray: buildRoads,
+    tempRoad,
+    roads,
+  });
 }
 
 export function getNationName({ id }: { id: string }) {

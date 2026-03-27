@@ -2,10 +2,23 @@ import z from "zod";
 import { authedProcedure, router } from "./trpc.js";
 import { calculatePopulationChange, generateHexMap } from "../services/map.js";
 import { memoryStore } from "../server/memoryStore.js";
-import { buildNationBuildings, generateNations, newBuildings } from "../services/genNations.js";
+import {
+  buildNationBuildings,
+  buildNationRoads,
+  generateNations,
+  newBuildings,
+} from "../services/genNations.js";
 import { TRPCError } from "@trpc/server";
 import { moveArmy } from "../services/army.js";
-import { BUILDINGS, Hex, MAP_RADIUS, Nation } from "@repo/shared";
+import {
+  ALL_BUILDING_CATEGORIES,
+  Building,
+  BUILDINGS_CATEGORY,
+  Hex,
+  MAP_RADIUS,
+  Nation,
+  Road,
+} from "@repo/shared";
 
 export const appRouter = router({
   // Init game
@@ -13,45 +26,60 @@ export const appRouter = router({
     let mapHexes: Hex[] = [];
     let nations: Nation[] = [];
     let turn: number = 0;
+    let roads: Road[] = [];
+    let buildings: Building[] = [];
 
     if (memoryStore.maps.has("mapHexes")) {
       mapHexes = memoryStore.maps.get("mapHexes");
     } else {
-      mapHexes = generateHexMap(MAP_RADIUS);
+      mapHexes = generateHexMap(MAP_RADIUS, buildings);
       memoryStore.maps.set("mapHexes", mapHexes);
     }
 
     if (memoryStore.maps.has("nations")) {
       nations = memoryStore.maps.get("nations");
     } else {
-      nations = generateNations();
+      nations = generateNations({ buildings });
       memoryStore.maps.set("nations", nations);
     }
 
     if (memoryStore.maps.has("turn")) {
       turn = memoryStore.maps.get("turn");
     } else {
-      memoryStore.maps.set("turn", 0);
+      memoryStore.maps.set("turn", turn);
     }
 
-    return { mapHexes, nations, turn };
+    if (memoryStore.maps.has("roads")) {
+      roads = memoryStore.maps.get("roads");
+    } else {
+      memoryStore.maps.set("roads", roads);
+    }
+
+    if (memoryStore.maps.has("buildings")) {
+      buildings = memoryStore.maps.get("buildings");
+    } else {
+      memoryStore.maps.set("buildings", buildings);
+    }
+
+    return { mapHexes, nations, turn, roads, buildings };
   }),
   nextTurn: authedProcedure
     .input(
       z.object({
         newQueuedBuildings: z.array(
           z.object({
-            hexId: z.number(),
-            building: z.string(),
+            hexId: z.int(),
+            buildingType: z.string(),
+            levelsToUpgrade: z.int().min(1),
           })
         ),
         movePlayerArmy: z.array(
           z.object({
-            hexId: z.number(),
-            amount: z.number(),
+            hexId: z.int(),
+            amount: z.int(),
             direction: z.object({
-              dq: z.number(),
-              dr: z.number(),
+              dq: z.int(),
+              dr: z.int(),
             }),
           })
         ),
@@ -60,8 +88,10 @@ export const appRouter = router({
             id: z.string(),
             points: z.array(
               z.object({
-                q: z.number(),
-                r: z.number(),
+                q: z.int(),
+                r: z.int(),
+                d1: z.number(),
+                d2: z.number(),
               })
             ),
           })
@@ -72,6 +102,8 @@ export const appRouter = router({
       let mapHexes: Hex[] = memoryStore.maps.get("mapHexes");
       const nations: Nation[] = memoryStore.maps.get("nations");
       let turn: number = memoryStore.maps.get("turn");
+      let roads: Road[] = memoryStore.maps.get("roads");
+      let buildings: Building[] = memoryStore.maps.get("buildings");
       const playerNationId = nations.find((nation) => nation.isPlayer)?.id;
       const buildRoads = input.buildRoads;
 
@@ -87,22 +119,35 @@ export const appRouter = router({
       }
       if (!playerNationId) throw new TRPCError({ code: "NOT_FOUND" });
 
-      // increase turn
-      turn++;
-      memoryStore.maps.set("turn", turn);
-
       // step 1: calculate ai decisions (build, attack, move)
 
       // step 1.5: queue buildings that are going to be built & finish building
       for (const nation of nations) {
-        if (!nation.isPlayer) continue; // only allow player for now
-        if (!input.newQueuedBuildings.every((obj) => Object.keys(BUILDINGS).includes(obj.building)))
+        if (!nation.isPlayer) continue; // execute for player nation only
+        // check if all new queued buildings categories exist
+        if (
+          !input.newQueuedBuildings.every((obj) =>
+            ALL_BUILDING_CATEGORIES.includes(obj.buildingType as BUILDINGS_CATEGORY)
+          )
+        )
           throw new TRPCError({ code: "NOT_FOUND" });
         mapHexes = buildNationBuildings({
           nation: nation,
           mapHexes: mapHexes,
           newBuildings: input.newQueuedBuildings as newBuildings,
+          buildings: buildings,
         });
+
+        // build roads (only allow to build from building to building or road to building or road to road)
+        const roadsToBuild = buildRoads.map((r) => ({
+          ...r,
+          points: r.points.map((p) => ({
+            ...p,
+            isConstructing: true,
+          })),
+          constructing: null,
+        }));
+        roads = buildNationRoads({ nation, mapHexes, buildRoads: roadsToBuild, roads });
       }
 
       // step 2: army movement (player + ai)
@@ -123,12 +168,19 @@ export const appRouter = router({
       // step 3: calculate battle outcomes
 
       // step 4: calculate population growth
-      mapHexes = calculatePopulationChange(mapHexes);
+      mapHexes = calculatePopulationChange(mapHexes, buildings);
 
       // step 5: calculate gold & building output
 
-      // step 6: update values in memory store
+      // step 6: increase turn
+      turn++;
+      memoryStore.maps.set("turn", turn);
+
+      // step 7: update values in memory store
       memoryStore.maps.set("mapHexes", mapHexes);
+      memoryStore.maps.set("roads", roads);
+      memoryStore.maps.set("nations", nations);
+      memoryStore.maps.set("buildings", buildings);
       return { turn };
     }),
 });

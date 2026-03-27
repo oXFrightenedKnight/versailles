@@ -3,17 +3,21 @@ import {
   BIOME_GROWTH,
   BIOME_MOD,
   BIOMES,
+  Building,
+  BUILDINGS,
   CreatedHexes,
+  findBuildingNameByCategory,
   findNeighbors,
+  getBuilding,
   Hex,
   HEX_DIRECTIONS,
-  POPULATION_CAPS,
   WOOD_MOD,
 } from "@repo/shared";
 import { memoryStore } from "../server/memoryStore.js";
+import { BuildBuilding } from "./buildings.js";
 
 // generates the mathematical map & coordinates
-export function generateHexMap(radius: number) {
+export function generateHexMap(radius: number, buildings: Building[]) {
   const hexes: Hex[] = [];
   let id = 0;
 
@@ -28,12 +32,11 @@ export function generateHexMap(radius: number) {
           r,
           biome: null,
           population: null,
-          building: null,
+          buildingId: null,
           owner: null,
           build_queue: null,
           army: [],
           wood: 0,
-          road: null,
         });
       }
     }
@@ -112,19 +115,19 @@ export function generateHexMap(radius: number) {
 
   // assign nomadic camps to random tiles
   const randomHexes = randomLengthArray(
-    hexes.filter((hex) => !hex.building),
+    hexes.filter((hex) => !hex.buildingId),
     10,
     25
   ); // get from 10 to 25 random hexes
 
   for (const hex of randomHexes) {
-    hex.building = { type: "nomadic_camp" };
+    BuildBuilding({ category: "CIVILIAN", buildings, hex });
   }
 
   // assign starting population & urban
   for (const hex of hexes) {
     let randomPopulation = 0;
-    if (hex.building) {
+    if (hex.buildingId) {
       if (hex.biome === "plains") {
         randomPopulation = 150 + Math.floor(1 + Math.random() * 300);
       } else if (hex.biome === "forest") {
@@ -170,11 +173,17 @@ export function getHexById(id: number) {
   return null;
 }
 
-export function calculatePopulationChange(hexes: Hex[]) {
+export function calculatePopulationChange(hexes: Hex[], buildings: Building[]) {
   for (const hex of hexes) {
-    if (!hex.owner || !hex.building) continue;
+    if (!hex.owner || !hex.buildingId) continue;
+    const building = getBuilding({ buildings, id: hex.buildingId });
+    if (!building) continue;
+    const buildingName = findBuildingNameByCategory({
+      buildingCategory: building.category,
+      level: building.level,
+    });
     const cap =
-      POPULATION_CAPS[hex.building.type || "nomadic_camp"] * BIOME_GROWTH[hex.biome || "plains"];
+      BUILDINGS[buildingName || "nomadic_camp"].popCap * BIOME_GROWTH[hex.biome || "plains"];
     const rate = 0.15 * BIOME_GROWTH[hex.biome || "plains"];
 
     let currPopulation = hex.population || 0;
@@ -204,5 +213,3 @@ function randomLengthArray(array: Hex[], min: number, max: number) {
 
   return arr.slice(0, count);
 }
-
-// CHANGE STARTING POPULATION FOR EMPTY REGIONS

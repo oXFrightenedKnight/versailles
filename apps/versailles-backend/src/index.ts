@@ -6,6 +6,14 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { appRouter } from "./trpc/index.js";
 
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT EXCEPTION:", err);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("UNHANDLED REJECTION:", reason);
+});
+
 const app = new Hono();
 
 app.use(
@@ -31,6 +39,16 @@ app.all("/trpc/*", async (c) => {
     req: c.req.raw,
     router: appRouter,
     createContext: () => ({ clerkId: auth?.userId ?? null }),
+    onError({ error, path, input }) {
+      console.error(`[tRPC ERROR] ${path}`);
+
+      console.error({
+        message: error.message,
+        code: error.code,
+        input,
+        stack: error.stack,
+      });
+    },
   });
 });
 

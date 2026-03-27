@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, createContext } from "react";
 import { trpc } from "../_trpc/client";
 import Image from "next/image";
 import {
@@ -11,11 +11,34 @@ import {
   renderMap,
   initTextures,
 } from "../../canvas/render";
-import { findNeighbors, HEX_DIRECTIONS, type Hex, type Nation } from "@repo/shared";
+import {
+  BUILDINGS_CATEGORY,
+  findNeighbors,
+  getBuilding,
+  hasSegment,
+  HEX_DIRECTIONS,
+  Road,
+  topLevelsByCategory,
+  type Hex,
+  type Nation,
+  type Building,
+  getHexByAxial,
+} from "@repo/shared";
 import { Button } from "@/components/ui/button";
-import { getHexByAxial, getHexById, isLastElement, randomNumber } from "@/lib/utils";
+import { randomNumber } from "@/lib/utils";
 import { findHexPathBetween } from "@/canvas/pathfinding";
 import { d } from "@/canvas/map_data";
+import ProvinceInfoSidebar from "@/components/ProvinceInfoSidebar";
+import BuildMenu from "@/components/buildButton";
+
+export type DecisionContextObject = {
+  army?: {
+    setArmyTraining: React.Dispatch<React.SetStateAction<ArmyTraining[]>>;
+    armyTraining: ArmyTraining[];
+  };
+  playerNation?: Nation | null;
+};
+export const DecisionContext = createContext<DecisionContextObject>({});
 
 export type armyIntent = {
   hexId: number;
@@ -29,19 +52,39 @@ export type roadObject = {
   id: string;
   points: { q: number; r: number; d1: number; d2: number }[];
 };
+export type newBuilding = {
+  hexId: number;
+  buildingType: BUILDINGS_CATEGORY;
+  levelsToUpgrade: number;
+};
+export type Contract = { startBuildingId: string; endBuildingId: string };
+export type BuildModeType = "road" | "none" | BUILDINGS_CATEGORY;
+export type ArmyTraining = { amount: number; progress: number; owner: string; barrackId: string };
 
 export default function Home() {
   const [mapHexes, setMapHexes] = useState<Hex[] | null>(null);
   const [nations, setNations] = useState<Nation[] | null>(null);
   const [playerNation, setPlayerNation] = useState<Nation | null>(null);
   const [turn, setTurn] = useState<number>(0);
+  const [roads, setRoads] = useState<Road[]>([]);
+  const [buildings, setBuildings] = useState<Building[]>([]);
   const [selectedHex, setSelectedHex] = useState<Hex | null>(null);
   // player army intent
   const [armyMove, setArmyMove] = useState<armyIntent[]>([]);
 
   // build road array
-  const [buildRoads, setBuildRoads] = useState<roadObject[]>([]);
-  const [buildMode, setBuildMode] = useState<"none" | "road">("road");
+  const [buildRoads, setBuildRoads] = useState<roadObject[]>([]); // UPDATE WITH SERVER DATA LATER
+  const [buildMode, setBuildMode] = useState<BuildModeType>("none");
+  // new buildings
+  const [buildBuildings, setBuildBuildings] = useState<newBuilding[]>([]); // UPDATE WITH SERVER DATA LATER
+  // contracts
+  const [contracts, setContracts] = useState<Contract[]>([]); // UPDATE WITH SERVER DATA LATER
+  const [isContractSelected, setIsContractSelected] = useState<boolean>(false);
+  // troop training
+  const [armyTraining, setArmyTraining] = useState<ArmyTraining[]>([]); // UPDATE WITH SERVER DATA LATER
+
+  // MENUS
+  const [buildMenuOpen, setBuildMenuOpen] = useState<boolean>(false);
 
   // DATA FETCH
   const mapData = trpc.generateHexMap.useMutation({
@@ -49,6 +92,8 @@ export default function Home() {
       setMapHexes(data.mapHexes);
       setNations(data.nations);
       setTurn(data.turn);
+      setRoads(data.roads);
+      setBuildings(data.buildings);
       setSelectedHex(
         prevId !== null ? (data.mapHexes.find((hex) => hex.id === prevId) ?? null) : null
       );
@@ -56,6 +101,8 @@ export default function Home() {
 
       // clear intent data
       setArmyMove([]);
+      // clear temp queued roads
+      setBuildRoads([]);
     },
   });
   const nextTurn = trpc.nextTurn.useMutation();
@@ -64,6 +111,10 @@ export default function Home() {
   useEffect(() => {
     mapData.mutate();
   }, []);
+
+  useEffect(() => {
+    console.log(selectedHex);
+  }, [selectedHex]);
 
   // REFS
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -132,11 +183,13 @@ export default function Home() {
       map,
       nationList,
       armyMove,
-      buildRoads
+      buildRoads, // array of roads to BE built
+      tempRoadRef.current, // temporary road drawn by player
+      roads // real road
     );
 
     ctxs.forEach((c) => c.restore());
-  }, [armyMove, buildRoads]);
+  }, [armyMove, buildRoads, roads]);
 
   const startAnimation = useCallback(() => {
     if (animatingRef.current) return;
@@ -200,41 +253,105 @@ export default function Home() {
 
       const { hex } = pixelToHex({ x: worldX, y: worldY, mapHexes: map });
       if (!hex) return;
+      let hexBuilding: Building | null = null;
+      // get hex building
+      if (hex.buildingId) {
+        hexBuilding = getBuilding({ buildings, id: hex.buildingId }) ?? null;
+      }
 
       // handle left mouse click
       if (event.button === 0) {
-        if (buildMode === "road" && !mouseDownRef.current) {
-          // set selected hex to be road start
-          if (!roadStartRef.current) {
-            roadStartRef.current = hex;
-            randomIdRef.current = crypto.randomUUID();
+        if (mouseDownRef.current) return;
+        // handle normal click
+        if (buildMode === "none") {
+          if (!isContractSelected) {
+            console.log(hex.id);
+            selectedHexIdRef.current = hex.id;
+            setSelectedHex(hex);
 
-            // push starting roadObject to array
-            tempRoadRef.current = {
-              id: randomIdRef.current!,
-              points: [
-                { q: hex.q, r: hex.r, d1: randomNumber(d.a, d.b), d2: randomNumber(d.a, d.b) },
-              ],
-            };
+            startAnimation();
+            redraw();
           } else {
-            // add logic to submit the road from temp to actual array and clean up
-            if (tempRoadRef.current) {
-              buildRoads.push(tempRoadRef.current);
-            }
+            const startId = selectedHex?.buildingId;
+            const endId = hex.buildingId;
 
-            // cleanup
-            tempRoadRef.current = null;
-            roadStartRef.current = null;
-            randomIdRef.current = null;
-            setBuildMode("none");
+            const belongToPlayer =
+              selectedHex?.owner === playerNation?.id && hex.owner === playerNation?.id;
+
+            if (startId && endId && belongToPlayer) {
+              setContracts((prev) => [...prev, { startBuildingId: startId, endBuildingId: endId }]);
+            }
+            setIsContractSelected(false);
           }
         } else {
-          console.log(hex.id);
-          selectedHexIdRef.current = hex.id;
-          setSelectedHex(hex);
+          // handle road building
+          if (buildMode === "road") {
+            // check if clicked hex belongs to player
+            if (hex.owner !== playerNation?.id) return;
 
-          startAnimation();
-          redraw();
+            // set selected hex to be road start
+            if (!roadStartRef.current) {
+              roadStartRef.current = hex;
+              randomIdRef.current = crypto.randomUUID();
+
+              // push starting roadObject to array
+              tempRoadRef.current = {
+                id: randomIdRef.current!,
+                points: [
+                  { q: hex.q, r: hex.r, d1: randomNumber(d.a, d.b), d2: randomNumber(d.a, d.b) },
+                ],
+              };
+            } else {
+              // add logic to submit the road from temp to actual array and clean up
+              const roadToCommit = tempRoadRef.current;
+              if (roadToCommit && roadStartRef.current !== hex) {
+                setBuildRoads((prev) => [...prev, roadToCommit]);
+              }
+
+              // cleanup
+              tempRoadRef.current = null;
+              roadStartRef.current = null;
+              randomIdRef.current = null;
+              setBuildMode("none");
+            }
+          } else {
+            // Add buildings to construction queue
+
+            // This is current queued building object in that hex (if any)
+            const queuedBuilding = buildBuildings.find((obj) => obj.hexId === hex.id);
+            // if there is a building queued already and its type doesn't match - skip
+            if (queuedBuilding && queuedBuilding.buildingType !== buildMode) return;
+
+            // if there is a building built and its category doesn't match - skip
+            if (hexBuilding && hexBuilding.category !== buildMode) return;
+
+            // if already max possible level - return
+            const currentLevel = hexBuilding?.level ? hexBuilding.level : 0;
+            const queuedLevels = queuedBuilding?.levelsToUpgrade ?? 0;
+            const maxLevel =
+              topLevelsByCategory.find((obj) => obj.category === buildMode)?.level ?? 0;
+            if (currentLevel + queuedLevels >= maxLevel) return;
+
+            // update if exists, create if doesn't
+            if (queuedBuilding) {
+              setBuildBuildings((prev) =>
+                prev.map((obj) =>
+                  obj.hexId === queuedBuilding.hexId
+                    ? { ...obj, levelsToUpgrade: obj.levelsToUpgrade + 1 }
+                    : obj
+                )
+              );
+            } else {
+              setBuildBuildings((prev) => [
+                ...prev,
+                {
+                  hexId: hex.id,
+                  levelsToUpgrade: 1,
+                  buildingType: buildMode,
+                },
+              ]);
+            }
+          }
         }
       }
 
@@ -261,7 +378,16 @@ export default function Home() {
         ]);
       }
     },
-    [redraw, startAnimation, selectedHex, buildMode, buildRoads]
+    [
+      redraw,
+      startAnimation,
+      selectedHex,
+      buildMode,
+      buildBuildings,
+      playerNation,
+      buildings,
+      isContractSelected,
+    ]
   );
 
   const handleMouseDown = useCallback((event: MouseEvent) => {
@@ -277,10 +403,12 @@ export default function Home() {
       if (buildMode === "road" && !mouseDownRef.current && roadStartRef) {
         const hitCanvas = hitCanvasRef.current;
         const map = mapHexesRef.current;
+        const tempRoadArray = tempRoadRef.current;
+
         if (!hitCanvas || !map) return;
         if (!mapHexes) return;
         if (!randomIdRef.current) return;
-        if (!tempRoadRef.current) return;
+        if (!tempRoadRef.current || !tempRoadArray) return;
 
         const rect = hitCanvas.getBoundingClientRect();
         const mouseX = event.clientX - rect.left;
@@ -291,65 +419,107 @@ export default function Home() {
         const worldY = (mouseY - hitCanvas.height / 2) / camera.zoom - camera.y;
 
         const { hex } = pixelToHex({ x: worldX, y: worldY, mapHexes: map });
+
+        // --- CHECKS ---
         if (!hex) return;
+        // return if player doesn't own this hex
+        if (hex.owner !== playerNation?.id) return;
 
-        // add hex to temporary array
-        const tempRoadArray = tempRoadRef.current;
+        // --- RESET BACK TO HEX IF IT ALREADY EXISTS ---
+        const points = tempRoadArray.points;
 
-        const pointSet = new Set<string>();
-        tempRoadArray?.points.forEach((point) => pointSet.add(`${point.q},${point.r}`));
+        // найти индекс хекса в дороге
+        const idx = points.findIndex((p) => p.q === hex.q && p.r === hex.r);
 
-        const tempArrayHexes = mapHexes.filter((h) => pointSet.has(`${h.q},${h.r}`));
-        const tempArrayHexIds = tempArrayHexes.map((h) => h.id);
-        const hasHexId = tempArrayHexIds.includes(hex.id);
-        if (hasHexId && isLastElement(tempArrayHexIds, hex.id)) return;
-
-        // reset back to that hex
-        if (hasHexId) {
-          const idx = tempRoadArray.points.findIndex((p) => p.q === hex.q && p.r === hex.r) + 1;
-          tempRoadArray?.points.splice(idx);
-        } else {
-          // add hex to temp array
-
-          // check for gaps
-          const neighborIds = findNeighbors(hex, mapHexes).map((n) => n.id);
-          if (tempRoadArray) {
-            // check if last added hex does not border with current hex
-            const lastPoint = tempRoadArray.points[tempRoadArray.points.length - 1];
-            const lastHexOfRoad = getHexByAxial(lastPoint.q, lastPoint.r, mapHexes);
-            if (!lastHexOfRoad) return;
-
-            if (!neighborIds.includes(lastHexOfRoad.id)) {
-              // fill distance with hex path
-
-              const path = findHexPathBetween(
-                { q: lastHexOfRoad.q, r: lastHexOfRoad.r },
-                { q: hex.q, r: hex.r }
-              ).slice(1, -1);
-              const missingHexes: Hex[] = [];
-              path.forEach((axialObj) => {
-                const missingHex = getHexByAxial(axialObj.q, axialObj.r, mapHexes);
-                if (!missingHex) return;
-                missingHexes.push(missingHex);
-
-                // add missing hex coordinates to road object
-                tempRoadArray.points.push({
-                  q: missingHex.q,
-                  r: missingHex.r,
-                  d1: randomNumber(d.a, d.b),
-                  d2: randomNumber(d.a, d.b),
-                });
-              });
-            }
+        // если этот хекс уже есть в дороге
+        if (idx !== -1) {
+          // если это последний — ничего не делаем
+          if (idx === points.length - 1) {
+            return;
           }
 
-          tempRoadArray.points.push({
-            q: hex.q,
-            r: hex.r,
-            d1: randomNumber(d.a, d.b),
-            d2: randomNumber(d.a, d.b),
+          // иначе откатываем дорогу до него
+          points.splice(idx + 1);
+          return;
+        }
+
+        // --- FILL GAPS BETWEEN HEXES ---
+        const neighborIds = findNeighbors(hex, mapHexes).map((n) => n.id);
+
+        // check if last added hex does not border with current hex
+        const currPoint = { q: hex.q, r: hex.r };
+        const lastPoint = tempRoadArray.points[tempRoadArray.points.length - 1];
+        const lastHexOfRoad = getHexByAxial(lastPoint.q, lastPoint.r, mapHexes);
+        if (!lastHexOfRoad) return;
+
+        // prevent building road if any road already includes the combination of this and last added point (including temp roads)
+        const roadsCopy = roads.map((r) => ({
+          ...r,
+          points: r.points.map((p) => ({ ...p })),
+        }));
+        buildRoads.forEach((obj) =>
+          roadsCopy.push({
+            id: obj.id,
+            constructing: null,
+            points: obj.points.map((p) => ({ ...p, isConstructing: true })),
+          })
+        ); // add queued roads too
+        for (const road of roadsCopy) {
+          // return if any road already has those two points in a row
+          if (hasSegment(road, currPoint, lastPoint)) {
+            return;
+          }
+        }
+
+        if (!neighborIds.includes(lastHexOfRoad.id)) {
+          // fill distance with hex path
+
+          const path = findHexPathBetween(
+            { q: lastHexOfRoad.q, r: lastHexOfRoad.r },
+            { q: hex.q, r: hex.r }
+          );
+
+          // check if those hexes lay only on owned provinces
+          for (const axialObj of path) {
+            const missingHex = getHexByAxial(axialObj.q, axialObj.r, mapHexes);
+            if (!missingHex) continue;
+            if (missingHex.owner !== playerNation.id) return;
+            const idx = path.findIndex((a) => a.q === axialObj.q && a.r === axialObj.r);
+
+            const point = { q: axialObj.q, r: axialObj.r };
+            const nextPoint = path[idx + 1];
+            if (nextPoint) {
+              for (const road of roadsCopy) {
+                if (hasSegment(road, point, nextPoint)) return;
+              }
+            }
+          }
+          // remove first and last points (duplicates)
+          path.slice(1, -1);
+
+          const missingHexes: Hex[] = [];
+          path.forEach((axialObj) => {
+            const missingHex = getHexByAxial(axialObj.q, axialObj.r, mapHexes);
+            if (!missingHex) return;
+            missingHexes.push(missingHex);
+
+            // add missing hex coordinates to road object
+            tempRoadArray.points.push({
+              q: missingHex.q,
+              r: missingHex.r,
+              d1: randomNumber(d.a, d.b),
+              d2: randomNumber(d.a, d.b),
+            });
           });
         }
+
+        tempRoadArray.points.push({
+          q: hex.q,
+          r: hex.r,
+          d1: randomNumber(d.a, d.b),
+          d2: randomNumber(d.a, d.b),
+        });
+
         redraw();
       }
 
@@ -371,7 +541,7 @@ export default function Home() {
 
       redraw();
     },
-    [redraw, buildMode, mapHexes]
+    [redraw, buildMode, mapHexes, playerNation, roads, buildRoads]
   );
 
   const handleMouseUp = useCallback(
@@ -456,142 +626,89 @@ export default function Home() {
 
   return (
     <>
-      <div className="relative w-screen h-screen">
-        <canvas ref={hitCanvasRef} className="absolute inset-0 z-10" />
-        <canvas ref={canvasRef} className="absolute inset-0 z-0" />
+      <DecisionContext.Provider
+        value={{ army: { setArmyTraining, armyTraining }, playerNation: playerNation }}
+      >
+        <div className="relative w-screen h-screen">
+          <canvas ref={hitCanvasRef} className="absolute inset-0 z-10" />
+          <canvas ref={canvasRef} className="absolute inset-0 z-0" />
 
-        {/* UI Layer */}
-        <div className="absolute inset-0 z-20 pointer-events-none">
-          <div className="absolute right-2 bottom-2 pointer-events-auto">
-            <Button
-              onClick={() => {
-                nextTurn.mutate({
-                  movePlayerArmy: armyMove,
-                  newQueuedBuildings: [],
-                  buildRoads: buildRoads,
-                });
-                mapData.mutate();
-                console.log(selectedHex);
-                console.log(selectedHexIdRef.current);
-              }}
-            >
-              Next Turn (turn: {turn})
-            </Button>
-          </div>
+          {/* UI Layer */}
+          <div className="absolute inset-0 z-20 pointer-events-none">
+            <div className="absolute right-2 bottom-2 pointer-events-auto">
+              <Button
+                onClick={() => {
+                  nextTurn.mutate({
+                    movePlayerArmy: armyMove,
+                    newQueuedBuildings: buildBuildings,
+                    buildRoads: buildRoads,
+                  });
+                  mapData.mutate();
+                  console.log(selectedHex);
+                  console.log(selectedHexIdRef.current);
+                }}
+              >
+                Next Turn (turn: {turn})
+              </Button>
+            </div>
+            {/* MENUS */}
+            <ProvinceInfoSidebar
+              selectedHex={selectedHex}
+              buildings={buildings}
+              setIsContractSelected={setIsContractSelected}
+              isContractSelected={isContractSelected}
+              contracts={contracts}
+            ></ProvinceInfoSidebar>
+            <BuildMenu
+              isOpen={buildMenuOpen}
+              setIsOpen={setBuildMenuOpen}
+              setBuildMode={setBuildMode}
+              buildMode={buildMode}
+            ></BuildMenu>
 
-          <div className="h-[50%] w-[20%] absolute left-0 bottom-0 p-2">
-            <div className="flex flex-col justify-between items-center h-full w-full bg-gray-800 rounded-xl pointer-events-auto p-2 gap-4">
-              <div className="flex flex-col w-full justify-between bg-gray-900 rounded-lg shadow-md shadow-black">
-                <div className="w-[50%] h-auto bg-amber-200 m-2 rounded-[5px]">
+            <div className="absolute left-0 top-0 pointer-events-auto h-[10%] w-full">
+              <div className="flex justify-start items-center h-full bg-gray-800">
+                <div className="flex justify-between items-center w-full h-full p-1">
                   <Image
-                    src={`/flags/${getNationName({ id: selectedHex?.owner ?? "tribes" })}_flag.png`}
+                    src={`/flags/${getNationName({ id: playerNation?.id ?? "tribes" })}_flag.png`}
                     alt="nation flag"
                     width={1463}
                     height={962}
-                    className="w-full h-full p-[1px] rounded-[8px]"
+                    className="w-auto h-full p-[1px] rounded-[8px]"
                   ></Image>
-                </div>
-
-                <p className="text-2xl text-white flex items-center justify-start p-2 w-full">
-                  {getNationName({ id: selectedHex?.owner ?? "tribes" })}
-                </p>
-              </div>
-              <div className="w-full h-[40%]">
-                <div className="w-full h-full flex flex-col justify-center gap-2">
-                  <div className="bg-gray-900 shadow-md shadow-black rounded-lg text-white h-full flex justify-center items-center text-2xl w-full">
-                    <div className="w-[50%] h-auto p-2 group relative">
-                      <Image
-                        src={`/urban/${selectedHex?.building ? selectedHex.building.type : "empty"}.png`}
-                        alt="urban type"
-                        width={1482}
-                        height={972}
-                        className="w-full h-full"
-                      ></Image>
-                      <div
-                        className="
-                          absolute left-1/2 bottom-full mt-2 -translate-x-1/2
-                          rounded-md bg-zinc-900 border border-zinc-700
-                          px-3 py-1 text-xs text-zinc-100
-                          opacity-0 group-hover:opacity-100
-                          transition
-                          shadow-lg
-                          pointer-events-none"
-                      >
-                        Urban Type: {`${selectedHex?.building?.type ?? "empty"}`}
+                  <div className="w-full h-full flex justify-between items-center">
+                    <div className="m-2 flex justify-start items-center gap-2 h-full w-auto max-w-[50%] p-1.5 pb-2">
+                      <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1">
+                        <Image
+                          src="/icons/gold_coin.png"
+                          alt="gold coin icon"
+                          width={399}
+                          height={408}
+                          className="w-auto h-[70%] flex items-center justify-center"
+                        ></Image>
+                        <p className="text-white text-2xl">{numberConverter("1000")}</p>
+                      </div>
+                      <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1">
+                        <Image
+                          src="/icons/wheat_bag.png"
+                          alt="wheat bag icon"
+                          width={408}
+                          height={612}
+                          className="w-auto h-[80%] flex items-center justify-center"
+                        ></Image>
+                        <p className="text-white text-2xl">100</p>
                       </div>
                     </div>
-                    <div className="w-[50%] h-auto p-2 group relative">
-                      <Image
-                        src={`/biome_type/${selectedHex ? selectedHex.biome : "plains"}.png`}
-                        alt="biome type"
-                        width={1482}
-                        height={972}
-                        className="w-full h-full"
-                      ></Image>
-                      <div
-                        className="
-                          absolute left-1/2 bottom-full mt-2 -translate-x-1/2
-                          rounded-md bg-zinc-900 border border-zinc-700
-                          px-3 py-1 text-xs text-zinc-100
-                          opacity-0 group-hover:opacity-100
-                          transition
-                          shadow-lg
-                          pointer-events-none"
-                      >
-                        Biome: {selectedHex?.biome}
+                    <div className="h-full flex items-center justify-center border">
+                      <div className="flex items-center justify-center border mr-2">
+                        <Button
+                          onClick={() => {
+                            setBuildMenuOpen(!buildMenuOpen);
+                          }}
+                        >
+                          Build
+                        </Button>
                       </div>
-                    </div>
-                  </div>
-                  <div className="bg-gray-900 shadow-md shadow-black rounded-lg text-white h-full flex justify-center items-center text-2xl">
-                    {numberConverter(selectedHex?.population?.toString() ?? "1000")}
-                    <Image
-                      src="/icons/population.png"
-                      alt="population icon"
-                      width={48}
-                      height={32}
-                      className="w-9 h-7"
-                    ></Image>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="absolute left-0 top-0 pointer-events-auto h-[10%] w-full">
-            <div className="flex justify-start items-center h-full bg-gray-800">
-              <div className="flex justify-between items-center w-full h-full p-1">
-                <Image
-                  src={`/flags/${getNationName({ id: playerNation?.id ?? "tribes" })}_flag.png`}
-                  alt="nation flag"
-                  width={1463}
-                  height={962}
-                  className="w-auto h-full p-[1px] rounded-[8px]"
-                ></Image>
-                <div className="w-full h-full flex justify-between items-center">
-                  <div className="m-2 flex justify-start items-center gap-2 h-full w-auto max-w-[50%] p-1.5 pb-2">
-                    <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1">
-                      <Image
-                        src="/icons/gold_coin.png"
-                        alt="gold coin icon"
-                        width={399}
-                        height={408}
-                        className="w-auto h-[70%] flex items-center justify-center"
-                      ></Image>
-                      <p className="text-white text-2xl">{numberConverter("1000")}</p>
-                    </div>
-                    <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1">
-                      <Image
-                        src="/icons/wheat_bag.png"
-                        alt="wheat bag icon"
-                        width={408}
-                        height={612}
-                        className="w-auto h-[80%] flex items-center justify-center"
-                      ></Image>
-                      <p className="text-white text-2xl">100</p>
-                    </div>
-                  </div>
-                  <div className="h-full flex items-center justify-center">
-                    <div className="flex items-center justify-center">
-                      <Button>Open Menu</Button>
                     </div>
                   </div>
                 </div>
@@ -599,7 +716,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </div>
+      </DecisionContext.Provider>
     </>
   );
 }

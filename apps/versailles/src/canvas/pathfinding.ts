@@ -1,32 +1,11 @@
+import { CubeCoord, cubeDistance, axialToCube } from "@repo/shared";
+
 type AxialCoord = {
   q: number;
   r: number;
 };
 
-type CubeCoord = {
-  x: number;
-  y: number;
-  z: number;
-};
-
-export function axialToCube(q: number, r: number) {
-  // translate axial cooridantes to cube in order to do math
-  // this step is not required because we can just use q, r, s
-  const x = q;
-  const z = r;
-  const y = -x - z;
-  return { x, y, z };
-}
-
-function cubeDistance(a: CubeCoord, b: CubeCoord) {
-  // we send two coordinates, and find which axis has the biggest difference
-  // distance and return it (it is a whole number)
-
-  // this identifies how many steps we will have
-  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs(a.z - b.z));
-}
-
-function cubeToAxial(c: { x: number; y: number; z: number }) {
+export function cubeToAxial(c: { x: number; y: number; z: number }) {
   return { q: c.x, r: c.z };
 }
 

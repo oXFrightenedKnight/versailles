@@ -108,5 +108,8 @@ export function calculateWar(hexId: number) {
     const strongest = fighting_armies.reduce((max, a) => (a.amount > max.amount ? a : max));
 
     hex.owner = strongest.nationId;
+    if (hex.build_queue?.owner !== hex.owner) {
+      hex.build_queue = null;
+    }
   }
 }

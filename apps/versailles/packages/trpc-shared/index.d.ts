@@ -1,4 +1,4 @@
-import { Hex, Nation } from "@repo/shared";
+import { Building, Hex, Nation, Road } from "@repo/shared";
 export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
   {
     ctx: {
@@ -15,6 +15,8 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
         mapHexes: Hex[];
         nations: Nation[];
         turn: number;
+        roads: Road[];
+        buildings: Building[];
       };
       meta: object;
     }>;
@@ -22,7 +24,8 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
       input: {
         newQueuedBuildings: {
           hexId: number;
-          building: string;
+          buildingType: string;
+          levelsToUpgrade: number;
         }[];
         movePlayerArmy: {
           hexId: number;
@@ -34,7 +37,12 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
         }[];
         buildRoads: {
           id: string;
-          points: { q: number; r: number }[];
+          points: {
+            q: number;
+            r: number;
+            d1: number;
+            d2: number;
+          }[];
         }[];
       };
       output: {

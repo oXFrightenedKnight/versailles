@@ -1,0 +1,4 @@
+don't forget to fix roads so that you can only start building from a road or building 
+and check both client and server
+
+prevent user from drawing arrows for other nation army
