@@ -117,7 +117,8 @@ function calculateCivilian(
   const consumptionMod = calculateConsumption({ building, mapHexes });
   let avgConsumption = 0; // median consumption of all resources
   for (const ratio of Object.values(consumptionMod)) {
-    avgConsumption += ratio / consumptionMod.length;
+    const modLength = Object.values(consumptionMod).length;
+    avgConsumption += modLength > 0 ? ratio / modLength : 0;
   }
   // find hex of this building and calculate population
   const hex = mapHexes.find((h) => h.buildingId === building.id);
