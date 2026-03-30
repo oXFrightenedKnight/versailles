@@ -17,8 +17,11 @@ import {
   Hex,
   MAP_RADIUS,
   Nation,
+  RESOURCES,
   Road,
 } from "@repo/shared";
+import { createContracts, executeContracts } from "../services/contracts.js";
+import { buildingOutput } from "../services/buildings.js";
 
 export const appRouter = router({
   // Init game
@@ -96,6 +99,14 @@ export const appRouter = router({
             ),
           })
         ),
+        createNewContracts: z.array(
+          z.object({
+            startBuildingId: z.string(), // export from
+            endBuildingId: z.string(), // import to
+            amount: z.int().min(0),
+            resource: z.string(),
+          })
+        ),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -106,6 +117,10 @@ export const appRouter = router({
       let buildings: Building[] = memoryStore.maps.get("buildings");
       const playerNationId = nations.find((nation) => nation.isPlayer)?.id;
       const buildRoads = input.buildRoads;
+      const createNewContracts = input.createNewContracts.map((c) => ({
+        ...c,
+        resource: c.resource as RESOURCES,
+      }));
 
       // checks
       if (
@@ -147,7 +162,7 @@ export const appRouter = router({
           })),
           constructing: null,
         }));
-        roads = buildNationRoads({ nation, mapHexes, buildRoads: roadsToBuild, roads });
+        roads = buildNationRoads({ nation, mapHexes, buildRoads: roadsToBuild, roads, buildings });
       }
 
       // step 2: army movement (player + ai)
@@ -167,10 +182,12 @@ export const appRouter = router({
 
       // step 3: calculate battle outcomes
 
-      // step 4: calculate population growth
-      mapHexes = calculatePopulationChange(mapHexes, buildings);
+      // step 4: create & calculate contract exports
+      createContracts({ contracts: createNewContracts, buildings, mapHexes, roads });
+      executeContracts({ buildings });
 
       // step 5: calculate gold & building output
+      buildingOutput(buildings, mapHexes, nations);
 
       // step 6: increase turn
       turn++;

@@ -23,6 +23,9 @@ import {
   type Nation,
   type Building,
   getHexByAxial,
+  RESOURCES,
+  startDijkstrasAlgo,
+  calculateExportAmount,
 } from "@repo/shared";
 import { Button } from "@/components/ui/button";
 import { randomNumber } from "@/lib/utils";
@@ -37,6 +40,8 @@ export type DecisionContextObject = {
     armyTraining: ArmyTraining[];
   };
   playerNation?: Nation | null;
+  mapHexes?: Hex[];
+  roads?: Road[];
 };
 export const DecisionContext = createContext<DecisionContextObject>({});
 
@@ -57,7 +62,14 @@ export type newBuilding = {
   buildingType: BUILDINGS_CATEGORY;
   levelsToUpgrade: number;
 };
-export type Contract = { startBuildingId: string; endBuildingId: string };
+export type Contract = {
+  hexIds: number[];
+  startBuildingId: string;
+  endBuildingId: string;
+  amount: number;
+  resource: RESOURCES;
+  progress: number;
+};
 export type BuildModeType = "road" | "none" | BUILDINGS_CATEGORY;
 export type ArmyTraining = { amount: number; progress: number; owner: string; barrackId: string };
 
@@ -86,9 +98,19 @@ export default function Home() {
   // MENUS
   const [buildMenuOpen, setBuildMenuOpen] = useState<boolean>(false);
 
+  function cleanTempStates() {
+    setBuildBuildings([]);
+    setBuildRoads([]);
+    setArmyTraining([]);
+    setContracts([]);
+  }
+
   // DATA FETCH
   const mapData = trpc.generateHexMap.useMutation({
     onSuccess(data) {
+      // clean up old data
+      cleanTempStates();
+
       setMapHexes(data.mapHexes);
       setNations(data.nations);
       setTurn(data.turn);
@@ -278,8 +300,55 @@ export default function Home() {
             const belongToPlayer =
               selectedHex?.owner === playerNation?.id && hex.owner === playerNation?.id;
 
-            if (startId && endId && belongToPlayer) {
-              setContracts((prev) => [...prev, { startBuildingId: startId, endBuildingId: endId }]);
+            if (startId && endId && belongToPlayer && mapHexes) {
+              const startBuilding = getBuilding({ buildings, id: startId });
+              const endBuilding = getBuilding({ buildings, id: endId });
+              if (!startBuilding || !startBuilding.storage) return;
+              if (!endBuilding || !endBuilding.storage) return;
+
+              const resource = startBuilding?.storage[0].type;
+
+              // find path
+              const pointHexMap = new Map(mapHexes.map((h) => [`${h.q},${h.r}`, h]));
+              const points = startDijkstrasAlgo({
+                startingHex: selectedHex,
+                endHex: hex,
+                mapHexes,
+                roads,
+              });
+              if (!points) {
+                setIsContractSelected(false);
+                return;
+              } // don't add if path failed
+              const hexIds: number[] = [];
+              for (const point of points) {
+                const hex = pointHexMap.get(`${point.q},${point.r}`);
+                if (!hex) continue;
+
+                hexIds.push(hex.id);
+              }
+
+              const amount =
+                calculateExportAmount({
+                  startBuilding,
+                  endBuilding,
+                  length: hexIds.length - 1,
+                  resource,
+                  mapHexes,
+                  buildings,
+                }) ?? 0;
+
+              setContracts((prev) => [
+                ...prev,
+                {
+                  startBuildingId: startId,
+                  endBuildingId: endId,
+                  resource,
+                  amount,
+                  progress: 0,
+                  hexIds,
+                },
+              ]);
             }
             setIsContractSelected(false);
           }
@@ -387,6 +456,8 @@ export default function Home() {
       playerNation,
       buildings,
       isContractSelected,
+      mapHexes,
+      roads,
     ]
   );
 
@@ -627,7 +698,12 @@ export default function Home() {
   return (
     <>
       <DecisionContext.Provider
-        value={{ army: { setArmyTraining, armyTraining }, playerNation: playerNation }}
+        value={{
+          army: { setArmyTraining, armyTraining },
+          playerNation: playerNation,
+          mapHexes: mapHexes ?? [],
+          roads: roads,
+        }}
       >
         <div className="relative w-screen h-screen">
           <canvas ref={hitCanvasRef} className="absolute inset-0 z-10" />
@@ -642,6 +718,7 @@ export default function Home() {
                     movePlayerArmy: armyMove,
                     newQueuedBuildings: buildBuildings,
                     buildRoads: buildRoads,
+                    createNewContracts: contracts,
                   });
                   mapData.mutate();
                   console.log(selectedHex);
@@ -686,7 +763,9 @@ export default function Home() {
                           height={408}
                           className="w-auto h-[70%] flex items-center justify-center"
                         ></Image>
-                        <p className="text-white text-2xl">{numberConverter("1000")}</p>
+                        <p className="text-white text-2xl">
+                          {numberConverter((playerNation?.gold ?? 0).toString())}
+                        </p>
                       </div>
                       <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1">
                         <Image

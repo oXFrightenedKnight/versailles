@@ -173,38 +173,37 @@ export function getHexById(id: number) {
   return null;
 }
 
-export function calculatePopulationChange(hexes: Hex[], buildings: Building[]) {
-  for (const hex of hexes) {
-    if (!hex.owner || !hex.buildingId) continue;
-    const building = getBuilding({ buildings, id: hex.buildingId });
-    if (!building) continue;
-    const buildingName = findBuildingNameByCategory({
-      buildingCategory: building.category,
-      level: building.level,
-    });
-    const cap =
-      BUILDINGS[buildingName || "nomadic_camp"].popCap * BIOME_GROWTH[hex.biome || "plains"];
-    const rate = 0.15 * BIOME_GROWTH[hex.biome || "plains"];
+export function calculatePopulationChange(hex: Hex, buildings: Building[], consumeMod: number) {
+  if (!hex.owner || !hex.buildingId) return;
+  const building = getBuilding({ buildings, id: hex.buildingId });
+  if (!building) return;
+  const buildingName = findBuildingNameByCategory({
+    buildingCategory: building.category,
+    level: building.level,
+  });
+  const cap =
+    BUILDINGS[buildingName || "nomadic_camp"].popCap * BIOME_GROWTH[hex.biome || "plains"];
+  const rate = 0.15 * BIOME_GROWTH[hex.biome || "plains"];
 
-    let currPopulation = hex.population || 0;
+  let currPopulation = hex.population || 0;
 
-    const baseGrowth = (cap - currPopulation) * rate;
-    let tailGrowth = 0;
-    let minimalGrowth = 0;
-    if (currPopulation > cap) {
-      const excess = currPopulation - cap;
-      tailGrowth = cap * 0.0025 * Math.exp(-excess / 1000);
-    } else {
-      const left = cap - currPopulation;
-      minimalGrowth = cap * 0.0025 * Math.exp(-left / 1000);
-    }
-
-    const growth = Math.max(minimalGrowth, baseGrowth) + Math.max(0, tailGrowth);
-
-    currPopulation += growth;
-    hex.population = Math.round(currPopulation);
+  const baseGrowth = (cap - currPopulation) * rate;
+  let tailGrowth = 0;
+  let minimalGrowth = 0;
+  if (currPopulation > cap) {
+    const excess = currPopulation - cap;
+    tailGrowth = cap * 0.0025 * Math.exp(-excess / 1000);
+  } else {
+    const left = cap - currPopulation;
+    minimalGrowth = cap * 0.0025 * Math.exp(-left / 1000);
   }
-  return hexes;
+
+  const growth = Math.max(minimalGrowth, baseGrowth) + Math.max(0, tailGrowth);
+
+  currPopulation += growth * consumeMod;
+  hex.population = Math.round(currPopulation);
+
+  return hex;
 }
 
 function randomLengthArray(array: Hex[], min: number, max: number) {

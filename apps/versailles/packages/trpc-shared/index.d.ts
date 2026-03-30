@@ -44,6 +44,12 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
             d2: number;
           }[];
         }[];
+        createNewContracts: {
+          startBuildingId: string;
+          endBuildingId: string;
+          amount: number;
+          resource: string;
+        }[];
       };
       output: {
         turn: number;

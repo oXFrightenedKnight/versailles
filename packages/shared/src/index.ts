@@ -96,17 +96,6 @@ export function getBuilding({ buildings, id }: { buildings: Building[]; id: stri
   return buildings.find((b) => b.id === id);
 }
 
-export function buildRoadNodes({
-  roads,
-  mapHexes,
-  buildings,
-}: {
-  roads: Road[];
-  mapHexes: Hex[];
-  buildings: Building[];
-}) {}
-
-export type graphObj = { hexId: number; distance: number }[];
 export function startDijkstrasAlgo({
   startingHex,
   endHex,
@@ -118,104 +107,176 @@ export function startDijkstrasAlgo({
   mapHexes: Hex[];
   roads: Road[];
 }) {
-  const weightedGraph = Object.fromEntries(createWeightedGraph({ mapHexes, roads }));
+  const weightedGraph = Object.fromEntries(createWeightedGraph({ mapHexes, roads, startingHex }));
+  console.log("weighted graph", weightedGraph);
   const totalNodes = Object.keys(weightedGraph).length;
 
-  const startingPointKey = `${startingHex.q},${startingHex.r}`;
   const endingPointKey = `${endHex.q},${endHex.r}`;
 
-  const requiredSteps = new Map<number, number>(
-    Object.entries(weightedGraph).flatMap(([key, obj]) =>
-      obj.map((o) => [o.hexId, key === startingPointKey ? 0 : Infinity])
-    )
-  );
+  // create id set of all nodes
+  const nodeIds = new Set<number>();
+  for (const [key, neighbors] of Object.entries(weightedGraph)) {
+    const [q, r] = key.split(",").map(Number); // get node coordinates
+    const nodeHex = getHexByAxial(q, r, mapHexes);
+    if (nodeHex) nodeIds.add(nodeHex.id);
 
-  let atPoint: string = startingPointKey;
-  const visitedNodes: graphObj = [];
+    for (const n of neighbors) nodeIds.add(n.hexId);
+  }
 
-  // DON'T FORGET TO CHECK WHETHER THE PATH EVEN EXISTS
-  while (atPoint !== endingPointKey || visitedNodes.length >= totalNodes) {
-    // update estimates
-    const point = atPoint.split(",");
-    const hex = mapHexes.find((h) => h.q === Number(point[0]) && h.r === Number(point[1]));
-    if (!hex) continue;
-    for (const graphObj of weightedGraph[atPoint]) {
-      // get previous estimate of distance
-      const currentDistance = requiredSteps.get(hex.id); // current distance traveled so far
-      const prevDistance = requiredSteps.get(graphObj.hexId); // previous shortest distance of this node
-      if (!currentDistance || !prevDistance) continue;
+  // type of { hexId: distance }. Set all nodes to infinity, except starting
+  const requiredSteps = new Map<number, number>();
+  for (const id of nodeIds) requiredSteps.set(id, Infinity);
+  requiredSteps.set(startingHex.id, 0);
 
-      // if new path is shorter, set new distance to that length. Else, remain old distance
-      const smallest = Math.min(currentDistance + graphObj.distance, prevDistance);
+  console.log("requiredSteps", requiredSteps);
 
-      requiredSteps.set(graphObj.hexId, smallest);
-    }
+  const path = new Map<number, number>();
+  const visitedHexIds = new Set<number>();
 
-    // find node with smallest estimate
-    let smallest: number | null = null; // hexId, NOT distance
-    for (const graphObj of weightedGraph[atPoint]) {
-      // find that node in requiredSteps
-      const currSmallestDist = smallest ? (requiredSteps.get(smallest) ?? 0) : 0;
-      const dist = requiredSteps.get(graphObj.hexId);
-      if (!dist) continue;
-      if (currSmallestDist < dist) {
-        smallest = graphObj.hexId;
+  let atHexId: number | null = startingHex.id;
+  let safety = 0;
+
+  while (atHexId !== null && visitedHexIds.size < totalNodes && safety < 10000) {
+    safety++;
+
+    const hex = mapHexes.find((h) => h.id === atHexId);
+    if (!hex) throw new Error("Hex not found!");
+
+    const atPoint = `${hex.q},${hex.r}`;
+    if (atPoint === endingPointKey) break;
+
+    const neighbors = weightedGraph[atPoint] ?? [];
+    const currentDistance = requiredSteps.get(hex.id);
+
+    if (currentDistance === undefined) break;
+
+    // update estimates for neighbors
+    for (const graphObj of neighbors) {
+      const prevDistance = requiredSteps.get(graphObj.hexId);
+      if (prevDistance === undefined) continue;
+
+      const newDistance = currentDistance + graphObj.distance;
+
+      if (newDistance < prevDistance) {
+        requiredSteps.set(graphObj.hexId, newDistance);
+        path.set(graphObj.hexId, hex.id);
       }
     }
 
-    if (smallest) {
-      const newHexId = requiredSteps.get(smallest);
-      const newHex = mapHexes.find((h) => h.id === newHexId);
-      if (!newHex) continue;
+    // add current node as visited
+    visitedHexIds.add(hex.id);
 
-      // update point
-      atPoint = `${newHex.q},${newHex.r}`;
+    // find node with smallest distance that is UNEXPLORED
+    let smallest: number | null = null;
+    for (const [hexId, dist] of requiredSteps) {
+      if (visitedHexIds.has(hexId)) continue;
+      if (dist === Infinity) continue;
+
+      if (smallest === null || dist < (requiredSteps.get(smallest) ?? Infinity)) {
+        smallest = hexId;
+      }
     }
+
+    if (smallest === null) break;
+    atHexId = smallest;
   }
 
-  // temp check
-  return atPoint === endingPointKey ? true : false;
+  console.log("requredSteps2", requiredSteps);
+
+  let fromHexId = endHex.id;
+  const pointPath: { q: number; r: number }[] = [];
+
+  while (fromHexId !== startingHex.id) {
+    const hex = mapHexes.find((h) => h.id === fromHexId);
+    if (!hex) break;
+
+    const prevHexId = path.get(fromHexId);
+    if (prevHexId === undefined) break;
+
+    pointPath.push({ q: hex.q, r: hex.r });
+
+    fromHexId = prevHexId;
+  }
+
+  // only push if there are other points in array
+  if (pointPath.length > 0) {
+    pointPath.push({ q: startingHex.q, r: startingHex.r });
+  }
+
+  return pointPath.length > 0 ? pointPath.reverse() : null;
 }
-function createWeightedGraph({ mapHexes, roads }: { mapHexes: Hex[]; roads: Road[] }) {
+
+function createWeightedGraph({
+  mapHexes,
+  roads,
+  startingHex,
+}: {
+  mapHexes: Hex[];
+  roads: Road[];
+  startingHex: Hex;
+}) {
   const weightedGraph = new Map<string, graphObj>();
-  // step 1: build graph (consider road intersects and buildings as nodes)
 
   // find hexes that have multiple roads intersecting to use as nodes
-  const intersectPointRoadMap = new Map<string, Road[]>();
+  const pointRoadMap = new Map<string, Road[]>();
   for (const road of roads) {
     for (const point of road.points) {
-      const prevRoads = intersectPointRoadMap.get(`${point.q},${point.r}`) ?? [];
-      intersectPointRoadMap.set(`${point.q},${point.r}`, [...prevRoads, road]);
+      const prevRoads = pointRoadMap.get(`${point.q},${point.r}`) ?? [];
+      pointRoadMap.set(`${point.q},${point.r}`, [...prevRoads, road]);
     }
   }
 
-  // turn map into object
-  const roadPoints = Object.fromEntries(intersectPointRoadMap);
+  // filter out points with buildings
+  const buildingPoints = new Map<string, Road[]>();
+  for (const [key, roads] of pointRoadMap) {
+    if (hasBuilding(key, mapHexes)) {
+      buildingPoints.set(key, roads);
+    }
+  }
+
+  // filter out points that belong to start hex owner
+  const ownerPoints = new Set<string>();
+  for (const [key, _] of pointRoadMap) {
+    const point = key.split(",");
+    const hex = getHexByAxial(Number(point[0]), Number(point[1]), mapHexes);
+
+    if (hex && hex.owner === startingHex.owner) {
+      ownerPoints.add(key);
+    }
+  }
 
   // get building points
-  // find all hexes that have buildings AND lay on hexes with roads
-  const buidlingHexes = mapHexes.filter(
-    (hex) => hex.buildingId && Object.keys(roadPoints).some((r) => r === `${hex.q},${hex.r}`)
-  );
+  // find all hexes that have buildings AND have road(s)
+  const nodes = new Set<string>();
+  const nodePointMap = new Map<string, Road[]>();
 
-  // leave arrays with more than 1 road or a building
-  const crossingRoadPoints = Object.entries(roadPoints).filter(
-    (arr) => arr.length > 1 || hasBuilding(arr[0], mapHexes)
-  );
+  for (const [key, roads] of pointRoadMap) {
+    const hasRoad = roads.length > 0;
 
-  const nodes = new Set<string>([
-    ...buidlingHexes.map((hex) => `${hex.q},${hex.r}`),
-    ...crossingRoadPoints.map((a) => a[0]),
-  ]);
+    const noConstruction = roads.every((r) => r.points.every((p) => !p.isConstructing));
+
+    const hasBuildingHere = buildingPoints.has(key);
+
+    const belongsToOwner = ownerPoints.has(key);
+
+    if (
+      (hasRoad && noConstruction && belongsToOwner) ||
+      (hasBuildingHere && hasRoad && noConstruction && belongsToOwner)
+    ) {
+      nodes.add(key);
+      nodePointMap.set(key, roads);
+    }
+  }
 
   // turn intersects into array and loop over to add to graph
-  for (const [pointString, roads] of crossingRoadPoints) {
+  for (const [pointString, roads] of nodePointMap) {
     const point = pointString.split(","); // [0] - q, [1] - r
     for (const road of roads) {
       // split road in two arrays by finding index of point
       const idx = road.points.findIndex(
         (p) => p.q === Number(point[0]) && p.r === Number(point[1])
       );
+      if (idx === -1) continue;
 
       // reverse first chunk to start searching from original point
       const first = road.points.slice(0, idx).reverse();
@@ -230,10 +291,10 @@ function createWeightedGraph({ mapHexes, roads }: { mapHexes: Hex[]; roads: Road
             if (nodes.has(`${nextPoint.q},${nextPoint.r}`)) {
               const prevObjs = weightedGraph.get(`${point[0]},${point[1]}`) ?? [];
               const hex = getHexByAxial(nextPoint.q, nextPoint.r, mapHexes);
+              if (!hex) continue;
               const cubeA = axialToCube(Number(point[0]), Number(point[1]));
               const cubeB = axialToCube(nextPoint.q, nextPoint.r);
               const distance = cubeDistance(cubeA, cubeB);
-              if (!hex) continue;
               weightedGraph.set(`${point[0]},${point[1]}`, [
                 ...prevObjs,
                 { hexId: hex.id, distance: distance },
@@ -254,6 +315,78 @@ function hasBuilding(key: string, mapHexes: Hex[]) {
   return hex?.buildingId ? true : false;
 }
 
+// estimates consumption of every resource this building can accept
+export function estimateConsumption({
+  building,
+  mapHexes,
+}: {
+  building: Building;
+  mapHexes: Hex[];
+}) {
+  const hex = mapHexes.find((h) => h.buildingId === building.id);
+  if (!hex || !hex.population) return;
+
+  const name = findBuildingNameByCategory({
+    buildingCategory: building.category,
+    level: building.level,
+  });
+  if (!name) return;
+
+  const consumedResources = BUILDINGS[name].consumptionMod;
+
+  const estConsumption = new Map<string, number>();
+  for (const [resource, modifier] of Object.entries(consumedResources)) {
+    const consumptionAmount = Math.round(hex.population * modifier * baseConsumeRate);
+
+    estConsumption.set(resource, consumptionAmount);
+  }
+
+  return Object.fromEntries(estConsumption);
+}
+
+// calculates how much a building should export based on road length, amount, etc.
+export function calculateExportAmount({
+  startBuilding,
+  endBuilding,
+  length,
+  resource,
+  mapHexes,
+  buildings,
+}: {
+  startBuilding: Building;
+  endBuilding: Building;
+  length: number;
+  resource: RESOURCES;
+  mapHexes: Hex[];
+  buildings: Building[];
+}) {
+  const consumptionPerTurn = estimateConsumption({ building: endBuilding, mapHexes });
+  if (!consumptionPerTurn) return;
+
+  const totalConsumption = consumptionPerTurn[resource] * length; // consumption while delivering
+  // also find other contracts that are exporting this resource to this building
+  const contracts = new Set<SupplyContract>();
+  for (const building of buildings) {
+    if (!building.contracts) continue;
+    for (const contract of building.contracts) {
+      contracts.add(contract);
+    }
+  }
+
+  const sameExports = [...contracts].filter((c) => c.buildingId === endBuilding.id);
+  let totalExportAmount = 0; // export amount per turn
+  for (const contract of sameExports) {
+    totalExportAmount += contract.amount / (contract.hexIds.length - 1);
+  }
+
+  const neededForExport = consumptionPerTurn[resource] - totalExportAmount;
+  if (neededForExport > 0) {
+    return neededForExport; // REMEMBER TO LIMIT THE AMOUNT BY THE MAXIMUM
+    // OUTPUT PER TURN THAT OF EXPORTING BUILDING
+  }
+}
+
+export type graphObj = { hexId: number; distance: number }[];
 export type CubeCoord = {
   x: number;
   y: number;
@@ -293,7 +426,7 @@ export const WOOD_MOD = {
   plains: 0.5,
   forest: 1,
 };
-const resources = ["wheat", "wood"] as const;
+export const resources = ["wheat", "wood"] as const;
 export type RESOURCES = (typeof resources)[number];
 
 export type BUILDINGS_CATEGORY =
@@ -322,7 +455,7 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     buildTime: 3,
     buildCost: 50,
     storageCap: {},
-    consumptionMod: {},
+    consumptionMod: { wheat: 1, wood: 0 },
   },
   village: {
     category: "CIVILIAN",
@@ -331,7 +464,7 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     buildTime: 6,
     buildCost: 400,
     storageCap: { wheat: 80, wood: 100 },
-    consumptionMod: {},
+    consumptionMod: { wheat: 1.2, wood: 0 },
   },
   settlement: {
     category: "CIVILIAN",
@@ -398,10 +531,19 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     popCap: 200,
     buildTime: 10,
     buildCost: 3000,
-    storageCap: { wheat: 360, wood: 1000 },
+    storageCap: { wheat: 360, wood: 2000 },
     consumptionMod: { wheat: 2.4 },
   },
 } as const;
+
+const baseConsumeRate = 0.025; // base consumption rate
+// assuming that 1 person consumes 0.025 of resource per 1 modifier
+export const baseGoldRate = 0.0125; // 0.0125 gold per person
+export const baseWheatRate = 1.6; // 50 wheat bags for every 80 farmers
+export const baseWoodRate = 0.07; // 0.07 wood per lumberjack
+export const baseTrainingProgress = 0.1; // full training in 10 turns 0.1x10
+
+export const EXPORTING_CATEGORIES = ["FARM", "LUMBERJACK_SETTLEMENT"];
 
 const LEVEL_CATEGORY = Object.entries(BUILDINGS).map(([key, value]) => ({
   category: value.category,
@@ -433,7 +575,7 @@ export type SupplyContract = {
   buildingId: string;
   amount: number;
   resource: RESOURCES;
-  progress: number; // make progress be dependent on biome. starts from 0
+  progress: number; // make progress to depend on biome. starts from 0
   //  and when it reaches 1 or above add resource to destination
 };
 
@@ -514,6 +656,8 @@ export type Nation = {
   expansionBias: number;
   isPlayer: boolean;
   atWar: string[];
+  gold: number;
+  manpower: number;
 };
 
 export type Road = {

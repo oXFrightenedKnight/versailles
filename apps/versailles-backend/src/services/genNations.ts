@@ -18,6 +18,7 @@ import {
 import { memoryStore } from "../server/memoryStore.js";
 import { getHexById, randomNationColor } from "./map.js";
 import { BuildBuilding, UpgradeBuilding } from "./buildings.js";
+import { recalculateContracts } from "./contracts.js";
 
 export type newBuildings = {
   hexId: number;
@@ -49,6 +50,8 @@ export function generateNations({ buildings }: { buildings: Building[] }) {
       expansionBias: expansionBias,
       isPlayer: false,
       atWar: [],
+      gold: 100,
+      manpower: 0,
     });
   }
 
@@ -196,11 +199,13 @@ export function buildNationRoads({
   mapHexes,
   buildRoads,
   roads,
+  buildings,
 }: {
   nation: Nation;
   mapHexes: Hex[];
   buildRoads: Road[];
   roads: Road[];
+  buildings: Building[];
 }) {
   // create a set of hex coordinates and a map of hex maps
   const hexCoorSet = new Set<string>(mapHexes.map((hex) => `${hex.q},${hex.r}`));
@@ -254,12 +259,13 @@ export function buildNationRoads({
         continue outer; // continue if any point of the road is not neighboring anyone
       }
 
-      // --- CHECK OTHER ROADS FOR THE SAME PATTERN OF TWO POINTS ---
-      // additionaly check if this and next point already exist in another road
-      // with the same sequence
+      // --- CHECK OTHER ROADS FOR SAME PATTERN OF TWO POINTS ---
       if (nextPoint) {
-        if (hasSegment(road, point, nextPoint)) {
-          continue outer;
+        const roadsWithoutCurr = roads.filter((r) => r.id !== road.id);
+        for (const r of roadsWithoutCurr) {
+          if (hasSegment(r, point, nextPoint)) {
+            continue outer;
+          }
         }
       }
     }
@@ -300,6 +306,9 @@ export function buildNationRoads({
       road.constructing.progress = 0;
     }
   }
+
+  // recaulculate contracts
+  recalculateContracts({ buildings, roads, mapHexes });
 
   return roads;
 }
