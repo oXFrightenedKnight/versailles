@@ -2,3 +2,22 @@ don't forget to fix roads so that you can only start building from a road or bui
 and check both client and server
 
 prevent user from drawing arrows for other nation army
+
+don't forget to show how much of resource the building is currently consuming
+then offer a button that would track the change in demand and adjust it automatically
+(on by default)
+
+list of changes to make next: 
+1. Handle client-sent army train requests
+2. Add resource pick button and option to automatically update contracts
+3. Only allow 1 contract per two different buildings
+(ex: a farm can only have one contract with this specific village, but other farms
+can have contracts with this village as well)
+4. Make logistics system more intuitive. Show how much the building is currently
+consuming, and how much is being send and a progress bar showing progress of delivery
+5. Add option to delete contracts, army trainings, unfinished buildings
+6. Add basic diplomacy (at least 1 button - declare war)
+7. start working on ai
+8. setup a database to store game state in
+9. bug fixes + ui polishment
+10. deploy

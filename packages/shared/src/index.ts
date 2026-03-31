@@ -363,8 +363,7 @@ export function calculateExportAmount({
   const consumptionPerTurn = estimateConsumption({ building: endBuilding, mapHexes });
   if (!consumptionPerTurn) return;
 
-  const totalConsumption = consumptionPerTurn[resource] * length; // consumption while delivering
-  // also find other contracts that are exporting this resource to this building
+  // find other contracts that are exporting this resource to this building
   const contracts = new Set<SupplyContract>();
   for (const building of buildings) {
     if (!building.contracts) continue;
@@ -380,9 +379,9 @@ export function calculateExportAmount({
   }
 
   const neededForExport = consumptionPerTurn[resource] - totalExportAmount;
+  const totalNeededExport = neededForExport * length;
   if (neededForExport > 0) {
-    return neededForExport; // REMEMBER TO LIMIT THE AMOUNT BY THE MAXIMUM
-    // OUTPUT PER TURN THAT OF EXPORTING BUILDING
+    return totalNeededExport;
   }
 }
 
@@ -455,7 +454,7 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     buildTime: 3,
     buildCost: 50,
     storageCap: {},
-    consumptionMod: { wheat: 1, wood: 0 },
+    consumptionMod: { wheat: 1 },
   },
   village: {
     category: "CIVILIAN",
@@ -463,8 +462,8 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     popCap: 800,
     buildTime: 6,
     buildCost: 400,
-    storageCap: { wheat: 80, wood: 100 },
-    consumptionMod: { wheat: 1.2, wood: 0 },
+    storageCap: { wheat: 80 },
+    consumptionMod: { wheat: 1.2 },
   },
   settlement: {
     category: "CIVILIAN",

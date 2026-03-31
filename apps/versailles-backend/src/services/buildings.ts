@@ -85,20 +85,15 @@ function calculateFarm(building: Building, mapHexes: Hex[], buildings: Building[
     level: building.level,
   });
   if (!name) return;
-  const consumptionMod = calculateConsumption({ building, mapHexes });
-  let avgConsumption = 0; // median consumption of all resources
-  for (const ratio of Object.values(consumptionMod)) {
-    avgConsumption += ratio / consumptionMod.length;
-  }
   // find hex of this building and calculate population change
   const hex = mapHexes.find((h) => h.buildingId === building.id);
   if (!hex || !hex.population) return;
 
-  calculatePopulationChange(hex, buildings, avgConsumption);
+  calculatePopulationChange(hex, buildings, 1);
 
   // now calculate wheat output
   const max = BUILDINGS[name].storageCap["wheat"] ?? 0;
-  const wheatOutput = Math.round(hex.population * baseWheatRate * avgConsumption);
+  const wheatOutput = Math.round(hex.population * baseWheatRate);
   if (building.storage) {
     const wheatStorage = building.storage.find((s) => s.type === "wheat");
     if (!wheatStorage) return;
@@ -115,11 +110,10 @@ function calculateCivilian(
 ) {
   // apply resource consumption
   const consumptionMod = calculateConsumption({ building, mapHexes });
-  let avgConsumption = 0; // median consumption of all resources
-  for (const ratio of Object.values(consumptionMod)) {
-    const modLength = Object.values(consumptionMod).length;
-    avgConsumption += modLength > 0 ? ratio / modLength : 0;
-  }
+
+  // ex: wheatRatio: 0.5, woodRatio: 1 -> avgConsumption = 0.75
+  const avgConsumption = calculateAverageConsumption(consumptionMod); // avg consumption of all resources
+
   // find hex of this building and calculate population
   const hex = mapHexes.find((h) => h.buildingId === building.id);
   if (!hex || !hex.population) return;
@@ -147,10 +141,10 @@ function calculateBarracks(
   });
   if (!name) return;
   const consumptionMod = calculateConsumption({ building, mapHexes });
-  let avgConsumption = 0; // median consumption of all resources
-  for (const ratio of Object.values(consumptionMod)) {
-    avgConsumption += ratio / consumptionMod.length;
-  }
+
+  // ex: wheatRatio: 0.5, woodRatio: 1 -> avgConsumption = 0.75
+  const avgConsumption = calculateAverageConsumption(consumptionMod); // avg consumption of all resources
+
   // find hex of this building and calculate population
   const hex = mapHexes.find((h) => h.buildingId === building.id);
   if (!hex || !hex.population) return;
@@ -204,10 +198,10 @@ function calculateLumberjack(building: Building, mapHexes: Hex[], buildings: Bui
   });
   if (!name) return;
   const consumptionMod = calculateConsumption({ building, mapHexes });
-  let avgConsumption = 0; // median consumption of all resources
-  for (const ratio of Object.values(consumptionMod)) {
-    avgConsumption += ratio / consumptionMod.length;
-  }
+
+  // ex: wheatRatio: 0.5, woodRatio: 1 -> avgConsumption = 0.75
+  const avgConsumption = calculateAverageConsumption(consumptionMod); // avg consumption of all resources
+
   // find hex of this building and calculate population change
   const hex = mapHexes.find((h) => h.buildingId === building.id);
   if (!hex || !hex.population) return;
@@ -228,10 +222,10 @@ function calculateLumberjack(building: Building, mapHexes: Hex[], buildings: Bui
 function calculateWatchtower(building: Building, mapHexes: Hex[], buildings: Building[]) {
   // apply resource consumption
   const consumptionMod = calculateConsumption({ building, mapHexes });
-  let avgConsumption = 0; // median consumption of all resources
-  for (const ratio of Object.values(consumptionMod)) {
-    avgConsumption += ratio / consumptionMod.length;
-  }
+
+  // ex: wheatRatio: 0.5, woodRatio: 1 -> avgConsumption = 0.75
+  const avgConsumption = calculateAverageConsumption(consumptionMod); // avg consumption of all resources
+
   // find hex of this building and calculate population change
   const hex = mapHexes.find((h) => h.buildingId === building.id);
   if (!hex || !hex.population) return;
@@ -308,28 +302,40 @@ export function calculateConsumption({
   const consuming = Object.keys(BUILDINGS[name].consumptionMod);
   const estConsumption = estimateConsumption({ building, mapHexes });
   if (!estConsumption || !name || !storage) {
-    const v: Record<string, number> = {};
-    for (const c of consuming) {
-      v[c] = 1;
-    }
-    return v;
+    return {};
   }
 
   let estConsumptionRatio = new Map<string, number>();
   for (const resource of consuming) {
     const currStoredResource = storage.find((s) => s.type === resource);
     if (!currStoredResource) continue;
+    // don't add a resource if it can't be stored and doesn't have a maximum cap
+    const storageCap = BUILDINGS[name].storageCap[resource as RESOURCES];
+    if (!storageCap || storageCap === 0) continue;
 
     // consume resource
     const left = Math.round(Math.max(currStoredResource.amount - estConsumption[resource], 0));
     const consumed = Math.max(currStoredResource.amount - left, 0); // just in case
     currStoredResource.amount = left;
 
+    const need = estConsumption[resource] ?? 0;
+
+    const ratio = need > 0 ? consumed / need : 1; // если не нужно — считаем, что всё ок
     estConsumptionRatio.set(
       resource,
-      roundToNearestDecimal(consumed / estConsumption[resource], 100) // to hundredth
+      roundToNearestDecimal(ratio, 100) // to hundredth
     );
   }
 
   return Object.fromEntries(estConsumptionRatio);
+}
+
+function calculateAverageConsumption(consumptionMod: Record<string, number>) {
+  let avgConsumption = 0; // median consumption of all resources
+  for (const ratio of Object.values(consumptionMod)) {
+    const resourceNum = consumptionMod.length;
+    avgConsumption += resourceNum > 0 ? ratio / consumptionMod.length : 0;
+  }
+
+  return avgConsumption;
 }

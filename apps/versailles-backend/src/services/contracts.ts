@@ -10,7 +10,6 @@ import {
   RESOURCES,
   Road,
   startDijkstrasAlgo,
-  SupplyContract,
 } from "@repo/shared";
 
 export function createContracts({
