@@ -38,7 +38,7 @@ export default function ProvinceInfoSidebar({
     : "empty";
 
   return (
-    <div className="h-[90%] w-[20%] absolute left-0 bottom-0 p-2">
+    <div className="h-[90%] w-full absolute left-0 bottom-0 p-2">
       <div className="flex flex-col justify-between items-center h-full w-full bg-gray-800 rounded-xl pointer-events-auto p-2 gap-2">
         <div className="flex flex-col w-full justify-between bg-gray-900 rounded-lg shadow-md shadow-black">
           <div className="flex w-full justify-between items-start">

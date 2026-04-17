@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, createContext } from "react";
+import { useCallback, useEffect, useRef, useState, createContext, useMemo } from "react";
 import { trpc } from "../_trpc/client";
 import Image from "next/image";
 import {
@@ -26,6 +26,8 @@ import {
   RESOURCES,
   startDijkstrasAlgo,
   calculateExportAmount,
+  BUILDINGS,
+  findBuildingNameByCategory,
 } from "@repo/shared";
 import { Button } from "@/components/ui/button";
 import { randomNumber } from "@/lib/utils";
@@ -33,6 +35,8 @@ import { findHexPathBetween } from "@/canvas/pathfinding";
 import { d } from "@/canvas/map_data";
 import ProvinceInfoSidebar from "@/components/ProvinceInfoSidebar";
 import BuildMenu from "@/components/buildButton";
+import Tooltip from "@/components/tooltip";
+import { Descriptions } from "@/lib/data";
 
 export type DecisionContextObject = {
   army?: {
@@ -69,6 +73,7 @@ export type Contract = {
   amount: number;
   resource: RESOURCES;
   progress: number;
+  autoAdjust: boolean;
 };
 export type BuildModeType = "road" | "none" | BUILDINGS_CATEGORY;
 export type ArmyTraining = { amount: number; progress: number; owner: string; barrackId: string };
@@ -138,7 +143,7 @@ export default function Home() {
     console.log(selectedHex);
   }, [selectedHex]);
 
-  // REFS
+  // --- REFS ---
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const hitCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -155,6 +160,35 @@ export default function Home() {
   // add temporary road path tracker
   const tempRoadRef = useRef<roadObject | null>(null);
   const randomIdRef = useRef<string | null>(null);
+
+  // --- MEMOs ---
+  const effectiveManpower = useMemo(() => {
+    let totalArmy = 0;
+    for (const army of armyTraining) {
+      totalArmy += army.amount;
+    }
+
+    return playerNation?.manpower ? playerNation.manpower - totalArmy : 0;
+  }, [playerNation, armyTraining]);
+
+  const effectiveGold = useMemo(() => {
+    let totalCost = 0;
+    for (const building of buildBuildings) {
+      const hex = mapHexes?.find((h) => h.id === building.hexId);
+      if (!hex) continue;
+      const existingLevel = hex.buildingId
+        ? (getBuilding({ buildings, id: hex.buildingId })?.level ?? 0)
+        : 0;
+      const totalLevel = existingLevel + building.levelsToUpgrade;
+      const name = findBuildingNameByCategory({
+        buildingCategory: building.buildingType,
+        level: totalLevel,
+      });
+      const cost = BUILDINGS[name].buildCost;
+      totalCost += cost;
+    }
+    return playerNation?.gold ? playerNation.gold - totalCost : 0;
+  }, [playerNation, buildBuildings, mapHexes, buildings]);
 
   const cameraRef = useRef({
     x: 0,
@@ -347,6 +381,7 @@ export default function Home() {
                   amount,
                   progress: 0,
                   hexIds,
+                  autoAdjust: true,
                 },
               ]);
             }
@@ -695,6 +730,16 @@ export default function Home() {
     return () => stopAnimation();
   }, [startAnimation, stopAnimation]);
 
+  useEffect(() => {
+    let totalArmy = 0;
+    for (const army of armyTraining) {
+      totalArmy += army.amount;
+    }
+    if (playerNationRef.current && playerNationRef.current.manpower) {
+      playerNationRef.current.manpower -= totalArmy;
+    }
+  }, [armyTraining]);
+
   return (
     <>
       <DecisionContext.Provider
@@ -719,6 +764,10 @@ export default function Home() {
                     newQueuedBuildings: buildBuildings,
                     buildRoads: buildRoads,
                     createNewContracts: contracts,
+                    trainNewArmy: armyTraining.map((a) => ({
+                      amount: a.amount,
+                      barrackId: a.barrackId,
+                    })),
                   });
                   mapData.mutate();
                   console.log(selectedHex);
@@ -729,19 +778,21 @@ export default function Home() {
               </Button>
             </div>
             {/* MENUS */}
-            <ProvinceInfoSidebar
-              selectedHex={selectedHex}
-              buildings={buildings}
-              setIsContractSelected={setIsContractSelected}
-              isContractSelected={isContractSelected}
-              contracts={contracts}
-            ></ProvinceInfoSidebar>
-            <BuildMenu
-              isOpen={buildMenuOpen}
-              setIsOpen={setBuildMenuOpen}
-              setBuildMode={setBuildMode}
-              buildMode={buildMode}
-            ></BuildMenu>
+            <div className="w-[300px] max-w-[300px] h-full relative">
+              <ProvinceInfoSidebar
+                selectedHex={selectedHex}
+                buildings={buildings}
+                setIsContractSelected={setIsContractSelected}
+                isContractSelected={isContractSelected}
+                contracts={contracts}
+              ></ProvinceInfoSidebar>
+              <BuildMenu
+                isOpen={buildMenuOpen}
+                setIsOpen={setBuildMenuOpen}
+                setBuildMode={setBuildMode}
+                buildMode={buildMode}
+              ></BuildMenu>
+            </div>
 
             <div className="absolute left-0 top-0 pointer-events-auto h-[10%] w-full">
               <div className="flex justify-start items-center h-full bg-gray-800">
@@ -755,27 +806,31 @@ export default function Home() {
                   ></Image>
                   <div className="w-full h-full flex justify-between items-center">
                     <div className="m-2 flex justify-start items-center gap-2 h-full w-auto max-w-[50%] p-1.5 pb-2">
-                      <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1">
+                      <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1 relative group">
                         <Image
                           src="/icons/gold_coin.png"
                           alt="gold coin icon"
-                          width={399}
+                          width={408}
                           height={408}
-                          className="w-auto h-[70%] flex items-center justify-center"
+                          className="w-[30px] h-[30px] flex items-center justify-center"
                         ></Image>
                         <p className="text-white text-2xl">
-                          {numberConverter((playerNation?.gold ?? 0).toString())}
+                          {numberConverter(effectiveGold.toString())}
                         </p>
+                        <Tooltip text={Descriptions["gold"]} position="bottom"></Tooltip>
                       </div>
-                      <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1">
+                      <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1 relative group">
                         <Image
-                          src="/icons/wheat_bag.png"
-                          alt="wheat bag icon"
+                          src="/icons/manpower.png"
+                          alt="manpower icon"
                           width={408}
-                          height={612}
-                          className="w-auto h-[80%] flex items-center justify-center"
+                          height={408}
+                          className="w-[30px] h-[30px] flex items-center justify-center"
                         ></Image>
-                        <p className="text-white text-2xl">100</p>
+                        <p className="text-white text-2xl">
+                          {numberConverter(effectiveManpower.toString())}
+                        </p>
+                        <Tooltip text={Descriptions["manpower"]} position="bottom"></Tooltip>
                       </div>
                     </div>
                     <div className="h-full flex items-center justify-center border">

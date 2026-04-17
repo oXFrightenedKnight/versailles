@@ -20,8 +20,12 @@ import {
   RESOURCES,
   Road,
 } from "@repo/shared";
-import { createContracts, executeContracts } from "../services/contracts.js";
-import { buildingOutput } from "../services/buildings.js";
+import {
+  createContracts,
+  executeContracts,
+  recalculateContractsAmounts,
+} from "../services/contracts.js";
+import { buildingOutput, queueArmyTraining } from "../services/buildings.js";
 
 export const appRouter = router({
   // Init game
@@ -105,6 +109,13 @@ export const appRouter = router({
             endBuildingId: z.string(), // import to
             amount: z.int().min(0),
             resource: z.string(),
+            autoAdjust: z.boolean(),
+          })
+        ),
+        trainNewArmy: z.array(
+          z.object({
+            amount: z.int().min(0),
+            barrackId: z.string(),
           })
         ),
       })
@@ -121,6 +132,7 @@ export const appRouter = router({
         ...c,
         resource: c.resource as RESOURCES,
       }));
+      const trainNewArmy = input.trainNewArmy;
 
       // checks
       if (
@@ -165,6 +177,14 @@ export const appRouter = router({
         roads = buildNationRoads({ nation, mapHexes, buildRoads: roadsToBuild, roads, buildings });
       }
 
+      try {
+        // step 1.6: queue army training (player, then ai)
+        queueArmyTraining({ trainNewArmy, buildings, nationId: playerNationId, mapHexes, nations }); // for player country (client request)
+        // map over all other ai nations and execute this function for each
+      } catch (err) {
+        throw new Error(`err: ${err}`);
+      }
+
       // step 2: army movement (player + ai)
       // player first
       const movePlayerArmy = input.movePlayerArmy;
@@ -188,6 +208,9 @@ export const appRouter = router({
 
       // step 5: calculate gold & building output
       buildingOutput(buildings, mapHexes, nations);
+
+      // step 5.5: recalculate all auto-adjust contracts to match new state
+      recalculateContractsAmounts({ buildings, mapHexes });
 
       // step 6: increase turn
       turn++;

@@ -18,7 +18,7 @@ import {
 import { memoryStore } from "../server/memoryStore.js";
 import { getHexById, randomNationColor } from "./map.js";
 import { BuildBuilding, UpgradeBuilding } from "./buildings.js";
-import { recalculateContracts } from "./contracts.js";
+import { recalculateContractsPaths } from "./contracts.js";
 
 export type newBuildings = {
   hexId: number;
@@ -51,7 +51,7 @@ export function generateNations({ buildings }: { buildings: Building[] }) {
       isPlayer: false,
       atWar: [],
       gold: 100,
-      manpower: 0,
+      manpower: 1000, // change to 0 later when you add manpower calc
     });
   }
 
@@ -308,7 +308,7 @@ export function buildNationRoads({
   }
 
   // recaulculate contracts
-  recalculateContracts({ buildings, roads, mapHexes });
+  recalculateContractsPaths({ buildings, roads, mapHexes });
 
   return roads;
 }

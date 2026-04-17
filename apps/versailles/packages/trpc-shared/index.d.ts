@@ -49,6 +49,11 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
           endBuildingId: string;
           amount: number;
           resource: string;
+          autoAdjust: boolean;
+        }[];
+        trainNewArmy: {
+          amount: number;
+          barrackId: string;
         }[];
       };
       output: {

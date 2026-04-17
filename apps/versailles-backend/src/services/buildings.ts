@@ -15,6 +15,7 @@ import {
 } from "@repo/shared";
 import { calculatePopulationChange, getHexById } from "./map.js";
 import { roundToNearestDecimal } from "../lib/helpers.js";
+import { getNationById } from "./genNations.js";
 
 {
   /*export function calculateSupply(buildings: Building[], mapHexes: Hex[]) {
@@ -164,8 +165,9 @@ function calculateBarracks(
   const training = building.trainingTroops;
   const maxTraining = BUILDINGS[name].maxTraining ?? 0;
   let trainingCap = 0; // add progress to every training contract until reached cap
+  const idxsToDelete: number[] = [];
   if (training && training.length > 0) {
-    for (const army of training) {
+    for (const [i, army] of training.entries()) {
       if (trainingCap >= maxTraining) continue;
 
       const amountTrained = Math.min(army.amount, maxTraining - trainingCap);
@@ -175,7 +177,7 @@ function calculateBarracks(
       trainingCap += amountTrained;
 
       // if progress is full, deploy army
-      if (army.progress > army.amount) {
+      if (army.progress >= army.amount) {
         const ownerArmyInHex = hex.army.find((a) => a.nationId === army.nationId);
         if (!ownerArmyInHex) {
           hex.army.push({ amount: army.amount, nationId: army.nationId });
@@ -183,10 +185,54 @@ function calculateBarracks(
           ownerArmyInHex.amount += army.amount;
         }
 
+        // add index to delete after loop
+        idxsToDelete.push(i);
+
         // recalculate population
         hex.population -= army.amount;
       }
     }
+
+    // delete armies that finished training and deployed
+    building.trainingTroops = training.filter((_, i) => !idxsToDelete.includes(i));
+  }
+}
+export function queueArmyTraining({
+  trainNewArmy,
+  buildings,
+  nationId,
+  mapHexes,
+  nations,
+}: {
+  trainNewArmy: { amount: number; barrackId: string }[];
+  buildings: Building[];
+  nationId: string;
+  mapHexes: Hex[];
+  nations: Nation[];
+}) {
+  const buildingsById = new Map<string, Building>(buildings.map((b) => [b.id, b]));
+  const hexByBuilding = new Map<string | null, Hex>(mapHexes.map((hex) => [hex.buildingId, hex]));
+  const nation = nations.find((n) => n.id === nationId);
+  if (!nation) return;
+
+  // map over every request and create a queue
+  for (const newArmy of trainNewArmy) {
+    if (nation.manpower < newArmy.amount) continue; // continue if now enough manpower
+
+    const barrack = buildingsById.get(newArmy.barrackId);
+    const hex = hexByBuilding.get(newArmy.barrackId);
+    if (!barrack || !hex || !hex.population) continue;
+
+    // check ownership
+    if (hex.owner !== nationId) continue;
+
+    if (barrack.trainingTroops) {
+      barrack.trainingTroops.push({ amount: newArmy.amount, progress: 0, nationId });
+    } else {
+      barrack.trainingTroops = [{ amount: newArmy.amount, progress: 0, nationId }];
+    }
+    nation.manpower -= newArmy.amount;
+    hex.population += newArmy.amount;
   }
 }
 
@@ -316,6 +362,7 @@ export function calculateConsumption({
     // consume resource
     const left = Math.round(Math.max(currStoredResource.amount - estConsumption[resource], 0));
     const consumed = Math.max(currStoredResource.amount - left, 0); // just in case
+    console.log(`consumed this turn by ${building.category}`, consumed);
     currStoredResource.amount = left;
 
     const need = estConsumption[resource] ?? 0;
@@ -333,8 +380,8 @@ export function calculateConsumption({
 function calculateAverageConsumption(consumptionMod: Record<string, number>) {
   let avgConsumption = 0; // median consumption of all resources
   for (const ratio of Object.values(consumptionMod)) {
-    const resourceNum = consumptionMod.length;
-    avgConsumption += resourceNum > 0 ? ratio / consumptionMod.length : 0;
+    const resourceNum = Object.values(consumptionMod).length;
+    avgConsumption += resourceNum > 0 ? ratio / resourceNum : 0;
   }
 
   return avgConsumption;

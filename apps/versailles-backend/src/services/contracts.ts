@@ -1,7 +1,7 @@
 import {
   Building,
   BUILDINGS,
-  EXPORTING_CATEGORIES,
+  calculateExportAmount,
   findBuildingNameByCategory,
   getBuilding,
   getHexByAxial,
@@ -23,6 +23,7 @@ export function createContracts({
     endBuildingId: string;
     amount: number;
     resource: RESOURCES;
+    autoAdjust: boolean;
   }[];
   buildings: Building[];
   mapHexes: Hex[];
@@ -33,10 +34,30 @@ export function createContracts({
     const startBuilding = getBuilding({ buildings, id: contract.startBuildingId });
     const startingHex = mapHexes.find((h) => h.buildingId === contract.startBuildingId);
     const endHex = mapHexes.find((h) => h.buildingId === contract.endBuildingId);
-    if (!startBuilding || !endHex?.buildingId || !startingHex || !endHex) continue;
+    const endBuilding = getBuilding({ buildings, id: contract.endBuildingId });
+    if (!startBuilding || !endHex?.buildingId || !startingHex || !endHex || !endBuilding) continue;
 
-    if (!EXPORTING_CATEGORIES.includes(startBuilding.category)) continue;
+    // -- VALIDATION --
+    // check if building produces anything to export
+    const startName = findBuildingNameByCategory({
+      buildingCategory: startBuilding?.category,
+      level: startBuilding.level,
+    });
+    if (!startName) continue;
+    if (!BUILDINGS[startName].producing || BUILDINGS[startName].producing.length === 0) continue;
 
+    // check if destination is allowed to store that resource
+    const endName = findBuildingNameByCategory({
+      buildingCategory: endBuilding.category,
+      level: endBuilding.level,
+    });
+    if (!endName) continue;
+
+    const canStore = BUILDINGS[endName].storageCap?.[contract.resource];
+
+    if (!canStore || canStore <= 0) continue;
+
+    // --- CREATE ---
     const prevContracts = startBuilding.contracts ?? [];
     const points = startDijkstrasAlgo({ startingHex: startingHex, endHex, mapHexes, roads });
     if (!points) continue;
@@ -48,14 +69,8 @@ export function createContracts({
         return h?.id;
       })
       .filter((id) => id !== undefined);
-    const name = findBuildingNameByCategory({
-      buildingCategory: startBuilding.category,
-      level: startBuilding.level,
-    });
 
-    // allow amounts that are not higher than maximum storage of building for now
     if (!resources.includes(contract.resource)) continue;
-    if (contract.amount > (BUILDINGS[name].storageCap[contract.resource] ?? 0)) continue;
 
     startBuilding.contracts = [
       ...prevContracts,
@@ -65,6 +80,7 @@ export function createContracts({
         amount: contract.amount,
         resource: contract.resource,
         progress: 0,
+        autoAdjust: contract.autoAdjust,
       },
     ];
   }
@@ -88,9 +104,23 @@ export function executeContracts({ buildings }: { buildings: Building[] }) {
         const endResourceStore = endBuilding.storage?.find((s) => s.type === contract.resource);
         if (!endResourceStore || !startResourceStore) continue;
 
+        const destName = findBuildingNameByCategory({
+          buildingCategory: endBuilding.category,
+          level: endBuilding.level,
+        });
+        if (!destName) continue;
+
         const amount = Math.min(startResourceStore.amount, contract.amount);
-        startResourceStore.amount -= amount;
-        endResourceStore.amount += amount;
+        const endResourceMax = BUILDINGS[destName].storageCap[contract.resource] ?? 0;
+
+        // amount of resource that will be actually sent
+        const outForDelivery = Math.min(amount, endResourceMax - endResourceStore.amount);
+
+        console.log("currently stored:", startResourceStore.amount);
+        startResourceStore.amount -= outForDelivery;
+        endResourceStore.amount += outForDelivery;
+
+        console.log("amount sent", amount);
 
         contract.progress = 0;
       }
@@ -98,7 +128,7 @@ export function executeContracts({ buildings }: { buildings: Building[] }) {
   }
 }
 
-export function recalculateContracts({
+export function recalculateContractsPaths({
   buildings,
   roads,
   mapHexes,
@@ -133,6 +163,42 @@ export function recalculateContracts({
       if (length < contract.hexIds.length - 1) {
         contract.hexIds = hexIds;
       }
+    }
+  }
+}
+
+export function recalculateContractsAmounts({
+  buildings,
+  mapHexes,
+}: {
+  buildings: Building[];
+  mapHexes: Hex[];
+}) {
+  const buildingHexMap = new Map(mapHexes.map((h) => [h.buildingId, h]));
+
+  const contractBuildinds = buildings.filter((b) => b.contracts !== undefined);
+  for (const building of contractBuildinds) {
+    const startingHex = buildingHexMap.get(building.id);
+    if (!startingHex) continue;
+    for (const contract of building.contracts!) {
+      if (!contract.autoAdjust) continue; // only recalculate with auto-adjust
+      const endHex = buildingHexMap.get(contract.buildingId);
+      const endBuilding = getBuilding({ buildings, id: contract.buildingId });
+      if (!endHex || !endBuilding) continue;
+
+      const amount = calculateExportAmount({
+        startBuilding: building,
+        endBuilding,
+        length: contract.hexIds.length - 1,
+        resource: contract.resource,
+        mapHexes,
+        buildings,
+      });
+
+      if (!amount) continue;
+
+      console.log(`amount for ${endHex}:`, amount);
+      contract.amount = amount;
     }
   }
 }

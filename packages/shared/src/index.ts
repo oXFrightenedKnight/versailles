@@ -108,7 +108,6 @@ export function startDijkstrasAlgo({
   roads: Road[];
 }) {
   const weightedGraph = Object.fromEntries(createWeightedGraph({ mapHexes, roads, startingHex }));
-  console.log("weighted graph", weightedGraph);
   const totalNodes = Object.keys(weightedGraph).length;
 
   const endingPointKey = `${endHex.q},${endHex.r}`;
@@ -127,8 +126,6 @@ export function startDijkstrasAlgo({
   const requiredSteps = new Map<number, number>();
   for (const id of nodeIds) requiredSteps.set(id, Infinity);
   requiredSteps.set(startingHex.id, 0);
-
-  console.log("requiredSteps", requiredSteps);
 
   const path = new Map<number, number>();
   const visitedHexIds = new Set<number>();
@@ -180,8 +177,6 @@ export function startDijkstrasAlgo({
     if (smallest === null) break;
     atHexId = smallest;
   }
-
-  console.log("requredSteps2", requiredSteps);
 
   let fromHexId = endHex.id;
   const pointPath: { q: number; r: number }[] = [];
@@ -366,21 +361,28 @@ export function calculateExportAmount({
   // find other contracts that are exporting this resource to this building
   const contracts = new Set<SupplyContract>();
   for (const building of buildings) {
-    if (!building.contracts) continue;
+    // make sure to filter out building that currently owns this contract to
+    // get actual export amount and not delta
+    if (!building.contracts || building === startBuilding) continue;
     for (const contract of building.contracts) {
       contracts.add(contract);
     }
   }
 
-  const sameExports = [...contracts].filter((c) => c.buildingId === endBuilding.id);
+  const sameExports = [...contracts].filter(
+    (c) => c.buildingId === endBuilding.id && c.resource === resource
+  );
   let totalExportAmount = 0; // export amount per turn
   for (const contract of sameExports) {
     totalExportAmount += contract.amount / (contract.hexIds.length - 1);
   }
 
-  const neededForExport = consumptionPerTurn[resource] - totalExportAmount;
+  const neededForExport = consumptionPerTurn[resource]
+    ? consumptionPerTurn[resource] - totalExportAmount
+    : 0;
   const totalNeededExport = neededForExport * length;
   if (neededForExport > 0) {
+    console.log("totalNeededForExport", totalNeededExport);
     return totalNeededExport;
   }
 }
@@ -444,6 +446,7 @@ export type BuildingConfig = {
   storageCap: Partial<Record<RESOURCES, number>>;
   consumptionMod: Partial<Record<RESOURCES, number>>;
   maxTraining?: number;
+  producing?: RESOURCES[];
 };
 // building data
 export const BUILDINGS: Record<string, BuildingConfig> = {
@@ -512,6 +515,7 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     buildCost: 800,
     storageCap: { wheat: 150 },
     consumptionMod: {},
+    producing: ["wheat"],
   },
 
   watch_tower: {
@@ -532,17 +536,16 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     buildCost: 3000,
     storageCap: { wheat: 360, wood: 2000 },
     consumptionMod: { wheat: 2.4 },
+    producing: ["wood"],
   },
 } as const;
 
 const baseConsumeRate = 0.025; // base consumption rate
 // assuming that 1 person consumes 0.025 of resource per 1 modifier
 export const baseGoldRate = 0.0125; // 0.0125 gold per person
-export const baseWheatRate = 1.6; // 50 wheat bags for every 80 farmers
+export const baseWheatRate = 0.32; // 50 wheat bags for every 80 farmers
 export const baseWoodRate = 0.07; // 0.07 wood per lumberjack
 export const baseTrainingProgress = 0.1; // full training in 10 turns 0.1x10
-
-export const EXPORTING_CATEGORIES = ["FARM", "LUMBERJACK_SETTLEMENT"];
 
 const LEVEL_CATEGORY = Object.entries(BUILDINGS).map(([key, value]) => ({
   category: value.category,
@@ -576,6 +579,7 @@ export type SupplyContract = {
   resource: RESOURCES;
   progress: number; // make progress to depend on biome. starts from 0
   //  and when it reaches 1 or above add resource to destination
+  autoAdjust: boolean;
 };
 
 // create building data map

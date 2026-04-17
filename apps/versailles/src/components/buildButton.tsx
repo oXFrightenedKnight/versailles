@@ -26,7 +26,7 @@ export default function BuildMenu({
   return (
     <>
       {isOpen && (
-        <div className="h-[90%] w-[20%] absolute left-0 bottom-0 p-2">
+        <div className="h-[90%] w-full absolute left-0 bottom-0 p-2">
           <div className="flex flex-col items-center h-full w-full bg-gray-800 rounded-xl pointer-events-auto p-2 gap-2">
             <div className="w-full flex justify-between items-center bg-gray-900 shadow-md shadow-black rounded-[8px] pl-2">
               <p className="text-white text-2xl">Build</p>

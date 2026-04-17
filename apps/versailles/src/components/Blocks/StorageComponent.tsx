@@ -22,7 +22,12 @@ export default function StorageComponent({
     <>
       <div className="w-full h-25 bg-gray-900 rounded-xl p-1 flex flex-col justify-center items-center m-1 gap-2 relative group">
         <div className="w-7.5 h-7.5 flex justify-center items-center">
-          <Image alt="resource icon" src={`/icons/${type}.png`} width={30} height={30}></Image>
+          <Image
+            alt="resource icon"
+            src={`/icons/resources/${type}.png`}
+            width={30}
+            height={30}
+          ></Image>
         </div>
 
         <Tooltip text={`${type}`} position="top"></Tooltip>

@@ -38,9 +38,9 @@ export default function TrainingBlock({ building }: { building: Building }) {
             className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
             onClick={(e) => {
               if (e.shiftKey) {
-                setAmount(Math.min(amount + 1000, 1_000_000));
+                setAmount(Math.min(amount + 1000, playerNation?.manpower ?? 0));
               } else {
-                setAmount(Math.min(amount + 100, 1_000_000));
+                setAmount(Math.min(amount + 100, playerNation?.manpower ?? 0));
               }
             }}
           >
