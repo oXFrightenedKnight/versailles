@@ -2,12 +2,14 @@ import { Contract } from "@/app/game/page";
 import { Building } from "@repo/shared";
 import { SquarePen } from "lucide-react";
 import ContractComponent from "./ContractComponent";
+import { useGameStore } from "@/lib/gameStore";
+import { useIntentStore } from "@/lib/intentStore";
+import { getMergedContracts } from "@/lib/utils";
 
 export default function ContractBlock({
   buildings,
   isContractSelected,
   setIsContractSelected,
-  contracts,
   hasContract,
   buildingType,
   building,
@@ -15,12 +17,13 @@ export default function ContractBlock({
   buildings: Building[];
   isContractSelected: boolean;
   setIsContractSelected: React.Dispatch<React.SetStateAction<boolean>>;
-  contracts: Contract[];
   hasContract: boolean;
   buildingType: string;
   building: Building;
 }) {
-  const buildingContracts = contracts.filter((c) => c.startBuildingId === building.id);
+  const contracts = getMergedContracts(building.id);
+  console.log("contracts", contracts);
+
   return (
     <div className="w-full bg-gray-800 rounded-xl">
       <div className="flex w-full justify-between items-center bg-gray-700 p-2 rounded-t-xl">
@@ -36,13 +39,15 @@ export default function ContractBlock({
       <div className="w-full">
         {hasContract ? (
           <div>
-            {buildingContracts.map((contract, key) => (
-              <ContractComponent
-                key={key}
-                contract={contract}
-                buildings={buildings}
-              ></ContractComponent>
-            ))}
+            {contracts.map((contract, key) => {
+              return (
+                <ContractComponent
+                  key={key}
+                  contract={contract}
+                  buildings={buildings}
+                ></ContractComponent>
+              );
+            })}
           </div>
         ) : (
           <div className="w-full h-10 flex items-center justify-center text-sm">

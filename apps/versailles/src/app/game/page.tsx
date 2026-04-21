@@ -30,24 +30,16 @@ import {
   findBuildingNameByCategory,
 } from "@repo/shared";
 import { Button } from "@/components/ui/button";
-import { randomNumber } from "@/lib/utils";
+import { getFirstFreeResource, randomNumber } from "@/lib/utils";
 import { findHexPathBetween } from "@/canvas/pathfinding";
 import { d } from "@/canvas/map_data";
 import ProvinceInfoSidebar from "@/components/ProvinceInfoSidebar";
 import BuildMenu from "@/components/buildButton";
 import Tooltip from "@/components/tooltip";
 import { Descriptions } from "@/lib/data";
-
-export type DecisionContextObject = {
-  army?: {
-    setArmyTraining: React.Dispatch<React.SetStateAction<ArmyTraining[]>>;
-    armyTraining: ArmyTraining[];
-  };
-  playerNation?: Nation | null;
-  mapHexes?: Hex[];
-  roads?: Road[];
-};
-export const DecisionContext = createContext<DecisionContextObject>({});
+import { create } from "zustand";
+import { useGameStore } from "@/lib/gameStore";
+import { useIntentStore } from "@/lib/intentStore";
 
 export type armyIntent = {
   hexId: number;
@@ -67,6 +59,7 @@ export type newBuilding = {
   levelsToUpgrade: number;
 };
 export type Contract = {
+  id: string;
   hexIds: number[];
   startBuildingId: string;
   endBuildingId: string;
@@ -78,36 +71,57 @@ export type Contract = {
 export type BuildModeType = "road" | "none" | BUILDINGS_CATEGORY;
 export type ArmyTraining = { amount: number; progress: number; owner: string; barrackId: string };
 
-export default function Home() {
-  const [mapHexes, setMapHexes] = useState<Hex[] | null>(null);
-  const [nations, setNations] = useState<Nation[] | null>(null);
-  const [playerNation, setPlayerNation] = useState<Nation | null>(null);
-  const [turn, setTurn] = useState<number>(0);
-  const [roads, setRoads] = useState<Road[]>([]);
-  const [buildings, setBuildings] = useState<Building[]>([]);
-  const [selectedHex, setSelectedHex] = useState<Hex | null>(null);
-  // player army intent
-  const [armyMove, setArmyMove] = useState<armyIntent[]>([]);
+export type serverData = {
+  mapHexes: Hex[];
+  nations: Nation[];
+  turn: number;
+  roads: Road[];
+  buildings: Building[];
+};
 
-  // build road array
-  const [buildRoads, setBuildRoads] = useState<roadObject[]>([]); // UPDATE WITH SERVER DATA LATER
-  const [buildMode, setBuildMode] = useState<BuildModeType>("none");
+export default function Home() {
+  const mapHexes = useGameStore((state) => state.mapHexes);
+  const nations = useGameStore((state) => state.nations);
+  const playerNation = useGameStore((state) => state.playerNation);
+  const turn = useGameStore((state) => state.turn);
+  const roads = useGameStore((state) => state.roads);
+  const buildings = useGameStore((state) => state.buildings);
+  const [selectedHex, setSelectedHex] = useState<Hex | null>(null);
+
+  // player army intent
+  const armyMove = useIntentStore((state) => state.armyMove);
+  const setArmyMove = useIntentStore((state) => state.setArmyMove);
+
+  // road building intent storage
+  const buildRoads = useIntentStore((state) => state.buildRoads); // UPDATE WITH SERVER DATA LATER
+  const setBuildRoads = useIntentStore((state) => state.setBuildRoads);
+
   // new buildings
-  const [buildBuildings, setBuildBuildings] = useState<newBuilding[]>([]); // UPDATE WITH SERVER DATA LATER
+  const buildBuildings = useIntentStore((state) => state.buildBuildings);
+  const setBuildBuildings = useIntentStore((state) => state.setBuildBuildings);
+
   // contracts
-  const [contracts, setContracts] = useState<Contract[]>([]); // UPDATE WITH SERVER DATA LATER
-  const [isContractSelected, setIsContractSelected] = useState<boolean>(false);
+  const contracts = useIntentStore((state) => state.contracts);
+  const setContracts = useIntentStore((state) => state.setContracts);
+
   // troop training
-  const [armyTraining, setArmyTraining] = useState<ArmyTraining[]>([]); // UPDATE WITH SERVER DATA LATER
+  const armyTraining = useIntentStore((state) => state.armyTraining);
+  const setArmyTraining = useIntentStore((state) => state.setArmyTraining);
 
   // MENUS
   const [buildMenuOpen, setBuildMenuOpen] = useState<boolean>(false);
+
+  // ui states
+  const [buildMode, setBuildMode] = useState<BuildModeType>("none");
+  const [isContractSelected, setIsContractSelected] = useState<boolean>(false);
 
   function cleanTempStates() {
     setBuildBuildings([]);
     setBuildRoads([]);
     setArmyTraining([]);
     setContracts([]);
+    setArmyMove([]);
+    setBuildRoads([]);
   }
 
   // DATA FETCH
@@ -116,20 +130,11 @@ export default function Home() {
       // clean up old data
       cleanTempStates();
 
-      setMapHexes(data.mapHexes);
-      setNations(data.nations);
-      setTurn(data.turn);
-      setRoads(data.roads);
-      setBuildings(data.buildings);
+      useGameStore.getState().setGameData(data);
+
       setSelectedHex(
         prevId !== null ? (data.mapHexes.find((hex) => hex.id === prevId) ?? null) : null
       );
-      setPlayerNation(data.nations.find((nation) => nation.isPlayer) ?? null);
-
-      // clear intent data
-      setArmyMove([]);
-      // clear temp queued roads
-      setBuildRoads([]);
     },
   });
   const nextTurn = trpc.nextTurn.useMutation();
@@ -340,7 +345,13 @@ export default function Home() {
               if (!startBuilding || !startBuilding.storage) return;
               if (!endBuilding || !endBuilding.storage) return;
 
-              const resource = startBuilding?.storage[0].type;
+              // get first resource that could be exported to destination
+              // and is not taken by other contracts between these to buildings
+              const resource = getFirstFreeResource({ startBuilding, endBuilding, contracts });
+              if (!resource) {
+                setIsContractSelected(false);
+                return;
+              }
 
               // find path
               const pointHexMap = new Map(mapHexes.map((h) => [`${h.q},${h.r}`, h]));
@@ -375,6 +386,7 @@ export default function Home() {
               setContracts((prev) => [
                 ...prev,
                 {
+                  id: crypto.randomUUID(),
                   startBuildingId: startId,
                   endBuildingId: endId,
                   resource,
@@ -487,12 +499,22 @@ export default function Home() {
       startAnimation,
       selectedHex,
       buildMode,
+
       buildBuildings,
+      setBuildBuildings,
+
       playerNation,
       buildings,
       isContractSelected,
       mapHexes,
       roads,
+
+      contracts,
+      setContracts,
+
+      setBuildRoads,
+
+      setArmyMove,
     ]
   );
 
@@ -742,107 +764,98 @@ export default function Home() {
 
   return (
     <>
-      <DecisionContext.Provider
-        value={{
-          army: { setArmyTraining, armyTraining },
-          playerNation: playerNation,
-          mapHexes: mapHexes ?? [],
-          roads: roads,
-        }}
-      >
-        <div className="relative w-screen h-screen">
-          <canvas ref={hitCanvasRef} className="absolute inset-0 z-10" />
-          <canvas ref={canvasRef} className="absolute inset-0 z-0" />
+      <div className="relative w-screen h-screen">
+        <canvas ref={hitCanvasRef} className="absolute inset-0 z-10" />
+        <canvas ref={canvasRef} className="absolute inset-0 z-0" />
 
-          {/* UI Layer */}
-          <div className="absolute inset-0 z-20 pointer-events-none">
-            <div className="absolute right-2 bottom-2 pointer-events-auto">
-              <Button
-                onClick={() => {
-                  nextTurn.mutate({
-                    movePlayerArmy: armyMove,
-                    newQueuedBuildings: buildBuildings,
-                    buildRoads: buildRoads,
-                    createNewContracts: contracts,
-                    trainNewArmy: armyTraining.map((a) => ({
-                      amount: a.amount,
-                      barrackId: a.barrackId,
-                    })),
-                  });
-                  mapData.mutate();
-                  console.log(selectedHex);
-                  console.log(selectedHexIdRef.current);
-                }}
-              >
-                Next Turn (turn: {turn})
-              </Button>
-            </div>
-            {/* MENUS */}
-            <div className="w-[300px] max-w-[300px] h-full relative">
-              <ProvinceInfoSidebar
-                selectedHex={selectedHex}
-                buildings={buildings}
-                setIsContractSelected={setIsContractSelected}
-                isContractSelected={isContractSelected}
-                contracts={contracts}
-              ></ProvinceInfoSidebar>
-              <BuildMenu
-                isOpen={buildMenuOpen}
-                setIsOpen={setBuildMenuOpen}
-                setBuildMode={setBuildMode}
-                buildMode={buildMode}
-              ></BuildMenu>
-            </div>
+        {/* UI Layer */}
+        <div className="absolute inset-0 z-20 pointer-events-none">
+          <div className="absolute right-2 bottom-2 pointer-events-auto">
+            <Button
+              onClick={() => {
+                nextTurn.mutate({
+                  movePlayerArmy: armyMove,
+                  newQueuedBuildings: buildBuildings,
+                  buildRoads: buildRoads,
+                  createNewContracts: contracts,
+                  trainNewArmy: armyTraining.map((a) => ({
+                    amount: a.amount,
+                    barrackId: a.barrackId,
+                  })),
+                });
+                mapData.mutate();
+                console.log(selectedHex);
+                console.log(selectedHexIdRef.current);
+              }}
+            >
+              Next Turn (turn: {turn})
+            </Button>
+          </div>
+          {/* MENUS */}
+          <div className="w-[300px] max-w-[300px] h-full relative">
+            <ProvinceInfoSidebar
+              selectedHex={selectedHex}
+              buildings={buildings}
+              setIsContractSelected={setIsContractSelected}
+              isContractSelected={isContractSelected}
+              contracts={contracts}
+            ></ProvinceInfoSidebar>
+            <BuildMenu
+              isOpen={buildMenuOpen}
+              setIsOpen={setBuildMenuOpen}
+              setBuildMode={setBuildMode}
+              buildMode={buildMode}
+            ></BuildMenu>
+          </div>
 
-            <div className="absolute left-0 top-0 pointer-events-auto h-[10%] w-full">
-              <div className="flex justify-start items-center h-full bg-gray-800">
-                <div className="flex justify-between items-center w-full h-full p-1">
-                  <Image
-                    src={`/flags/${getNationName({ id: playerNation?.id ?? "tribes" })}_flag.png`}
-                    alt="nation flag"
-                    width={1463}
-                    height={962}
-                    className="w-auto h-full p-[1px] rounded-[8px]"
-                  ></Image>
-                  <div className="w-full h-full flex justify-between items-center">
-                    <div className="m-2 flex justify-start items-center gap-2 h-full w-auto max-w-[50%] p-1.5 pb-2">
-                      <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1 relative group">
-                        <Image
-                          src="/icons/gold_coin.png"
-                          alt="gold coin icon"
-                          width={408}
-                          height={408}
-                          className="w-[30px] h-[30px] flex items-center justify-center"
-                        ></Image>
-                        <p className="text-white text-2xl">
-                          {numberConverter(effectiveGold.toString())}
-                        </p>
-                        <Tooltip text={Descriptions["gold"]} position="bottom"></Tooltip>
-                      </div>
-                      <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1 relative group">
-                        <Image
-                          src="/icons/manpower.png"
-                          alt="manpower icon"
-                          width={408}
-                          height={408}
-                          className="w-[30px] h-[30px] flex items-center justify-center"
-                        ></Image>
-                        <p className="text-white text-2xl">
-                          {numberConverter(effectiveManpower.toString())}
-                        </p>
-                        <Tooltip text={Descriptions["manpower"]} position="bottom"></Tooltip>
-                      </div>
+          <div className="absolute left-0 top-0 pointer-events-auto h-[10%] w-full">
+            <div className="flex justify-start items-center h-full bg-gray-800">
+              <div className="flex justify-between items-center w-full h-full p-1">
+                <Image
+                  src={`/flags/${getNationName({ id: playerNation?.id ?? "tribes" })}_flag.png`}
+                  alt="nation flag"
+                  width={1463}
+                  height={962}
+                  className="w-auto h-full p-[1px] rounded-[8px]"
+                ></Image>
+                <div className="w-full h-full flex justify-between items-center">
+                  <div className="m-2 flex justify-start items-center gap-2 h-full w-auto max-w-[50%] p-1.5 pb-2">
+                    <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1 relative group">
+                      <Image
+                        src="/icons/gold_coin.png"
+                        alt="gold coin icon"
+                        width={408}
+                        height={408}
+                        className="w-[30px] h-[30px] flex items-center justify-center"
+                      ></Image>
+                      <p className="text-white text-2xl">
+                        {numberConverter(effectiveGold.toString())}
+                      </p>
+                      <Tooltip text={Descriptions["gold"]} position="bottom"></Tooltip>
                     </div>
-                    <div className="h-full flex items-center justify-center border">
-                      <div className="flex items-center justify-center border mr-2">
-                        <Button
-                          onClick={() => {
-                            setBuildMenuOpen(!buildMenuOpen);
-                          }}
-                        >
-                          Build
-                        </Button>
-                      </div>
+                    <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1 relative group">
+                      <Image
+                        src="/icons/manpower.png"
+                        alt="manpower icon"
+                        width={408}
+                        height={408}
+                        className="w-[30px] h-[30px] flex items-center justify-center"
+                      ></Image>
+                      <p className="text-white text-2xl">
+                        {numberConverter(effectiveManpower.toString())}
+                      </p>
+                      <Tooltip text={Descriptions["manpower"]} position="bottom"></Tooltip>
+                    </div>
+                  </div>
+                  <div className="h-full flex items-center justify-center border">
+                    <div className="flex items-center justify-center border mr-2">
+                      <Button
+                        onClick={() => {
+                          setBuildMenuOpen(!buildMenuOpen);
+                        }}
+                      >
+                        Build
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -850,7 +863,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </DecisionContext.Provider>
+      </div>
     </>
   );
 }

@@ -15,7 +15,9 @@ import {
 } from "@repo/shared";
 import { memoryStore } from "../server/memoryStore.js";
 import { BuildBuilding } from "./buildings.js";
+import { GameCtx } from "../trpc/index.js";
 
+// DO NOT CHANGE THIS FUNCTION TO ACCEPT GAMECTX
 // generates the mathematical map & coordinates
 export function generateHexMap(radius: number, buildings: Building[]) {
   const hexes: Hex[] = [];
@@ -173,7 +175,9 @@ export function getHexById(id: number) {
   return null;
 }
 
-export function calculatePopulationChange(hex: Hex, buildings: Building[], consumeMod: number) {
+export function calculatePopulationChange(hex: Hex, gameCtx: GameCtx, consumeMod: number) {
+  const { buildings } = gameCtx;
+
   if (!hex.owner || !hex.buildingId) return;
   const building = getBuilding({ buildings, id: hex.buildingId });
   if (!building) return;
@@ -202,8 +206,6 @@ export function calculatePopulationChange(hex: Hex, buildings: Building[], consu
 
   currPopulation += growth * consumeMod;
   hex.population = Math.round(currPopulation);
-
-  return hex;
 }
 
 function randomLengthArray(array: Hex[], min: number, max: number) {

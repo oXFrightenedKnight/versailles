@@ -1,6 +1,9 @@
-import { Hex } from "@repo/shared";
+import { Contract } from "@/app/game/page";
+import { Building, BUILDINGS, findBuildingNameByCategory, Hex, RESOURCES } from "@repo/shared";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { useGameStore } from "./gameStore";
+import { useIntentStore } from "./intentStore";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -31,4 +34,57 @@ export function lerp(a: number, b: number, t: number) {
 
 export function randomNumber(a: number, b: number) {
   return Math.floor(Math.random() * (b - a + 1)) + a;
+}
+
+export function getFirstFreeResource({
+  startBuilding,
+  endBuilding,
+  contracts,
+}: {
+  startBuilding: Building;
+  endBuilding: Building;
+  contracts: Contract[];
+}) {
+  const startName = findBuildingNameByCategory({
+    buildingCategory: startBuilding.category,
+    level: startBuilding.level,
+  });
+  if (!startName) return;
+
+  const takenResources = new Set<RESOURCES>(
+    contracts
+      .filter((c) => c.startBuildingId === startBuilding.id && c.endBuildingId === endBuilding.id)
+      .map((c) => c.resource)
+  );
+
+  // get first available
+  const producing = BUILDINGS[startName].producing;
+  if (!producing) return;
+  const availableResource = producing.find((r) => !takenResources.has(r));
+  if (!availableResource) return;
+  return availableResource;
+}
+
+export function getMergedContracts(buildingId: string) {
+  const serverContracts =
+    useGameStore.getState().buildings.find((b) => b.id === buildingId)?.contracts ?? [];
+
+  const clientContracts = useIntentStore
+    .getState()
+    .contracts.filter((c) => c.startBuildingId === buildingId);
+
+  const mappedServerContracts: Contract[] = serverContracts.map((c) => ({
+    id: c.id,
+    hexIds: c.hexIds,
+    startBuildingId: buildingId, // start building - passed from props
+    endBuildingId: c.buildingId, // end building - get from contract
+    amount: c.amount,
+    autoAdjust: c.autoAdjust,
+    resource: c.resource,
+    progress: c.progress,
+  }));
+
+  console.log("mappedServerContracts", mappedServerContracts);
+
+  return [...mappedServerContracts, ...clientContracts];
 }

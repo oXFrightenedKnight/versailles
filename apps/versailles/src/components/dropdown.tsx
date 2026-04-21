@@ -19,13 +19,13 @@ export function Dropdown<T>({
   renderItem,
   renderButton,
   items,
-  setValue,
+  updaterFn,
   value,
 }: {
   items: DropdownItem<T>[];
   renderButton?: (item?: DropdownItem<T>) => React.ReactNode;
   renderItem?: (item: DropdownItem<T>, isSelected: boolean) => React.ReactNode;
-  setValue: React.Dispatch<React.SetStateAction<T>>;
+  updaterFn: (selectedValue: T) => void;
   value: T;
 }) {
   return (
@@ -42,7 +42,7 @@ export function Dropdown<T>({
               <DropdownMenuItem
                 key={item.id}
                 className="cursor-pointer focus:bg-gray-700"
-                onClick={() => setValue(item.value)}
+                onClick={() => updaterFn(item.value)}
               >
                 {renderItem ? renderItem(item, isSelected) : item.label}
               </DropdownMenuItem>

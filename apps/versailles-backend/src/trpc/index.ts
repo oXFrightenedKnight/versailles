@@ -1,6 +1,6 @@
 import z from "zod";
 import { authedProcedure, router } from "./trpc.js";
-import { calculatePopulationChange, generateHexMap } from "../services/map.js";
+import { generateHexMap } from "../services/map.js";
 import { memoryStore } from "../server/memoryStore.js";
 import {
   buildNationBuildings,
@@ -16,6 +16,7 @@ import {
   BUILDINGS_CATEGORY,
   Hex,
   MAP_RADIUS,
+  MODIFIER,
   Nation,
   RESOURCES,
   Road,
@@ -26,6 +27,16 @@ import {
   recalculateContractsAmounts,
 } from "../services/contracts.js";
 import { buildingOutput, queueArmyTraining } from "../services/buildings.js";
+import { nationsUpdateManpower } from "../services/manpower.js";
+
+export type GameCtx = {
+  mapHexes: Hex[];
+  nations: Nation[];
+  turn: number;
+  roads: Road[];
+  buildings: Building[];
+  modifiers: MODIFIER[];
+};
 
 export const appRouter = router({
   // Init game
@@ -35,6 +46,7 @@ export const appRouter = router({
     let turn: number = 0;
     let roads: Road[] = [];
     let buildings: Building[] = [];
+    let modifiers: MODIFIER[] = [];
 
     if (memoryStore.maps.has("mapHexes")) {
       mapHexes = memoryStore.maps.get("mapHexes");
@@ -66,6 +78,12 @@ export const appRouter = router({
       buildings = memoryStore.maps.get("buildings");
     } else {
       memoryStore.maps.set("buildings", buildings);
+    }
+
+    if (memoryStore.maps.has("modifiers")) {
+      modifiers = memoryStore.maps.get("modifiers");
+    } else {
+      memoryStore.maps.set("modifiers", modifiers);
     }
 
     return { mapHexes, nations, turn, roads, buildings };
@@ -121,12 +139,17 @@ export const appRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      let mapHexes: Hex[] = memoryStore.maps.get("mapHexes");
-      const nations: Nation[] = memoryStore.maps.get("nations");
-      let turn: number = memoryStore.maps.get("turn");
-      let roads: Road[] = memoryStore.maps.get("roads");
-      let buildings: Building[] = memoryStore.maps.get("buildings");
-      const playerNationId = nations.find((nation) => nation.isPlayer)?.id;
+      // create gameCtx
+      const gameCtx: GameCtx = {
+        mapHexes: memoryStore.maps.get("mapHexes"),
+        nations: memoryStore.maps.get("nations"),
+        turn: memoryStore.maps.get("turn"),
+        roads: memoryStore.maps.get("roads"),
+        buildings: memoryStore.maps.get("buildings"),
+        modifiers: memoryStore.maps.get("modifiers"),
+      };
+
+      const playerNationId = gameCtx.nations.find((nation) => nation.isPlayer)?.id;
       const buildRoads = input.buildRoads;
       const createNewContracts = input.createNewContracts.map((c) => ({
         ...c,
@@ -136,11 +159,11 @@ export const appRouter = router({
 
       // checks
       if (
-        !mapHexes ||
-        mapHexes.length === 0 ||
-        !nations ||
-        nations.length === 0 ||
-        turn === undefined
+        !gameCtx.mapHexes ||
+        gameCtx.mapHexes.length === 0 ||
+        !gameCtx.nations ||
+        gameCtx.nations.length === 0 ||
+        gameCtx.turn === undefined
       ) {
         throw new TRPCError({ code: "NOT_FOUND" });
       }
@@ -149,7 +172,7 @@ export const appRouter = router({
       // step 1: calculate ai decisions (build, attack, move)
 
       // step 1.5: queue buildings that are going to be built & finish building
-      for (const nation of nations) {
+      for (const nation of gameCtx.nations) {
         if (!nation.isPlayer) continue; // execute for player nation only
         // check if all new queued buildings categories exist
         if (
@@ -158,11 +181,10 @@ export const appRouter = router({
           )
         )
           throw new TRPCError({ code: "NOT_FOUND" });
-        mapHexes = buildNationBuildings({
+        gameCtx.mapHexes = buildNationBuildings({
           nation: nation,
-          mapHexes: mapHexes,
+          gameCtx,
           newBuildings: input.newQueuedBuildings as newBuildings,
-          buildings: buildings,
         });
 
         // build roads (only allow to build from building to building or road to building or road to road)
@@ -174,12 +196,12 @@ export const appRouter = router({
           })),
           constructing: null,
         }));
-        roads = buildNationRoads({ nation, mapHexes, buildRoads: roadsToBuild, roads, buildings });
+        buildNationRoads({ gameCtx, buildRoads: roadsToBuild, nationId: nation.id });
       }
 
       try {
         // step 1.6: queue army training (player, then ai)
-        queueArmyTraining({ trainNewArmy, buildings, nationId: playerNationId, mapHexes, nations }); // for player country (client request)
+        queueArmyTraining({ trainNewArmy, nationId: playerNationId, gameCtx }); // for player country (client request)
         // map over all other ai nations and execute this function for each
       } catch (err) {
         throw new Error(`err: ${err}`);
@@ -195,7 +217,7 @@ export const appRouter = router({
           amount: hexObj.amount,
           direction: hexObj.direction,
           nationId: playerNationId,
-          mapHexes: mapHexes,
+          gameCtx,
         });
       }
       // ai movement
@@ -203,25 +225,28 @@ export const appRouter = router({
       // step 3: calculate battle outcomes
 
       // step 4: create & calculate contract exports
-      createContracts({ contracts: createNewContracts, buildings, mapHexes, roads });
-      executeContracts({ buildings });
+      createContracts({ contracts: createNewContracts, gameCtx });
+      executeContracts(gameCtx);
 
       // step 5: calculate gold & building output
-      buildingOutput(buildings, mapHexes, nations);
+      buildingOutput(gameCtx);
 
-      // step 5.5: recalculate all auto-adjust contracts to match new state
-      recalculateContractsAmounts({ buildings, mapHexes });
+      // step 6: recalculate all auto-adjust contracts to match new state
+      recalculateContractsAmounts(gameCtx);
 
-      // step 6: increase turn
-      turn++;
-      memoryStore.maps.set("turn", turn);
+      // step 7: recalculate manpower
+      nationsUpdateManpower(gameCtx);
 
-      // step 7: update values in memory store
-      memoryStore.maps.set("mapHexes", mapHexes);
-      memoryStore.maps.set("roads", roads);
-      memoryStore.maps.set("nations", nations);
-      memoryStore.maps.set("buildings", buildings);
-      return { turn };
+      // step 8: increase turn
+      gameCtx.turn++;
+      memoryStore.maps.set("turn", gameCtx.turn);
+
+      // step 9: update values in memory store
+      memoryStore.maps.set("mapHexes", gameCtx.mapHexes);
+      memoryStore.maps.set("roads", gameCtx.roads);
+      memoryStore.maps.set("nations", gameCtx.nations);
+      memoryStore.maps.set("buildings", gameCtx.buildings);
+      memoryStore.maps.set("modifiers", gameCtx.modifiers);
     }),
 });
 // Export type router type signature,

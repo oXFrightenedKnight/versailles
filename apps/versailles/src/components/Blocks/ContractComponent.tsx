@@ -1,6 +1,6 @@
 "use client";
 
-import { Contract, DecisionContext } from "@/app/game/page";
+import { Contract } from "@/app/game/page";
 import { numberConverter } from "@/canvas/render";
 import { BuildingIcons, getResourceImage } from "@/lib/data";
 import {
@@ -9,7 +9,6 @@ import {
   calculateExportAmount,
   findBuildingNameByCategory,
   getBuilding,
-  RESOURCES,
 } from "@repo/shared";
 import {
   ArrowBigDown,
@@ -20,10 +19,12 @@ import {
   CirclePlus,
   X,
 } from "lucide-react";
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import Tooltip from "../tooltip";
 import { Progress } from "../ui/progress";
 import { Dropdown, DropdownItem } from "../dropdown";
+import { useGameStore } from "@/lib/gameStore";
+import { useIntentStore } from "@/lib/intentStore";
 
 export default function ContractComponent({
   contract,
@@ -32,11 +33,10 @@ export default function ContractComponent({
   contract: Contract;
   buildings: Building[];
 }) {
-  const { mapHexes } = useContext(DecisionContext);
-  const [amount, setAmount] = useState<number>(contract.amount);
-  const [autoAdjust, setAutoAdjust] = useState<boolean>(contract.autoAdjust);
-  const [exportedResource, setExportedResource] = useState<RESOURCES>(contract.resource);
-  const [prevResource, setPrevResource] = useState<RESOURCES>(contract.resource);
+  const mapHexes = useGameStore((s) => s.mapHexes);
+  const updateContract = useIntentStore((s) => s.updateContract);
+  const contracts = useIntentStore((s) => s.contracts);
+
   const startBuilding = getBuilding({ buildings, id: contract.startBuildingId });
   const endBuilding = getBuilding({ buildings, id: contract.endBuildingId });
 
@@ -57,10 +57,20 @@ export default function ContractComponent({
   const StartIcon = BuildingIcons[startBuilding?.category ?? "CIVILIAN"];
   const EndIcon = BuildingIcons[endBuilding?.category ?? "CIVILIAN"];
 
-  const allAvailableResources = startName ? BUILDINGS[startName].producing : undefined;
+  const allAvailableResources = startName ? BUILDINGS[startName].producing : undefined; // all resources currently produced by this starting building
+  const sameBuildingContracts = contracts.filter(
+    (c) => c.startBuildingId === startBuilding?.id && c.endBuildingId === endBuilding?.id
+  ); // contracts that have the same starting id and end id
   const allowedResources =
     allAvailableResources && endName
-      ? allAvailableResources.filter((r) => Object.keys(BUILDINGS[endName].storageCap).includes(r))
+      ? allAvailableResources.filter(
+          (r) =>
+            Object.keys(BUILDINGS[endName].storageCap).includes(r) &&
+            (sameBuildingContracts.every((c) => c.resource !== r) || r === contract.resource)
+          // leave resources that could be stored in destination and either
+          // not included in any other contract between these two buildings
+          // or is a resource of this contract of this component
+        )
       : [];
   const dropdownItems: DropdownItem<typeof contract.resource>[] = allowedResources.map((r) => ({
     id: crypto.randomUUID(),
@@ -78,8 +88,17 @@ export default function ContractComponent({
     ),
   }));
 
-  {
-    /*useEffect(() => {
+  // --- FUNCTIONS ---
+  const setAmount = useCallback(
+    (value: number) => {
+      updateContract(contract.id, { amount: value });
+    },
+    [contract.id, updateContract]
+  );
+  function setAutoAdjust(value: boolean) {
+    updateContract(contract.id, { autoAdjust: value });
+  }
+  const recalculateAmount = useCallback(() => {
     if (startBuilding && endBuilding && mapHexes) {
       const newAmount = calculateExportAmount({
         startBuilding,
@@ -92,35 +111,14 @@ export default function ContractComponent({
       if (!newAmount) return;
       setAmount(newAmount);
     }
-  }, [exportedResource, autoAdjust])*/
-  }
+  }, [startBuilding, endBuilding, mapHexes, dist, buildings, contract.resource, setAmount]);
 
-  // --- Update amount ---
-  if (exportedResource !== prevResource) {
-    setPrevResource(exportedResource);
-    if (autoAdjust) {
-      recalculateAmount();
-    }
-  }
+  useEffect(() => {
+    recalculateAmount();
+  }, [contract.resource, recalculateAmount]);
 
-  // --- FUNCTIONS ---
-  function recalculateAmount() {
-    console.log("exportedResource:", exportedResource);
-    if (startBuilding && endBuilding && mapHexes) {
-      const newAmount = calculateExportAmount({
-        startBuilding,
-        endBuilding,
-        length: dist,
-        resource: exportedResource,
-        mapHexes,
-        buildings,
-      });
-      if (!newAmount) return;
-      setAmount(newAmount);
-    }
-  }
-
-  console.log("exported resource link", getResourceImage(exportedResource));
+  console.log("exported resource link", getResourceImage(contract.resource));
+  console.log("contract progress", contract.progress);
 
   return (
     <div className="w-full h-[75px] bg-gray-800 rounded-xl flex justify-center items-center gap-1 p-1">
@@ -143,9 +141,9 @@ export default function ContractComponent({
             className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
             onClick={(e) => {
               if (e.shiftKey) {
-                setAmount(Math.max(amount - 100, 0));
+                setAmount(Math.max(contract.amount - 100, 0));
               } else {
-                setAmount(Math.max(amount - 10, 0));
+                setAmount(Math.max(contract.amount - 10, 0));
               }
               setAutoAdjust(false);
             }}
@@ -154,16 +152,16 @@ export default function ContractComponent({
           </div>
           {/* Display amount */}
           <div className="bg-gray-800 text-white rounded-md p-1 w-15 flex justify-center items-center">
-            {numberConverter(amount.toString())}
+            {numberConverter(contract.amount.toString())}
           </div>
           {/* Addition */}
           <div
             className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
             onClick={(e) => {
               if (e.shiftKey) {
-                setAmount(Math.min(amount + 100, 1_000_000));
+                setAmount(Math.min(contract.amount + 100, 1_000_000));
               } else {
-                setAmount(Math.min(amount + 10, 1_000_000));
+                setAmount(Math.min(contract.amount + 10, 1_000_000));
               }
               setAutoAdjust(false);
             }}
@@ -174,17 +172,17 @@ export default function ContractComponent({
           <div
             className={`flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black relative group`}
             onClick={() => {
-              setAutoAdjust(!autoAdjust);
+              setAutoAdjust(!contract.autoAdjust);
               recalculateAmount();
             }}
           >
-            {autoAdjust ? (
+            {contract.autoAdjust ? (
               <Calculator className="w-4 h-4 text-amber-200"></Calculator>
             ) : (
               <X className="w-4 h-4 text-amber-200 "></X>
             )}
             <Tooltip
-              text={`Auto-Adjust exported resource. ${autoAdjust ? "ON" : "OFF"}`}
+              text={`Auto-Adjust exported resource. ${contract.autoAdjust ? "ON" : "OFF"}`}
               position="top"
             ></Tooltip>
           </div>
@@ -192,8 +190,10 @@ export default function ContractComponent({
             {dropdownItems && (
               <Dropdown
                 items={dropdownItems}
-                setValue={setExportedResource}
-                value={exportedResource}
+                updaterFn={(selectedValue) => {
+                  updateContract(contract.id, { resource: selectedValue ?? undefined });
+                }}
+                value={contract.resource}
                 renderItem={(item, isSelected) => (
                   <div className="flex justify-between items-center w-full">
                     <div className="flex justify-center items-center gap-2">
@@ -210,7 +210,11 @@ export default function ContractComponent({
                       width={408}
                       height={408}
                       alt="pick exported resource button"
-                      src={getResourceImage(exportedResource)}
+                      src={
+                        contract.resource
+                          ? getResourceImage(contract.resource)
+                          : "/icons/unknown.png"
+                      }
                     ></img>
                     <ChevronDown className="w-4 h-4 text-gray-600"></ChevronDown>
                   </div>

@@ -1,14 +1,17 @@
 "use client";
 
-import { Building, BUILDINGS, findBuildingNameByCategory } from "@repo/shared";
+import { Building } from "@repo/shared";
 import TrainingComponent from "./TrainingComponent";
 import { CircleMinus, CirclePlus, Cog } from "lucide-react";
-import { DecisionContext } from "@/app/game/page";
-import { useContext, useState } from "react";
+import { useState } from "react";
 import { numberConverter } from "@/canvas/render";
+import { useGameStore } from "@/lib/gameStore";
+import { useIntentStore } from "@/lib/intentStore";
 
 export default function TrainingBlock({ building }: { building: Building }) {
-  const { army, playerNation } = useContext(DecisionContext);
+  const playerNation = useGameStore((s) => s.playerNation);
+  const armyTraining = useIntentStore((s) => s.armyTraining);
+  const setArmyTraining = useIntentStore((s) => s.setArmyTraining);
   const [amount, setAmount] = useState<number>(100);
 
   return (
@@ -51,9 +54,9 @@ export default function TrainingBlock({ building }: { building: Building }) {
           <div
             className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
             onClick={() => {
-              if (!army || !playerNation) return;
+              if (!armyTraining || !setArmyTraining || !playerNation) return;
 
-              army.setArmyTraining((prev) => [
+              setArmyTraining((prev) => [
                 ...prev,
                 { amount: amount, progress: 0, barrackId: building.id, owner: playerNation.id },
               ]);
@@ -64,9 +67,9 @@ export default function TrainingBlock({ building }: { building: Building }) {
         </div>
       </div>
       <div>
-        {army?.armyTraining && army.armyTraining.length > 0 ? (
+        {armyTraining && armyTraining.length > 0 ? (
           <div className="w-full flex flex-col gap-2">
-            {army.armyTraining.map((obj, key) => (
+            {armyTraining.map((obj, key) => (
               <TrainingComponent
                 key={key}
                 amount={obj.amount}

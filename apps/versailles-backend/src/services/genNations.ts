@@ -19,6 +19,7 @@ import { memoryStore } from "../server/memoryStore.js";
 import { getHexById, randomNationColor } from "./map.js";
 import { BuildBuilding, UpgradeBuilding } from "./buildings.js";
 import { recalculateContractsPaths } from "./contracts.js";
+import { GameCtx } from "../trpc/index.js";
 
 export type newBuildings = {
   hexId: number;
@@ -26,6 +27,7 @@ export type newBuildings = {
   levelsToUpgrade: number;
 }[];
 
+// DO NOT CHANGE THIS FUNCTION TO ACCEPT GAMECTX
 export function generateNations({ buildings }: { buildings: Building[] }) {
   // choose nations and assign available spaces
   let availableTiles = [...AVAILABLE_TILES];
@@ -50,8 +52,8 @@ export function generateNations({ buildings }: { buildings: Building[] }) {
       expansionBias: expansionBias,
       isPlayer: false,
       atWar: [],
-      gold: 100,
-      manpower: 1000, // change to 0 later when you add manpower calc
+      gold: 0,
+      manpower: 0,
     });
   }
 
@@ -81,16 +83,16 @@ export function generateNations({ buildings }: { buildings: Building[] }) {
 
 // put new buildings in queue and give progress to older ones
 export function buildNationBuildings({
-  nation,
-  mapHexes,
+  gameCtx,
   newBuildings,
-  buildings,
+  nation,
 }: {
-  nation: Nation;
-  mapHexes: Hex[];
+  gameCtx: GameCtx;
   newBuildings: newBuildings;
-  buildings: Building[];
+  nation: Nation;
 }) {
+  const { mapHexes, nations, buildings } = gameCtx;
+
   // check if hex ids' exist
   const hexIdSet = new Set<number>(mapHexes.map((hex) => hex.id));
   if (!newBuildings.every((obj) => hexIdSet.has(obj.hexId)))
@@ -195,20 +197,20 @@ export function buildNationBuildings({
 }
 
 export function buildNationRoads({
-  nation,
-  mapHexes,
+  gameCtx,
   buildRoads,
-  roads,
-  buildings,
+  nationId,
 }: {
-  nation: Nation;
-  mapHexes: Hex[];
+  gameCtx: GameCtx;
   buildRoads: Road[];
-  roads: Road[];
-  buildings: Building[];
+  nationId: string;
 }) {
+  const { mapHexes, nations, buildings, roads } = gameCtx;
+
   // create a set of hex coordinates and a map of hex maps
   const hexCoorSet = new Set<string>(mapHexes.map((hex) => `${hex.q},${hex.r}`));
+  const nation = nations.find((n) => n.id === nationId);
+  if (!nation) return;
 
   const hexMap = new Map<string, Hex>();
   for (const hex of mapHexes) {
@@ -308,9 +310,7 @@ export function buildNationRoads({
   }
 
   // recaulculate contracts
-  recalculateContractsPaths({ buildings, roads, mapHexes });
-
-  return roads;
+  recalculateContractsPaths(gameCtx);
 }
 
 export function getNationById(nationId: string) {

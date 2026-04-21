@@ -1,20 +1,23 @@
 import { Hex } from "@repo/shared";
 import { getNationById } from "./genNations.js";
 import { getHexById } from "./map.js";
+import { GameCtx } from "../trpc/index.js";
 
 export function moveArmy({
   hexId,
   amount,
   nationId,
   direction,
-  mapHexes,
+  gameCtx,
 }: {
   hexId: number;
   amount: number;
   nationId: string;
   direction: { dq: number; dr: number };
-  mapHexes: Hex[];
+  gameCtx: GameCtx;
 }) {
+  const { mapHexes } = gameCtx;
+
   const hex = getHexById(hexId);
   const nationWarList = new Set(getNationById(nationId)?.atWar);
   const contested = hex?.army.some((obj) => nationWarList.has(obj.nationId)) ?? false;

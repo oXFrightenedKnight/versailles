@@ -8,11 +8,7 @@ then offer a button that would track the change in demand and adjust it automati
 (on by default)
 
 list of changes to make next: 
-1,5. Add manpower handling and calculating
-3. Only allow 1 contract per two different buildings and single resource (no duplicates)
-(ex: a farm can only have one contract with this specific village, but other farms
-can have contracts with this village as well)
-3.5. Make ctx system that will contain all game info and be passed to every function
+3,5. merge client and server logic
 4. Make logistics system more intuitive. Show how much the building is currently
 consuming, and how much is being send and a progress bar showing progress of delivery
 5. Add option to delete contracts, army trainings, unfinished buildings
@@ -20,10 +16,13 @@ consuming, and how much is being send and a progress bar showing progress of del
 7. start working on ai
 8. Update war mechanics. add surrendering.
 9. setup a database to store game state in
-10. bug fixes + ui polishment
+10. bug fixes + ui polishment + refactor clicking handler on client
 11. Music, sound effects, reusable components
 11. deploy
 
-additionally add automatic resource updates whenever you pick another resource in
-contract config and disable resources in dropdown if they are already used in contract
-with these two buildings
+also good to add modifier support for other parts of the game, not just manpower
+
+also think what you will do with hex population after recruiting manpower
+do you remove manpower from hexes, or leave it as it is like it was always in reserve?
+
+consider making uistore to contain all ui changes cleanly

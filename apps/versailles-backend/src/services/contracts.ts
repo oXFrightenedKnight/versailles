@@ -11,12 +11,11 @@ import {
   Road,
   startDijkstrasAlgo,
 } from "@repo/shared";
+import { GameCtx } from "../trpc/index.js";
 
 export function createContracts({
   contracts,
-  buildings,
-  mapHexes,
-  roads,
+  gameCtx,
 }: {
   contracts: {
     startBuildingId: string;
@@ -25,10 +24,10 @@ export function createContracts({
     resource: RESOURCES;
     autoAdjust: boolean;
   }[];
-  buildings: Building[];
-  mapHexes: Hex[];
-  roads: Road[];
+  gameCtx: GameCtx;
 }) {
+  const { mapHexes, buildings, roads } = gameCtx;
+
   // check whether starting building is allowed to have contracts
   for (const contract of contracts) {
     const startBuilding = getBuilding({ buildings, id: contract.startBuildingId });
@@ -57,6 +56,14 @@ export function createContracts({
 
     if (!canStore || canStore <= 0) continue;
 
+    // check if these two buildings already have a contract with the same resource
+    const buildingContracts = startBuilding.contracts ?? [];
+
+    const sameContract = buildingContracts.find(
+      (c) => c.buildingId === endBuilding.id && c.resource === contract.resource
+    );
+    if (sameContract) continue;
+
     // --- CREATE ---
     const prevContracts = startBuilding.contracts ?? [];
     const points = startDijkstrasAlgo({ startingHex: startingHex, endHex, mapHexes, roads });
@@ -75,6 +82,7 @@ export function createContracts({
     startBuilding.contracts = [
       ...prevContracts,
       {
+        id: crypto.randomUUID(),
         hexIds,
         buildingId: endHex.buildingId,
         amount: contract.amount,
@@ -85,7 +93,7 @@ export function createContracts({
     ];
   }
 }
-export function executeContracts({ buildings }: { buildings: Building[] }) {
+export function executeContracts({ buildings }: GameCtx) {
   // find all buildings with contracts
   const contractBuildings = buildings.filter((b) => b.contracts);
 
@@ -128,15 +136,7 @@ export function executeContracts({ buildings }: { buildings: Building[] }) {
   }
 }
 
-export function recalculateContractsPaths({
-  buildings,
-  roads,
-  mapHexes,
-}: {
-  buildings: Building[];
-  roads: Road[];
-  mapHexes: Hex[];
-}) {
+export function recalculateContractsPaths({ buildings, roads, mapHexes }: GameCtx) {
   // recalculate every contract to see if shorter path is available
   const buildingHexMap = new Map(mapHexes.map((h) => [h.buildingId, h]));
   const pointHexMap = new Map(mapHexes.map((h) => [`${h.q},${h.r}`, h]));
@@ -167,13 +167,7 @@ export function recalculateContractsPaths({
   }
 }
 
-export function recalculateContractsAmounts({
-  buildings,
-  mapHexes,
-}: {
-  buildings: Building[];
-  mapHexes: Hex[];
-}) {
+export function recalculateContractsAmounts({ buildings, mapHexes }: GameCtx) {
   const buildingHexMap = new Map(mapHexes.map((h) => [h.buildingId, h]));
 
   const contractBuildinds = buildings.filter((b) => b.contracts !== undefined);

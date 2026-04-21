@@ -51,7 +51,6 @@ export default function LumberjackBlock({
     <div className="w-full h-full flex flex-col gap-2 min-h-0 overflow-y-auto no-scrollbar">
       {/* Contract block */}
       <ContractBlock
-        contracts={contracts}
         buildings={buildings}
         isContractSelected={isContractSelected}
         setIsContractSelected={setIsContractSelected}

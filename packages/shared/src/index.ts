@@ -437,6 +437,15 @@ export type BUILDINGS_CATEGORY =
   | "WATCHTOWER"
   | "LUMBERJACK_SETTLEMENT";
 
+export type MODIFIER_CATEGORIES = "manpower";
+export type MOD_TYPE = "percent" | "flat";
+export type MODIFIER = {
+  category: MODIFIER_CATEGORIES;
+  type: MOD_TYPE;
+  value: number;
+  owner: string;
+};
+
 export type BuildingConfig = {
   category: BUILDINGS_CATEGORY;
   level: number;
@@ -515,7 +524,7 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     buildCost: 800,
     storageCap: { wheat: 150 },
     consumptionMod: {},
-    producing: ["wheat"],
+    producing: ["wheat", "wood"],
   },
 
   watch_tower: {
@@ -547,6 +556,8 @@ export const baseWheatRate = 0.32; // 50 wheat bags for every 80 farmers
 export const baseWoodRate = 0.07; // 0.07 wood per lumberjack
 export const baseTrainingProgress = 0.1; // full training in 10 turns 0.1x10
 
+export const MANPOWER_RATE = 0.075; // % of population that is eligibile for recruitment
+
 const LEVEL_CATEGORY = Object.entries(BUILDINGS).map(([key, value]) => ({
   category: value.category,
   level: value.level,
@@ -573,6 +584,7 @@ export type Building = {
 };
 
 export type SupplyContract = {
+  id: string;
   hexIds: number[];
   buildingId: string;
   amount: number;

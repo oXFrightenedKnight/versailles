@@ -56,9 +56,7 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
           barrackId: string;
         }[];
       };
-      output: {
-        turn: number;
-      };
+      output: void;
       meta: object;
     }>;
   }>

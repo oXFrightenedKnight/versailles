@@ -16,6 +16,7 @@ import {
 import { calculatePopulationChange, getHexById } from "./map.js";
 import { roundToNearestDecimal } from "../lib/helpers.js";
 import { getNationById } from "./genNations.js";
+import { GameCtx } from "../trpc/index.js";
 
 {
   /*export function calculateSupply(buildings: Building[], mapHexes: Hex[]) {
@@ -53,7 +54,8 @@ import { getNationById } from "./genNations.js";
 } */
 }
 
-export function buildingOutput(buildings: Building[], mapHexes: Hex[], nations: Nation[]) {
+export function buildingOutput(gameCtx: GameCtx) {
+  const { buildings } = gameCtx;
   // sort buildings into different groups
   const civilian = buildings.filter((b) => b.category === "CIVILIAN");
   const farms = buildings.filter((b) => b.category === "FARM");
@@ -63,23 +65,25 @@ export function buildingOutput(buildings: Building[], mapHexes: Hex[], nations: 
 
   // calculate output for every building (farms and)
   for (const civ of civilian) {
-    calculateCivilian(civ, mapHexes, buildings, nations);
+    calculateCivilian(civ, gameCtx);
   }
   for (const farm of farms) {
-    calculateFarm(farm, mapHexes, buildings);
+    calculateFarm(farm, gameCtx);
   }
   for (const barrack of barracks) {
-    calculateBarracks(barrack, mapHexes, buildings, nations);
+    calculateBarracks(barrack, gameCtx);
   }
   for (const lumber_set of lumber_sets) {
-    calculateLumberjack(lumber_set, mapHexes, buildings);
+    calculateLumberjack(lumber_set, gameCtx);
   }
   for (const tower of watchtowers) {
-    calculateWatchtower(tower, mapHexes, buildings);
+    calculateWatchtower(tower, gameCtx);
   }
 }
 
-function calculateFarm(building: Building, mapHexes: Hex[], buildings: Building[]) {
+function calculateFarm(building: Building, gameCtx: GameCtx) {
+  const { mapHexes } = gameCtx;
+
   // apply resource consumption
   const name = findBuildingNameByCategory({
     buildingCategory: building.category,
@@ -90,7 +94,7 @@ function calculateFarm(building: Building, mapHexes: Hex[], buildings: Building[
   const hex = mapHexes.find((h) => h.buildingId === building.id);
   if (!hex || !hex.population) return;
 
-  calculatePopulationChange(hex, buildings, 1);
+  calculatePopulationChange(hex, gameCtx, 1); // 1 means 100% consumption (since farm does not consume anything)
 
   // now calculate wheat output
   const max = BUILDINGS[name].storageCap["wheat"] ?? 0;
@@ -103,14 +107,11 @@ function calculateFarm(building: Building, mapHexes: Hex[], buildings: Building[
   }
 }
 
-function calculateCivilian(
-  building: Building,
-  mapHexes: Hex[],
-  buildings: Building[],
-  nations: Nation[]
-) {
+function calculateCivilian(building: Building, gameCtx: GameCtx) {
+  const { mapHexes, buildings, nations } = gameCtx;
+
   // apply resource consumption
-  const consumptionMod = calculateConsumption({ building, mapHexes });
+  const consumptionMod = calculateConsumption({ building, gameCtx });
 
   // ex: wheatRatio: 0.5, woodRatio: 1 -> avgConsumption = 0.75
   const avgConsumption = calculateAverageConsumption(consumptionMod); // avg consumption of all resources
@@ -119,7 +120,7 @@ function calculateCivilian(
   const hex = mapHexes.find((h) => h.buildingId === building.id);
   if (!hex || !hex.population) return;
 
-  calculatePopulationChange(hex, buildings, avgConsumption);
+  calculatePopulationChange(hex, gameCtx, avgConsumption);
 
   // now calculate gold output
   const nation = nations.find((n) => n.id === hex.owner);
@@ -129,19 +130,16 @@ function calculateCivilian(
   nation.gold += gold;
 }
 
-function calculateBarracks(
-  building: Building,
-  mapHexes: Hex[],
-  buildings: Building[],
-  nations: Nation[]
-) {
+function calculateBarracks(building: Building, gameCtx: GameCtx) {
+  const { mapHexes, buildings, nations } = gameCtx;
+
   // apply resource consumption
   const name = findBuildingNameByCategory({
     buildingCategory: building.category,
     level: building.level,
   });
   if (!name) return;
-  const consumptionMod = calculateConsumption({ building, mapHexes });
+  const consumptionMod = calculateConsumption({ building, gameCtx });
 
   // ex: wheatRatio: 0.5, woodRatio: 1 -> avgConsumption = 0.75
   const avgConsumption = calculateAverageConsumption(consumptionMod); // avg consumption of all resources
@@ -150,7 +148,7 @@ function calculateBarracks(
   const hex = mapHexes.find((h) => h.buildingId === building.id);
   if (!hex || !hex.population) return;
 
-  calculatePopulationChange(hex, buildings, avgConsumption);
+  calculatePopulationChange(hex, gameCtx, avgConsumption);
   // don't forget to re-calculate population change in hex after finding amount of trained army this turn
   // or when deploying army
 
@@ -199,17 +197,15 @@ function calculateBarracks(
 }
 export function queueArmyTraining({
   trainNewArmy,
-  buildings,
   nationId,
-  mapHexes,
-  nations,
+  gameCtx,
 }: {
   trainNewArmy: { amount: number; barrackId: string }[];
-  buildings: Building[];
   nationId: string;
-  mapHexes: Hex[];
-  nations: Nation[];
+  gameCtx: GameCtx;
 }) {
+  const { mapHexes, buildings, nations } = gameCtx;
+
   const buildingsById = new Map<string, Building>(buildings.map((b) => [b.id, b]));
   const hexByBuilding = new Map<string | null, Hex>(mapHexes.map((hex) => [hex.buildingId, hex]));
   const nation = nations.find((n) => n.id === nationId);
@@ -236,14 +232,16 @@ export function queueArmyTraining({
   }
 }
 
-function calculateLumberjack(building: Building, mapHexes: Hex[], buildings: Building[]) {
+function calculateLumberjack(building: Building, gameCtx: GameCtx) {
+  const { mapHexes, buildings } = gameCtx;
+
   // apply resource consumption
   const name = findBuildingNameByCategory({
     buildingCategory: building.category,
     level: building.level,
   });
   if (!name) return;
-  const consumptionMod = calculateConsumption({ building, mapHexes });
+  const consumptionMod = calculateConsumption({ building, gameCtx });
 
   // ex: wheatRatio: 0.5, woodRatio: 1 -> avgConsumption = 0.75
   const avgConsumption = calculateAverageConsumption(consumptionMod); // avg consumption of all resources
@@ -252,7 +250,7 @@ function calculateLumberjack(building: Building, mapHexes: Hex[], buildings: Bui
   const hex = mapHexes.find((h) => h.buildingId === building.id);
   if (!hex || !hex.population) return;
 
-  calculatePopulationChange(hex, buildings, avgConsumption);
+  calculatePopulationChange(hex, gameCtx, avgConsumption);
 
   // now calculate wood output
   const max = BUILDINGS[name].storageCap["wood"] ?? 0;
@@ -265,9 +263,11 @@ function calculateLumberjack(building: Building, mapHexes: Hex[], buildings: Bui
   }
 }
 
-function calculateWatchtower(building: Building, mapHexes: Hex[], buildings: Building[]) {
+function calculateWatchtower(building: Building, gameCtx: GameCtx) {
+  const { mapHexes, buildings } = gameCtx;
+
   // apply resource consumption
-  const consumptionMod = calculateConsumption({ building, mapHexes });
+  const consumptionMod = calculateConsumption({ building, gameCtx });
 
   // ex: wheatRatio: 0.5, woodRatio: 1 -> avgConsumption = 0.75
   const avgConsumption = calculateAverageConsumption(consumptionMod); // avg consumption of all resources
@@ -276,9 +276,10 @@ function calculateWatchtower(building: Building, mapHexes: Hex[], buildings: Bui
   const hex = mapHexes.find((h) => h.buildingId === building.id);
   if (!hex || !hex.population) return;
 
-  calculatePopulationChange(hex, buildings, avgConsumption);
+  calculatePopulationChange(hex, gameCtx, avgConsumption);
 }
 
+// DO NOT CHANGE THIS FUNCTION TO ACCEPT GAMECTX
 export function BuildBuilding({
   buildings,
   hex,
@@ -330,11 +331,13 @@ export function UpgradeBuilding({ building, byLevels }: { building: Building; by
 
 export function calculateConsumption({
   building,
-  mapHexes,
+  gameCtx,
 }: {
   building: Building;
-  mapHexes: Hex[];
+  gameCtx: GameCtx;
 }) {
+  const { mapHexes } = gameCtx;
+
   // this function calculates and applies consumption, returning the consumed ratio
   // later we use that ratio to multiply our output.
 
