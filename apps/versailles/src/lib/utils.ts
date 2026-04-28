@@ -1,9 +1,18 @@
-import { Contract } from "@/app/game/page";
-import { Building, BUILDINGS, findBuildingNameByCategory, Hex, RESOURCES } from "@repo/shared";
+import { ArmyTraining, Contract, newBuilding } from "./types/game";
+import {
+  Building,
+  BUILDINGS,
+  findBuildingNameByCategory,
+  getBuilding,
+  Hex,
+  Nation,
+  RESOURCES,
+  SupplyContract,
+} from "@repo/shared";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { useGameStore } from "./gameStore";
-import { useIntentStore } from "./intentStore";
+import { MergedContractChanges, ServerContractUpdate } from "./intentStore";
+import { MergedContract } from "./types/game";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -36,55 +45,46 @@ export function randomNumber(a: number, b: number) {
   return Math.floor(Math.random() * (b - a + 1)) + a;
 }
 
-export function getFirstFreeResource({
-  startBuilding,
-  endBuilding,
-  contracts,
-}: {
-  startBuilding: Building;
-  endBuilding: Building;
-  contracts: Contract[];
-}) {
-  const startName = findBuildingNameByCategory({
-    buildingCategory: startBuilding.category,
-    level: startBuilding.level,
-  });
-  if (!startName) return;
-
-  const takenResources = new Set<RESOURCES>(
-    contracts
-      .filter((c) => c.startBuildingId === startBuilding.id && c.endBuildingId === endBuilding.id)
-      .map((c) => c.resource)
-  );
-
-  // get first available
-  const producing = BUILDINGS[startName].producing;
-  if (!producing) return;
-  const availableResource = producing.find((r) => !takenResources.has(r));
-  if (!availableResource) return;
-  return availableResource;
+export function resolveValue<T>(value: T | ((prev: T) => T), prev: T): T {
+  if (typeof value === "function") {
+    return (value as (prev: T) => T)(prev); // tell ts that value is for sure a
+    // function and call it along with passing prev (old data)
+  }
+  return value;
 }
 
-export function getMergedContracts(buildingId: string) {
-  const serverContracts =
-    useGameStore.getState().buildings.find((b) => b.id === buildingId)?.contracts ?? [];
+export function calculateOptimisticManpower(
+  armyTraining: ArmyTraining[],
+  playerNation: Nation | null
+) {
+  let totalArmy = 0;
+  for (const army of armyTraining) {
+    totalArmy += army.amount;
+  }
 
-  const clientContracts = useIntentStore
-    .getState()
-    .contracts.filter((c) => c.startBuildingId === buildingId);
+  return playerNation?.manpower ? playerNation.manpower - totalArmy : 0;
+}
 
-  const mappedServerContracts: Contract[] = serverContracts.map((c) => ({
-    id: c.id,
-    hexIds: c.hexIds,
-    startBuildingId: buildingId, // start building - passed from props
-    endBuildingId: c.buildingId, // end building - get from contract
-    amount: c.amount,
-    autoAdjust: c.autoAdjust,
-    resource: c.resource,
-    progress: c.progress,
-  }));
-
-  console.log("mappedServerContracts", mappedServerContracts);
-
-  return [...mappedServerContracts, ...clientContracts];
+export function calculateOptimisticGold(
+  mapHexes: Hex[],
+  buildBuildings: newBuilding[],
+  buildings: Building[],
+  playerNation: Nation | null
+) {
+  let totalCost = 0;
+  for (const building of buildBuildings) {
+    const hex = mapHexes?.find((h) => h.id === building.hexId);
+    if (!hex) continue;
+    const existingLevel = hex.buildingId
+      ? (getBuilding({ buildings, id: hex.buildingId })?.level ?? 0)
+      : 0;
+    const totalLevel = existingLevel + building.levelsToUpgrade;
+    const name = findBuildingNameByCategory({
+      buildingCategory: building.buildingType,
+      level: totalLevel,
+    });
+    const cost = BUILDINGS[name].buildCost;
+    totalCost += cost;
+  }
+  return playerNation?.gold ? playerNation.gold - totalCost : 0;
 }

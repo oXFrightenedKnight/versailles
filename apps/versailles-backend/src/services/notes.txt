@@ -8,7 +8,13 @@ then offer a button that would track the change in demand and adjust it automati
 (on by default)
 
 list of changes to make next: 
-3,5. merge client and server logic
+2. fix issue with weird progress bar behaviour when building multiple levels of
+the same building at once
+(another edge where if you have 1 building built, 1 building building on server, 
+then you can set more buildings to build on client because already-built doesn't count)
+
+3. fix an issue where you can place multiple different buildings on one hex if they are client/server
+3,5. merge client and server logic + update/delete intent
 4. Make logistics system more intuitive. Show how much the building is currently
 consuming, and how much is being send and a progress bar showing progress of delivery
 5. Add option to delete contracts, army trainings, unfinished buildings
@@ -26,3 +32,14 @@ also think what you will do with hex population after recruiting manpower
 do you remove manpower from hexes, or leave it as it is like it was always in reserve?
 
 consider making uistore to contain all ui changes cleanly
+
+change construction handling into separate object or store inside buildings
+instead of storing inside hexes
+
+fix negative gold count after building on client
+
+maybe think about making a single function for creating AND validating
+it on creation/change, instead of having multiple sources of update that
+all require validating
+
+remember to delete/update user intent request first, and then build/add new

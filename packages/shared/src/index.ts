@@ -411,6 +411,8 @@ export type Hex = {
   owner: string | null;
   build_queue: {
     building: BUILDINGS_CATEGORY;
+    // progress is the amount of BUILDINGS[building].buildTime.
+    // Building is built when progress is >= that value.
     progress: number;
     owner: string;
     levels: number;
@@ -524,7 +526,7 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     buildCost: 800,
     storageCap: { wheat: 150 },
     consumptionMod: {},
-    producing: ["wheat", "wood"],
+    producing: ["wheat"],
   },
 
   watch_tower: {
@@ -575,7 +577,7 @@ export type Building = {
   // farm
 
   // barrack
-  trainingTroops?: { amount: number; progress: number; nationId: string }[];
+  trainingTroops?: { id: string; amount: number; progress: number; nationId: string }[];
   // lumberjack settlement
 
   // common properties
@@ -678,9 +680,11 @@ export type Nation = {
 export type Road = {
   id: string;
   points: { q: number; r: number; d1: number; d2: number; isConstructing: boolean }[];
+
+  // used to track construction of a single road point. once progress is enough,
+  // it sets next point with isConstructing flag to false
   constructing: {
     progress: number;
-    owner: string; // who is the owner of this construction | if hex
-    // doesn't belong to owner, you stop construction
+    owner: string; // the owner of this construction
   } | null;
 };

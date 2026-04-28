@@ -1,4 +1,4 @@
-import { Hex } from "@repo/shared";
+import { Building, Hex } from "@repo/shared";
 import { getNationById } from "./genNations.js";
 import { getHexById } from "./map.js";
 import { GameCtx } from "../trpc/index.js";
@@ -114,5 +114,50 @@ export function calculateWar(hexId: number) {
     if (hex.build_queue?.owner !== hex.owner) {
       hex.build_queue = null;
     }
+  }
+}
+
+// create army training object in a barrack
+export function queueArmyTraining({
+  trainNewArmy,
+  nationId,
+  gameCtx,
+}: {
+  trainNewArmy: { amount: number; barrackId: string }[];
+  nationId: string;
+  gameCtx: GameCtx;
+}) {
+  const { mapHexes, buildings, nations } = gameCtx;
+
+  const buildingsById = new Map<string, Building>(buildings.map((b) => [b.id, b]));
+  const hexByBuilding = new Map<string | null, Hex>(mapHexes.map((hex) => [hex.buildingId, hex]));
+  const nation = nations.find((n) => n.id === nationId);
+  if (!nation) return;
+
+  // map over every request and create a queue
+  for (const newArmy of trainNewArmy) {
+    if (nation.manpower < newArmy.amount) continue; // continue if now enough manpower
+
+    const barrack = buildingsById.get(newArmy.barrackId);
+    const hex = hexByBuilding.get(newArmy.barrackId);
+    if (!barrack || !hex || !hex.population) continue;
+
+    // check ownership
+    if (hex.owner !== nationId) continue;
+
+    if (barrack.trainingTroops) {
+      barrack.trainingTroops.push({
+        id: crypto.randomUUID(),
+        amount: newArmy.amount,
+        progress: 0,
+        nationId,
+      });
+    } else {
+      barrack.trainingTroops = [
+        { id: crypto.randomUUID(), amount: newArmy.amount, progress: 0, nationId },
+      ];
+    }
+    nation.manpower -= newArmy.amount;
+    hex.population += newArmy.amount;
   }
 }

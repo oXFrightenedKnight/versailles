@@ -9,7 +9,7 @@ import {
   newBuildings,
 } from "../services/genNations.js";
 import { TRPCError } from "@trpc/server";
-import { moveArmy } from "../services/army.js";
+import { moveArmy, queueArmyTraining } from "../services/army.js";
 import {
   ALL_BUILDING_CATEGORIES,
   Building,
@@ -26,7 +26,7 @@ import {
   executeContracts,
   recalculateContractsAmounts,
 } from "../services/contracts.js";
-import { buildingOutput, queueArmyTraining } from "../services/buildings.js";
+import { buildingOutput } from "../services/buildings.js";
 import { nationsUpdateManpower } from "../services/manpower.js";
 
 export type GameCtx = {
@@ -199,13 +199,9 @@ export const appRouter = router({
         buildNationRoads({ gameCtx, buildRoads: roadsToBuild, nationId: nation.id });
       }
 
-      try {
-        // step 1.6: queue army training (player, then ai)
-        queueArmyTraining({ trainNewArmy, nationId: playerNationId, gameCtx }); // for player country (client request)
-        // map over all other ai nations and execute this function for each
-      } catch (err) {
-        throw new Error(`err: ${err}`);
-      }
+      // step 1.6: queue army training (player, then ai)
+      queueArmyTraining({ trainNewArmy, nationId: playerNationId, gameCtx }); // for player country (client request)
+      // map over all other ai nations and execute this function for each
 
       // step 2: army movement (player + ai)
       // player first

@@ -1,6 +1,5 @@
 "use client";
 
-import { Contract } from "@/app/game/page";
 import { numberConverter } from "@/canvas/render";
 import { BuildingIcons, getResourceImage } from "@/lib/data";
 import {
@@ -19,23 +18,39 @@ import {
   CirclePlus,
   X,
 } from "lucide-react";
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import Tooltip from "../tooltip";
 import { Progress } from "../ui/progress";
 import { Dropdown, DropdownItem } from "../dropdown";
 import { useGameStore } from "@/lib/gameStore";
-import { useIntentStore } from "@/lib/intentStore";
+import { MergedContractChanges, useIntentStore } from "@/lib/intentStore";
+import { MergedContract } from "@/lib/types/game";
+import {
+  getMergedContracts,
+  getServerContractsFromBuildings,
+  updateServerContractIntent,
+} from "@/lib/helpers/uiContract";
 
 export default function ContractComponent({
   contract,
   buildings,
 }: {
-  contract: Contract;
+  contract: MergedContract;
   buildings: Building[];
 }) {
   const mapHexes = useGameStore((s) => s.mapHexes);
   const updateContract = useIntentStore((s) => s.updateContract);
   const contracts = useIntentStore((s) => s.contracts);
+  const serverContracts = getServerContractsFromBuildings(buildings);
+  const serverContractUpdate = useIntentStore((s) => s.serverContractUpdate);
+
+  // all contracts of this building (server + client)
+  const allContracts = getMergedContracts(
+    serverContracts,
+    contracts,
+    contract.startBuildingId,
+    serverContractUpdate
+  );
 
   const startBuilding = getBuilding({ buildings, id: contract.startBuildingId });
   const endBuilding = getBuilding({ buildings, id: contract.endBuildingId });
@@ -52,13 +67,14 @@ export default function ContractComponent({
         level: endBuilding?.level,
       })
     : null;
+
   const dist = contract.hexIds.length - 1;
 
   const StartIcon = BuildingIcons[startBuilding?.category ?? "CIVILIAN"];
   const EndIcon = BuildingIcons[endBuilding?.category ?? "CIVILIAN"];
 
   const allAvailableResources = startName ? BUILDINGS[startName].producing : undefined; // all resources currently produced by this starting building
-  const sameBuildingContracts = contracts.filter(
+  const sameBuildingContracts = allContracts.filter(
     (c) => c.startBuildingId === startBuilding?.id && c.endBuildingId === endBuilding?.id
   ); // contracts that have the same starting id and end id
   const allowedResources =
@@ -89,15 +105,16 @@ export default function ContractComponent({
   }));
 
   // --- FUNCTIONS ---
-  const setAmount = useCallback(
-    (value: number) => {
-      updateContract(contract.id, { amount: value });
+  const updateMergedContract = useCallback(
+    (newChanges: MergedContractChanges) => {
+      if (contract.fromServer) {
+        updateServerContractIntent(contract.id, newChanges);
+      } else {
+        updateContract(contract.id, newChanges); // just pass changed data. no spread.
+      }
     },
-    [contract.id, updateContract]
+    [updateContract, contract]
   );
-  function setAutoAdjust(value: boolean) {
-    updateContract(contract.id, { autoAdjust: value });
-  }
   const recalculateAmount = useCallback(() => {
     if (startBuilding && endBuilding && mapHexes) {
       const newAmount = calculateExportAmount({
@@ -108,14 +125,30 @@ export default function ContractComponent({
         mapHexes,
         buildings,
       });
-      if (!newAmount) return;
-      setAmount(newAmount);
+      if (!newAmount && newAmount !== 0) return;
+      updateMergedContract({ amount: newAmount });
     }
-  }, [startBuilding, endBuilding, mapHexes, dist, buildings, contract.resource, setAmount]);
-
-  useEffect(() => {
-    recalculateAmount();
-  }, [contract.resource, recalculateAmount]);
+  }, [
+    startBuilding,
+    endBuilding,
+    mapHexes,
+    dist,
+    buildings,
+    contract.resource,
+    updateMergedContract,
+  ]);
+  const setAmount = useCallback(
+    (value: number) => {
+      updateMergedContract({ amount: value });
+    },
+    [updateMergedContract]
+  );
+  const setAutoAdjust = useCallback(
+    (value: boolean) => {
+      updateMergedContract({ autoAdjust: value });
+    },
+    [updateMergedContract]
+  );
 
   console.log("exported resource link", getResourceImage(contract.resource));
   console.log("contract progress", contract.progress);
@@ -191,7 +224,7 @@ export default function ContractComponent({
               <Dropdown
                 items={dropdownItems}
                 updaterFn={(selectedValue) => {
-                  updateContract(contract.id, { resource: selectedValue ?? undefined });
+                  updateMergedContract({ resource: selectedValue });
                 }}
                 value={contract.resource}
                 renderItem={(item, isSelected) => (

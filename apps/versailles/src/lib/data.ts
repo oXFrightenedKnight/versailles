@@ -1,4 +1,9 @@
-import { BUILDINGS, BUILDINGS_CATEGORY, RESOURCES } from "@repo/shared";
+import BarrackBlock from "@/components/buildingConfig/barrackBlock";
+import CivilianBlock from "@/components/buildingConfig/civilianBlock";
+import FarmBlock from "@/components/buildingConfig/farmBlock";
+import LumberjackBlock from "@/components/buildingConfig/lumberBlock";
+import WatchtowerBlock from "@/components/buildingConfig/watchtowerBlock";
+import { Building, BUILDINGS, BUILDINGS_CATEGORY, RESOURCES } from "@repo/shared";
 import {
   Axe,
   BrickWallShield,
@@ -8,6 +13,8 @@ import {
   TrainTrack,
   Wheat,
 } from "lucide-react";
+import { Contract } from "./types/game";
+import { Dispatch } from "react";
 export type BuildingNames = keyof typeof BUILDINGS;
 
 export const BuildingIcons: Record<"road" | BUILDINGS_CATEGORY, LucideIcon> = {
@@ -46,4 +53,55 @@ export const customBuildingImages: Record<BuildingNames, string> = {};
 export const Descriptions: Record<string, string> = {
   manpower: "All people in your nation that can serve in military.",
   gold: "Your nation's exchange currency.",
+};
+
+// Add New building buttons HERE
+export type buildingPropData = {
+  setIsContractSelected: Dispatch<React.SetStateAction<boolean>>;
+  isContractSelected: boolean;
+  building: Building;
+};
+type BuildingComponentEntry = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  component: React.ComponentType<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getProps: (data: buildingPropData) => Record<string, any>;
+};
+export const buildingComponents: Record<string, BuildingComponentEntry> = {
+  FARM: {
+    component: FarmBlock,
+    getProps: (data: buildingPropData) => ({
+      setIsContractSelected: data.setIsContractSelected,
+      isContractSelected: data.isContractSelected,
+      building: data.building,
+    }),
+  },
+  LUMBERJACK_SETTLEMENT: {
+    component: LumberjackBlock,
+    getProps: (data: buildingPropData) => ({
+      setIsContractSelected: data.setIsContractSelected,
+      isContractSelected: data.isContractSelected,
+      building: data.building,
+    }),
+  },
+  BARRACK: {
+    component: BarrackBlock,
+    getProps: (data: buildingPropData) => ({
+      building: data.building,
+    }),
+  },
+  CIVILIAN: {
+    component: CivilianBlock,
+    getProps: (data: buildingPropData) => ({
+      building: data.building,
+    }),
+  },
+  WATCHTOWER: {
+    component: WatchtowerBlock,
+    getProps: (data: buildingPropData) => ({
+      setIsContractSelected: data.setIsContractSelected,
+      isContractSelected: data.isContractSelected,
+      building: data.building,
+    }),
+  },
 };

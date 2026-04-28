@@ -2,7 +2,16 @@ import { X } from "lucide-react";
 import { ALL_BUILDING_CATEGORIES, BUILDINGS_CATEGORY } from "@repo/shared";
 import ToggleBuilding from "./ToggleBuilding";
 import { BuildingDescriptions, BuildingIcons } from "@/lib/data";
-import { BuildModeType } from "@/app/game/page";
+import { BuildModeType } from "@/lib/types/game";
+import { useGameStore } from "@/lib/gameStore";
+import {
+  getConstructingBuildingsServer,
+  mergeConstructingBuildings,
+  mergeConstructingBuildingsClient,
+} from "@/lib/helpers/uiBuildings";
+import { useIntentStore } from "@/lib/intentStore";
+import ConstructingBuilding from "./ConstructingBuilding";
+import { useMemo } from "react";
 
 export default function BuildMenu({
   isOpen,
@@ -23,8 +32,20 @@ export default function BuildMenu({
     }
   }
   const categories: ("road" | BUILDINGS_CATEGORY)[] = [...ALL_BUILDING_CATEGORIES, "road"];
+
+  // Display server + client constructing buildings
+  const mapHexes = useGameStore((s) => s.mapHexes);
+  const serverConstructing = getConstructingBuildingsServer(mapHexes);
+  const buildBuildings = useIntentStore((s) => s.buildBuildings);
+  const clientConstructing = mergeConstructingBuildingsClient(buildBuildings);
+  const serverCancelBuilding = useIntentStore((s) => s.serverCancelBuilding);
+
+  const constructing = useMemo(() => {
+    return mergeConstructingBuildings(serverConstructing, clientConstructing);
+  }, [serverCancelBuilding, clientConstructing, serverConstructing]);
+
   return (
-    <>
+    <div className="w-full h-full">
       {isOpen && (
         <div className="h-[90%] w-full absolute left-0 bottom-0 p-2">
           <div className="flex flex-col items-center h-full w-full bg-gray-800 rounded-xl pointer-events-auto p-2 gap-2">
@@ -54,9 +75,16 @@ export default function BuildMenu({
                 ))}
               </div>
             </div>
+            <div className="w-full flex justify-between items-center bg-gray-900 shadow-md shadow-black rounded-[8px] overflow-y-auto no-scrollbar">
+              <div className="flex flex-col gap-2 w-full h-full">
+                {constructing.map((c, key) => (
+                  <ConstructingBuilding building={c} key={key}></ConstructingBuilding>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

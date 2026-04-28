@@ -1,83 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, createContext, useMemo } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { trpc } from "../_trpc/client";
 import Image from "next/image";
 import {
   getNationName,
   initBiomePatterns,
-  pixelToHex,
   numberConverter,
   renderMap,
   initTextures,
 } from "../../canvas/render";
-import {
-  BUILDINGS_CATEGORY,
-  findNeighbors,
-  getBuilding,
-  hasSegment,
-  HEX_DIRECTIONS,
-  Road,
-  topLevelsByCategory,
-  type Hex,
-  type Nation,
-  type Building,
-  getHexByAxial,
-  RESOURCES,
-  startDijkstrasAlgo,
-  calculateExportAmount,
-  BUILDINGS,
-  findBuildingNameByCategory,
-} from "@repo/shared";
+import { type Hex, type Nation } from "@repo/shared";
 import { Button } from "@/components/ui/button";
-import { getFirstFreeResource, randomNumber } from "@/lib/utils";
-import { findHexPathBetween } from "@/canvas/pathfinding";
 import { d } from "@/canvas/map_data";
 import ProvinceInfoSidebar from "@/components/ProvinceInfoSidebar";
-import BuildMenu from "@/components/buildButton";
+import BuildMenu from "@/components/BuildingMenu/buildButton";
 import Tooltip from "@/components/tooltip";
 import { Descriptions } from "@/lib/data";
-import { create } from "zustand";
 import { useGameStore } from "@/lib/gameStore";
 import { useIntentStore } from "@/lib/intentStore";
-
-export type armyIntent = {
-  hexId: number;
-  amount: number;
-  direction: {
-    dq: number;
-    dr: number;
-  };
-};
-export type roadObject = {
-  id: string;
-  points: { q: number; r: number; d1: number; d2: number }[];
-};
-export type newBuilding = {
-  hexId: number;
-  buildingType: BUILDINGS_CATEGORY;
-  levelsToUpgrade: number;
-};
-export type Contract = {
-  id: string;
-  hexIds: number[];
-  startBuildingId: string;
-  endBuildingId: string;
-  amount: number;
-  resource: RESOURCES;
-  progress: number;
-  autoAdjust: boolean;
-};
-export type BuildModeType = "road" | "none" | BUILDINGS_CATEGORY;
-export type ArmyTraining = { amount: number; progress: number; owner: string; barrackId: string };
-
-export type serverData = {
-  mapHexes: Hex[];
-  nations: Nation[];
-  turn: number;
-  roads: Road[];
-  buildings: Building[];
-};
+import { useCameraController } from "@/hooks/useCameraController";
+import { dispatchMapTap, handleRoadDrag } from "@/canvas/handleClick";
+import { calculateOptimisticGold, calculateOptimisticManpower } from "@/lib/utils";
+import { BuildModeType, roadObject } from "@/lib/types/game";
+import { getServerContractsFromBuildings } from "@/lib/helpers/uiContract";
 
 export default function Home() {
   const mapHexes = useGameStore((state) => state.mapHexes);
@@ -103,6 +49,8 @@ export default function Home() {
   // contracts
   const contracts = useIntentStore((state) => state.contracts);
   const setContracts = useIntentStore((state) => state.setContracts);
+  const serverContracts = getServerContractsFromBuildings(buildings);
+  const serverContractUpdate = useIntentStore((state) => state.serverContractUpdate);
 
   // troop training
   const armyTraining = useIntentStore((state) => state.armyTraining);
@@ -114,15 +62,6 @@ export default function Home() {
   // ui states
   const [buildMode, setBuildMode] = useState<BuildModeType>("none");
   const [isContractSelected, setIsContractSelected] = useState<boolean>(false);
-
-  function cleanTempStates() {
-    setBuildBuildings([]);
-    setBuildRoads([]);
-    setArmyTraining([]);
-    setContracts([]);
-    setArmyMove([]);
-    setBuildRoads([]);
-  }
 
   // DATA FETCH
   const mapData = trpc.generateHexMap.useMutation({
@@ -138,6 +77,14 @@ export default function Home() {
     },
   });
   const nextTurn = trpc.nextTurn.useMutation();
+  function cleanTempStates() {
+    setBuildBuildings([]);
+    setBuildRoads([]);
+    setArmyTraining([]);
+    setContracts([]);
+    setArmyMove([]);
+    setBuildRoads([]);
+  }
 
   // generate map
   useEffect(() => {
@@ -166,49 +113,31 @@ export default function Home() {
   const tempRoadRef = useRef<roadObject | null>(null);
   const randomIdRef = useRef<string | null>(null);
 
-  // --- MEMOs ---
-  const effectiveManpower = useMemo(() => {
-    let totalArmy = 0;
-    for (const army of armyTraining) {
-      totalArmy += army.amount;
-    }
-
-    return playerNation?.manpower ? playerNation.manpower - totalArmy : 0;
-  }, [playerNation, armyTraining]);
-
-  const effectiveGold = useMemo(() => {
-    let totalCost = 0;
-    for (const building of buildBuildings) {
-      const hex = mapHexes?.find((h) => h.id === building.hexId);
-      if (!hex) continue;
-      const existingLevel = hex.buildingId
-        ? (getBuilding({ buildings, id: hex.buildingId })?.level ?? 0)
-        : 0;
-      const totalLevel = existingLevel + building.levelsToUpgrade;
-      const name = findBuildingNameByCategory({
-        buildingCategory: building.buildingType,
-        level: totalLevel,
-      });
-      const cost = BUILDINGS[name].buildCost;
-      totalCost += cost;
-    }
-    return playerNation?.gold ? playerNation.gold - totalCost : 0;
-  }, [playerNation, buildBuildings, mapHexes, buildings]);
-
-  const cameraRef = useRef({
-    x: 0,
-    y: 0,
-    zoom: 1,
-  });
-  const draggingRef = useRef(false);
-  const mouseDownRef = useRef(false);
-  const startPosRef = useRef({ x: 0, y: 0 });
-  const lastPosRef = useRef({ x: 0, y: 0 });
-
+  // animation refs
   const blinkTimeRef = useRef(0);
   const lastTimeRef = useRef(0);
   const animatingRef = useRef(false);
   const rafRef = useRef<number | null>(null);
+
+  // --- MEMOs --- (values updated when deps change)
+  const effectiveManpower = useMemo(() => {
+    return calculateOptimisticManpower(armyTraining, playerNation);
+  }, [playerNation, armyTraining]);
+
+  const effectiveGold = useMemo(() => {
+    return calculateOptimisticGold(mapHexes, buildBuildings, buildings, playerNation);
+  }, [playerNation, buildBuildings, mapHexes, buildings]);
+
+  // --- CAMERA CONTROLING ---
+  const {
+    cameraRef,
+    mouseDownRef,
+    handleWheel,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+    handleMouseLeave,
+  } = useCameraController();
 
   const redraw = useCallback(() => {
     const ctx = ctxRef.current;
@@ -226,6 +155,7 @@ export default function Home() {
 
     const ctxs = [ctx, clickCtx];
     const canvas = ctx.canvas;
+
     ctxs.forEach((c) => {
       c.clearRect(0, 0, canvas.width, canvas.height);
       c.save();
@@ -250,7 +180,7 @@ export default function Home() {
     );
 
     ctxs.forEach((c) => c.restore());
-  }, [armyMove, buildRoads, roads]);
+  }, [armyMove, buildRoads, roads, cameraRef]);
 
   const startAnimation = useCallback(() => {
     if (animatingRef.current) return;
@@ -285,24 +215,10 @@ export default function Home() {
     redraw();
   }, [redraw]);
 
-  const handleWheel = useCallback(
-    (event: WheelEvent) => {
-      event.preventDefault();
-      const camera = cameraRef.current;
-      const zoomSpeed = 0.001;
-      camera.zoom *= 1 - event.deltaY * zoomSpeed;
-      camera.zoom = Math.min(Math.max(camera.zoom, 0.3), 4);
-      redraw();
-    },
-    [redraw]
-  );
-
   const handleCanvasClick = useCallback(
     (event: MouseEvent) => {
-      console.log("click!");
       const hitCanvas = hitCanvasRef.current;
-      const map = mapHexesRef.current;
-      if (!hitCanvas || !map) return;
+      if (!hitCanvas) return;
 
       const rect = hitCanvas.getBoundingClientRect();
       const mouseX = event.clientX - rect.left;
@@ -312,187 +228,36 @@ export default function Home() {
       const worldX = (mouseX - hitCanvas.width / 2) / camera.zoom - camera.x;
       const worldY = (mouseY - hitCanvas.height / 2) / camera.zoom - camera.y;
 
-      const { hex } = pixelToHex({ x: worldX, y: worldY, mapHexes: map });
-      if (!hex) return;
-      let hexBuilding: Building | null = null;
-      // get hex building
-      if (hex.buildingId) {
-        hexBuilding = getBuilding({ buildings, id: hex.buildingId }) ?? null;
-      }
+      const ctx = {
+        mouseDownRef,
+        buildMode,
+        isContractSelected,
+        selectedHexIdRef,
+        setSelectedHex,
+        startAnimation,
+        redraw,
+        selectedHex,
+        playerNation,
+        mapHexes,
+        roads,
+        buildings,
+        setIsContractSelected,
+        roadStartRef,
+        randomIdRef,
+        tempRoadRef,
+        setBuildMode,
+        buildBuildings,
+        setBuildBuildings,
+        setArmyMove,
+        contracts,
+        setContracts,
+        setBuildRoads,
+        serverContracts,
+        serverContractUpdate,
+        d,
+      };
 
-      // handle left mouse click
-      if (event.button === 0) {
-        if (mouseDownRef.current) return;
-        // handle normal click
-        if (buildMode === "none") {
-          if (!isContractSelected) {
-            console.log(hex.id);
-            selectedHexIdRef.current = hex.id;
-            setSelectedHex(hex);
-
-            startAnimation();
-            redraw();
-          } else {
-            const startId = selectedHex?.buildingId;
-            const endId = hex.buildingId;
-
-            const belongToPlayer =
-              selectedHex?.owner === playerNation?.id && hex.owner === playerNation?.id;
-
-            if (startId && endId && belongToPlayer && mapHexes) {
-              const startBuilding = getBuilding({ buildings, id: startId });
-              const endBuilding = getBuilding({ buildings, id: endId });
-              if (!startBuilding || !startBuilding.storage) return;
-              if (!endBuilding || !endBuilding.storage) return;
-
-              // get first resource that could be exported to destination
-              // and is not taken by other contracts between these to buildings
-              const resource = getFirstFreeResource({ startBuilding, endBuilding, contracts });
-              if (!resource) {
-                setIsContractSelected(false);
-                return;
-              }
-
-              // find path
-              const pointHexMap = new Map(mapHexes.map((h) => [`${h.q},${h.r}`, h]));
-              const points = startDijkstrasAlgo({
-                startingHex: selectedHex,
-                endHex: hex,
-                mapHexes,
-                roads,
-              });
-              if (!points) {
-                setIsContractSelected(false);
-                return;
-              } // don't add if path failed
-              const hexIds: number[] = [];
-              for (const point of points) {
-                const hex = pointHexMap.get(`${point.q},${point.r}`);
-                if (!hex) continue;
-
-                hexIds.push(hex.id);
-              }
-
-              const amount =
-                calculateExportAmount({
-                  startBuilding,
-                  endBuilding,
-                  length: hexIds.length - 1,
-                  resource,
-                  mapHexes,
-                  buildings,
-                }) ?? 0;
-
-              setContracts((prev) => [
-                ...prev,
-                {
-                  id: crypto.randomUUID(),
-                  startBuildingId: startId,
-                  endBuildingId: endId,
-                  resource,
-                  amount,
-                  progress: 0,
-                  hexIds,
-                  autoAdjust: true,
-                },
-              ]);
-            }
-            setIsContractSelected(false);
-          }
-        } else {
-          // handle road building
-          if (buildMode === "road") {
-            // check if clicked hex belongs to player
-            if (hex.owner !== playerNation?.id) return;
-
-            // set selected hex to be road start
-            if (!roadStartRef.current) {
-              roadStartRef.current = hex;
-              randomIdRef.current = crypto.randomUUID();
-
-              // push starting roadObject to array
-              tempRoadRef.current = {
-                id: randomIdRef.current!,
-                points: [
-                  { q: hex.q, r: hex.r, d1: randomNumber(d.a, d.b), d2: randomNumber(d.a, d.b) },
-                ],
-              };
-            } else {
-              // add logic to submit the road from temp to actual array and clean up
-              const roadToCommit = tempRoadRef.current;
-              if (roadToCommit && roadStartRef.current !== hex) {
-                setBuildRoads((prev) => [...prev, roadToCommit]);
-              }
-
-              // cleanup
-              tempRoadRef.current = null;
-              roadStartRef.current = null;
-              randomIdRef.current = null;
-              setBuildMode("none");
-            }
-          } else {
-            // Add buildings to construction queue
-
-            // This is current queued building object in that hex (if any)
-            const queuedBuilding = buildBuildings.find((obj) => obj.hexId === hex.id);
-            // if there is a building queued already and its type doesn't match - skip
-            if (queuedBuilding && queuedBuilding.buildingType !== buildMode) return;
-
-            // if there is a building built and its category doesn't match - skip
-            if (hexBuilding && hexBuilding.category !== buildMode) return;
-
-            // if already max possible level - return
-            const currentLevel = hexBuilding?.level ? hexBuilding.level : 0;
-            const queuedLevels = queuedBuilding?.levelsToUpgrade ?? 0;
-            const maxLevel =
-              topLevelsByCategory.find((obj) => obj.category === buildMode)?.level ?? 0;
-            if (currentLevel + queuedLevels >= maxLevel) return;
-
-            // update if exists, create if doesn't
-            if (queuedBuilding) {
-              setBuildBuildings((prev) =>
-                prev.map((obj) =>
-                  obj.hexId === queuedBuilding.hexId
-                    ? { ...obj, levelsToUpgrade: obj.levelsToUpgrade + 1 }
-                    : obj
-                )
-              );
-            } else {
-              setBuildBuildings((prev) => [
-                ...prev,
-                {
-                  hexId: hex.id,
-                  levelsToUpgrade: 1,
-                  buildingType: buildMode,
-                },
-              ]);
-            }
-          }
-        }
-      }
-
-      // handle right mouse click
-      if (event.button === 2) {
-        console.log("GOT THE CLICK");
-        if (selectedHexIdRef.current === hex.id || !selectedHex) return;
-        if (
-          !HEX_DIRECTIONS.some(
-            (dir) => dir.dq === selectedHex.q - hex.q && dir.dr === selectedHex.r - hex.r
-          )
-        )
-          return;
-        setArmyMove((prev) => [
-          ...prev,
-          {
-            hexId: selectedHex.id,
-            amount: 100,
-            direction: {
-              dq: hex.q - selectedHex.q,
-              dr: hex.r - selectedHex.r,
-            },
-          },
-        ]);
-      }
+      dispatchMapTap(worldX, worldY, event.button, ctx);
     },
     [
       redraw,
@@ -515,181 +280,62 @@ export default function Home() {
       setBuildRoads,
 
       setArmyMove,
+
+      cameraRef,
+      mouseDownRef,
+
+      serverContracts,
+      serverContractUpdate,
     ]
   );
 
-  const handleMouseDown = useCallback((event: MouseEvent) => {
-    if (event.button !== 0 && event.button !== 2) return;
-    mouseDownRef.current = true;
-    draggingRef.current = false;
-    startPosRef.current = { x: event.clientX, y: event.clientY };
-    lastPosRef.current = { x: event.clientX, y: event.clientY };
-  }, []);
-
-  const handleMouseMove = useCallback(
-    (event: MouseEvent) => {
-      if (buildMode === "road" && !mouseDownRef.current && roadStartRef) {
-        const hitCanvas = hitCanvasRef.current;
-        const map = mapHexesRef.current;
-        const tempRoadArray = tempRoadRef.current;
-
-        if (!hitCanvas || !map) return;
-        if (!mapHexes) return;
-        if (!randomIdRef.current) return;
-        if (!tempRoadRef.current || !tempRoadArray) return;
-
-        const rect = hitCanvas.getBoundingClientRect();
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
-
-        const camera = cameraRef.current;
-        const worldX = (mouseX - hitCanvas.width / 2) / camera.zoom - camera.x;
-        const worldY = (mouseY - hitCanvas.height / 2) / camera.zoom - camera.y;
-
-        const { hex } = pixelToHex({ x: worldX, y: worldY, mapHexes: map });
-
-        // --- CHECKS ---
-        if (!hex) return;
-        // return if player doesn't own this hex
-        if (hex.owner !== playerNation?.id) return;
-
-        // --- RESET BACK TO HEX IF IT ALREADY EXISTS ---
-        const points = tempRoadArray.points;
-
-        // найти индекс хекса в дороге
-        const idx = points.findIndex((p) => p.q === hex.q && p.r === hex.r);
-
-        // если этот хекс уже есть в дороге
-        if (idx !== -1) {
-          // если это последний — ничего не делаем
-          if (idx === points.length - 1) {
-            return;
-          }
-
-          // иначе откатываем дорогу до него
-          points.splice(idx + 1);
-          return;
-        }
-
-        // --- FILL GAPS BETWEEN HEXES ---
-        const neighborIds = findNeighbors(hex, mapHexes).map((n) => n.id);
-
-        // check if last added hex does not border with current hex
-        const currPoint = { q: hex.q, r: hex.r };
-        const lastPoint = tempRoadArray.points[tempRoadArray.points.length - 1];
-        const lastHexOfRoad = getHexByAxial(lastPoint.q, lastPoint.r, mapHexes);
-        if (!lastHexOfRoad) return;
-
-        // prevent building road if any road already includes the combination of this and last added point (including temp roads)
-        const roadsCopy = roads.map((r) => ({
-          ...r,
-          points: r.points.map((p) => ({ ...p })),
-        }));
-        buildRoads.forEach((obj) =>
-          roadsCopy.push({
-            id: obj.id,
-            constructing: null,
-            points: obj.points.map((p) => ({ ...p, isConstructing: true })),
-          })
-        ); // add queued roads too
-        for (const road of roadsCopy) {
-          // return if any road already has those two points in a row
-          if (hasSegment(road, currPoint, lastPoint)) {
-            return;
-          }
-        }
-
-        if (!neighborIds.includes(lastHexOfRoad.id)) {
-          // fill distance with hex path
-
-          const path = findHexPathBetween(
-            { q: lastHexOfRoad.q, r: lastHexOfRoad.r },
-            { q: hex.q, r: hex.r }
-          );
-
-          // check if those hexes lay only on owned provinces
-          for (const axialObj of path) {
-            const missingHex = getHexByAxial(axialObj.q, axialObj.r, mapHexes);
-            if (!missingHex) continue;
-            if (missingHex.owner !== playerNation.id) return;
-            const idx = path.findIndex((a) => a.q === axialObj.q && a.r === axialObj.r);
-
-            const point = { q: axialObj.q, r: axialObj.r };
-            const nextPoint = path[idx + 1];
-            if (nextPoint) {
-              for (const road of roadsCopy) {
-                if (hasSegment(road, point, nextPoint)) return;
-              }
-            }
-          }
-          // remove first and last points (duplicates)
-          path.slice(1, -1);
-
-          const missingHexes: Hex[] = [];
-          path.forEach((axialObj) => {
-            const missingHex = getHexByAxial(axialObj.q, axialObj.r, mapHexes);
-            if (!missingHex) return;
-            missingHexes.push(missingHex);
-
-            // add missing hex coordinates to road object
-            tempRoadArray.points.push({
-              q: missingHex.q,
-              r: missingHex.r,
-              d1: randomNumber(d.a, d.b),
-              d2: randomNumber(d.a, d.b),
-            });
-          });
-        }
-
-        tempRoadArray.points.push({
-          q: hex.q,
-          r: hex.r,
-          d1: randomNumber(d.a, d.b),
-          d2: randomNumber(d.a, d.b),
-        });
-
-        redraw();
+  const onMouseUp = useCallback(
+    (e: MouseEvent) => {
+      const wasDragging = handleMouseUp(e); // from useCameraController
+      if (!wasDragging) {
+        handleCanvasClick(e); // your map tap dispatcher
       }
-
-      // Dragging map
-      if (!mouseDownRef.current) return;
-
-      const start = startPosRef.current;
-      const distance = Math.hypot(event.clientX - start.x, event.clientY - start.y);
-      if (!draggingRef.current && distance > 6) {
-        draggingRef.current = true;
-      }
-      if (!draggingRef.current) return;
-
-      const last = lastPosRef.current;
-      const camera = cameraRef.current;
-      camera.x += (event.clientX - last.x) / camera.zoom;
-      camera.y += (event.clientY - last.y) / camera.zoom;
-      lastPosRef.current = { x: event.clientX, y: event.clientY };
-
-      redraw();
     },
-    [redraw, buildMode, mapHexes, playerNation, roads, buildRoads]
+    [handleMouseUp, handleCanvasClick]
   );
 
-  const handleMouseUp = useCallback(
-    (event: MouseEvent) => {
-      if (!mouseDownRef.current) return;
-      mouseDownRef.current = false;
-
-      if (!draggingRef.current) {
-        handleCanvasClick(event);
-      }
-
-      draggingRef.current = false;
+  const onMouseMove = useCallback(
+    (e: MouseEvent) => {
+      const ctx = {
+        buildMode,
+        mouseDownRef,
+        roadStartRef,
+        mapHexesRef,
+        tempRoadRef,
+        hitCanvasRef,
+        mapHexes,
+        randomIdRef,
+        cameraRef,
+        playerNation,
+        roads,
+        buildRoads,
+        d,
+      };
+      // wire road and dragging
+      handleRoadDrag(e, ctx);
+      handleMouseMove(e);
     },
-    [handleCanvasClick]
+    [
+      buildMode,
+      mouseDownRef,
+      roadStartRef,
+      mapHexesRef,
+      tempRoadRef,
+      hitCanvasRef,
+      mapHexes,
+      randomIdRef,
+      cameraRef,
+      playerNation,
+      roads,
+      buildRoads,
+      handleMouseMove,
+    ]
   );
-
-  const handleMouseLeave = useCallback(() => {
-    draggingRef.current = false;
-    mouseDownRef.current = false;
-  }, []);
 
   useEffect(() => {
     mapHexesRef.current = mapHexes;
@@ -704,6 +350,7 @@ export default function Home() {
     redraw();
   }, [nations, redraw, playerNation]);
 
+  // replace old event listeners with new ones that contain snapshots of newest data
   useEffect(() => {
     const canvas = canvasRef.current;
     const hitCanvas = hitCanvasRef.current;
@@ -723,8 +370,8 @@ export default function Home() {
     window.addEventListener("resize", resize);
     hitCanvas.addEventListener("wheel", handleWheel);
     hitCanvas.addEventListener("mousedown", handleMouseDown);
-    hitCanvas.addEventListener("mousemove", handleMouseMove);
-    hitCanvas.addEventListener("mouseup", handleMouseUp);
+    hitCanvas.addEventListener("mousemove", onMouseMove);
+    hitCanvas.addEventListener("mouseup", onMouseUp);
     hitCanvas.addEventListener("mouseleave", handleMouseLeave);
     hitCanvas.addEventListener("contextmenu", preventContextMenu);
 
@@ -732,8 +379,8 @@ export default function Home() {
       window.removeEventListener("resize", resize);
       hitCanvas.removeEventListener("wheel", handleWheel);
       hitCanvas.removeEventListener("mousedown", handleMouseDown);
-      hitCanvas.removeEventListener("mousemove", handleMouseMove);
-      hitCanvas.removeEventListener("mouseup", handleMouseUp);
+      hitCanvas.removeEventListener("mousemove", onMouseMove);
+      hitCanvas.removeEventListener("mouseup", onMouseUp);
       hitCanvas.removeEventListener("mouseleave", handleMouseLeave);
       hitCanvas.removeEventListener("contextmenu", preventContextMenu);
     };
@@ -745,22 +392,14 @@ export default function Home() {
     handleWheel,
     redraw,
     resize,
+    onMouseUp,
+    onMouseMove,
   ]);
 
   useEffect(() => {
     startAnimation();
     return () => stopAnimation();
   }, [startAnimation, stopAnimation]);
-
-  useEffect(() => {
-    let totalArmy = 0;
-    for (const army of armyTraining) {
-      totalArmy += army.amount;
-    }
-    if (playerNationRef.current && playerNationRef.current.manpower) {
-      playerNationRef.current.manpower -= totalArmy;
-    }
-  }, [armyTraining]);
 
   return (
     <>
@@ -798,7 +437,6 @@ export default function Home() {
               buildings={buildings}
               setIsContractSelected={setIsContractSelected}
               isContractSelected={isContractSelected}
-              contracts={contracts}
             ></ProvinceInfoSidebar>
             <BuildMenu
               isOpen={buildMenuOpen}

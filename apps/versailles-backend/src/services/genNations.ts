@@ -91,7 +91,7 @@ export function buildNationBuildings({
   newBuildings: newBuildings;
   nation: Nation;
 }) {
-  const { mapHexes, nations, buildings } = gameCtx;
+  const { mapHexes, buildings } = gameCtx;
 
   // check if hex ids' exist
   const hexIdSet = new Set<number>(mapHexes.map((hex) => hex.id));

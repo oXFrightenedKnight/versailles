@@ -1,4 +1,4 @@
-import { serverData } from "@/app/game/page";
+import { serverData } from "./types/game";
 import { Building, Hex, Nation, Road } from "@repo/shared";
 import { create } from "zustand";
 

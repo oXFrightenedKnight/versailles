@@ -1,7 +1,7 @@
 import { findNeighbors, Hex, Nation, NATION_NAMES, Road } from "@repo/shared";
 import { Biome, BIOME_COLOR, HEX_SIZE } from "./map_data";
-import { armyIntent, roadObject } from "@/app/game/page";
-import { buildMergedRoadsIterative, buildRoadsByPoint, drawAllRoads } from "./roads";
+import { armyIntent, roadObject } from "@/lib/types/game";
+import { drawAllRoads } from "./roads";
 
 const biomePatterns: Partial<Record<Biome, CanvasPattern>> = {};
 const texturePatterns: Partial<Record<string, CanvasPattern>> = {};

@@ -1,58 +1,78 @@
-import { armyIntent, ArmyTraining, Contract, newBuilding, roadObject } from "@/app/game/page";
 import { RESOURCES } from "@repo/shared";
 import { create } from "zustand";
+import { resolveValue } from "./utils";
+import { armyIntent, ArmyTraining, Contract, newBuilding, roadObject } from "./types/game";
 
-type ServerContractUpdate = {
-  contractId: Partial<{
-    // contract id
-    amount: number;
-    resource: RESOURCES;
-    progress: number;
-    autoAdjust: boolean;
-  }>;
+// custom react-like setState function type for zustland store
+export type SetStateAction<T> = (value: T | ((prev: T) => T)) => void;
+
+export type ServerContractUpdate = {
+  contractId: string;
+  changes: MergedContractChanges;
 };
+
+// ensuring both contracts are able to handle "updatable" fields
+export type MergedContractChanges = Partial<{
+  // contract id
+  amount: number;
+  resource: RESOURCES;
+  progress: number;
+  autoAdjust: boolean;
+}>;
 
 type ContractId = string;
 type BuildingId = string;
+type armyTrainId = string;
+type HexId = number;
+type RoadId = string;
 
 export type StoreType = {
   armyTraining: ArmyTraining[];
-  setArmyTraining: (value: ArmyTraining[] | ((prev: ArmyTraining[]) => ArmyTraining[])) => void;
+  setArmyTraining: SetStateAction<ArmyTraining[]>;
+  serverTrainingDelete: armyTrainId[];
+  setServerTrainingDelete: SetStateAction<armyTrainId[]>;
 
   contracts: Contract[];
-  setContracts: (value: Contract[] | ((prev: Contract[]) => Contract[])) => void;
-  updateContract: (id: string, newData: Partial<Contract>) => void;
+  setContracts: SetStateAction<Contract[]>;
+  updateContract: (id: string, newData: MergedContractChanges) => void;
   serverContractUpdate: ServerContractUpdate[];
-  setServerContractUpdate: (
-    value: ServerContractUpdate[] | ((prev: ServerContractUpdate[]) => ServerContractUpdate[])
-  ) => void;
+  setServerContractUpdate: SetStateAction<ServerContractUpdate[]>;
   serverContractDelete: ContractId[];
-  setServerContractDelete: (value: ContractId[] | ((prev: ContractId[]) => ContractId[])) => void;
+  setServerContractDelete: SetStateAction<ContractId[]>;
 
   buildBuildings: newBuilding[];
-  setBuildBuildings: (value: newBuilding[] | ((prev: newBuilding[]) => newBuilding[])) => void;
+  setBuildBuildings: SetStateAction<newBuilding[]>;
   serverBuildingsDelete: BuildingId[];
-  setServerBuildingsDelete: (value: BuildingId[] | ((prev: BuildingId[]) => BuildingId[])) => void;
+  setServerBuildingsDelete: SetStateAction<BuildingId[]>;
+  serverCancelBuilding: HexId[];
+  setServerCancelBuilding: SetStateAction<HexId[]>;
 
   buildRoads: roadObject[];
-  setBuildRoads: (value: roadObject[] | ((prev: roadObject[]) => roadObject[])) => void;
+  setBuildRoads: SetStateAction<roadObject[]>;
+  serverCancelRoadBuilding: RoadId[];
+  setServerCancelRoadBuilding: SetStateAction<RoadId[]>;
+
   armyMove: armyIntent[];
-  setArmyMove: (value: armyIntent[] | ((prev: armyIntent[]) => armyIntent[])) => void;
+  setArmyMove: SetStateAction<armyIntent[]>;
 };
 
 export const useIntentStore = create<StoreType>((set) => ({
-  // dynamic client data
   armyTraining: [],
   setArmyTraining: (value) =>
     set((state) => ({
-      armyTraining: typeof value === "function" ? value(state.armyTraining) : value,
+      armyTraining: resolveValue(value, state.armyTraining),
+    })),
+  serverTrainingDelete: [],
+  setServerTrainingDelete: (value) =>
+    set((state) => ({
+      serverTrainingDelete: resolveValue(value, state.serverTrainingDelete),
     })),
 
   // contracts
   contracts: [],
   setContracts: (value) =>
     set((state) => ({
-      contracts: typeof value === "function" ? value(state.contracts) : value,
+      contracts: resolveValue(value, state.contracts),
     })),
   updateContract: (id, newData) =>
     set((state) => ({
@@ -61,36 +81,45 @@ export const useIntentStore = create<StoreType>((set) => ({
   serverContractUpdate: [],
   setServerContractUpdate: (value) =>
     set((state) => ({
-      serverContractUpdate: typeof value === "function" ? value(state.serverContractUpdate) : value,
+      serverContractUpdate: resolveValue(value, state.serverContractUpdate),
     })),
   serverContractDelete: [],
   setServerContractDelete: (value) =>
     set((state) => ({
-      serverContractDelete: typeof value === "function" ? value(state.serverContractDelete) : value,
+      serverContractDelete: resolveValue(value, state.serverContractDelete),
     })),
 
   // buildings
   buildBuildings: [],
   setBuildBuildings: (value) =>
     set((state) => ({
-      buildBuildings: typeof value === "function" ? value(state.buildBuildings) : value,
+      buildBuildings: resolveValue(value, state.buildBuildings),
     })),
   serverBuildingsDelete: [],
   setServerBuildingsDelete: (value) =>
     set((state) => ({
-      serverBuildingsDelete:
-        typeof value === "function" ? value(state.serverBuildingsDelete) : value,
+      serverBuildingsDelete: resolveValue(value, state.serverBuildingsDelete),
+    })),
+  serverCancelBuilding: [],
+  setServerCancelBuilding: (value) =>
+    set((state) => ({
+      serverCancelBuilding: resolveValue(value, state.serverCancelBuilding),
     })),
 
   buildRoads: [],
   setBuildRoads: (value) =>
     set((state) => ({
-      buildRoads: typeof value === "function" ? value(state.buildRoads) : value,
+      buildRoads: resolveValue(value, state.buildRoads),
+    })),
+  serverCancelRoadBuilding: [],
+  setServerCancelRoadBuilding: (value) =>
+    set((state) => ({
+      serverCancelRoadBuilding: resolveValue(value, state.serverCancelRoadBuilding),
     })),
 
   armyMove: [],
   setArmyMove: (value) =>
     set((state) => ({
-      armyMove: typeof value === "function" ? value(state.armyMove) : value,
+      armyMove: resolveValue(value, state.armyMove),
     })),
 }));

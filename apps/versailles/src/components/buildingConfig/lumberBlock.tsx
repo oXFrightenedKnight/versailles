@@ -1,6 +1,6 @@
 import ContractBlock from "../Blocks/ContractBlock";
 import { Building, BUILDINGS, findBuildingNameByCategory } from "@repo/shared";
-import { Contract } from "@/app/game/page";
+import { Contract } from "@/lib/types/game";
 import { Info } from "../Blocks/InfoComponent";
 import StorageBlock from "../Blocks/StorageBlock";
 import InfoBlock from "../Blocks/InfoBlock";
@@ -8,18 +8,14 @@ import InfoBlock from "../Blocks/InfoBlock";
 export default function LumberjackBlock({
   setIsContractSelected,
   isContractSelected,
-  contracts,
-  buildings,
+
   building,
 }: {
-  buildings: Building[];
   isContractSelected: boolean;
   setIsContractSelected: React.Dispatch<React.SetStateAction<boolean>>;
-  contracts: Contract[];
+
   building: Building;
 }) {
-  const hasContract = contracts.find((c) => c.startBuildingId === building?.id) ? true : false;
-
   // name
   const name =
     findBuildingNameByCategory({ buildingCategory: building.category, level: building.level }) ??
@@ -51,10 +47,8 @@ export default function LumberjackBlock({
     <div className="w-full h-full flex flex-col gap-2 min-h-0 overflow-y-auto no-scrollbar">
       {/* Contract block */}
       <ContractBlock
-        buildings={buildings}
         isContractSelected={isContractSelected}
         setIsContractSelected={setIsContractSelected}
-        hasContract={hasContract}
         buildingType={name}
         building={building}
       ></ContractBlock>

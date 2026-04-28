@@ -1,6 +1,6 @@
 import ContractBlock from "../Blocks/ContractBlock";
 import { Building, BUILDINGS, findBuildingNameByCategory } from "@repo/shared";
-import { Contract } from "@/app/game/page";
+import { Contract } from "@/lib/types/game";
 import { Info } from "../Blocks/InfoComponent";
 import StorageBlock from "../Blocks/StorageBlock";
 import InfoBlock from "../Blocks/InfoBlock";
@@ -8,36 +8,33 @@ import InfoBlock from "../Blocks/InfoBlock";
 export default function FarmBlock({
   setIsContractSelected,
   isContractSelected,
-  contracts,
-  buildings,
-  farm,
+  building,
 }: {
-  buildings: Building[];
   isContractSelected: boolean;
   setIsContractSelected: React.Dispatch<React.SetStateAction<boolean>>;
-  contracts: Contract[];
-  farm: Building;
+  building: Building;
 }) {
-  const hasContract = contracts.find((c) => c.startBuildingId === farm?.id) ? true : false;
-
   // name
   const name =
-    findBuildingNameByCategory({ buildingCategory: farm.category, level: farm.level }) ??
+    findBuildingNameByCategory({ buildingCategory: building.category, level: building.level }) ??
     "nomadic_camp";
 
   // level
-  const level = farm.level;
+  const level = building.level;
   const populationCap = BUILDINGS[name].popCap;
 
   // next level building
   const nextName =
-    findBuildingNameByCategory({ buildingCategory: farm.category, level: farm.level + 1 }) ?? null;
+    findBuildingNameByCategory({
+      buildingCategory: building.category,
+      level: building.level + 1,
+    }) ?? null;
   const nextUpgradeTime = nextName ? BUILDINGS[nextName].buildTime : "max";
   const nextUpgradeCost = nextName ? BUILDINGS[nextName].buildCost : "max";
 
   const info: Info = [
     { key: "Type", value: name },
-    { key: "Category", value: farm.category },
+    { key: "Category", value: building.category },
     { key: "Level", value: level.toString() },
     { key: "Pop. Barrier", value: populationCap.toString() },
     { key: "Upgrade Time", value: nextUpgradeTime.toString() },
@@ -48,16 +45,14 @@ export default function FarmBlock({
     <div className="w-full h-full flex flex-col gap-2 min-h-0 overflow-y-auto no-scrollbar">
       {/* Contract block */}
       <ContractBlock
-        buildings={buildings}
         isContractSelected={isContractSelected}
         setIsContractSelected={setIsContractSelected}
-        hasContract={hasContract}
         buildingType={name}
-        building={farm}
+        building={building}
       ></ContractBlock>
 
       {/* Storage block */}
-      <StorageBlock building={farm} buildingType={name}></StorageBlock>
+      <StorageBlock building={building} buildingType={name}></StorageBlock>
 
       {/* Info Block */}
       <InfoBlock info={info}></InfoBlock>

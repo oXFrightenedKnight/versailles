@@ -1,28 +1,45 @@
-import { Contract } from "@/app/game/page";
+import { Contract } from "@/lib/types/game";
 import { Building } from "@repo/shared";
 import { SquarePen } from "lucide-react";
 import ContractComponent from "./ContractComponent";
 import { useGameStore } from "@/lib/gameStore";
 import { useIntentStore } from "@/lib/intentStore";
-import { getMergedContracts } from "@/lib/utils";
+import { getMergedContracts, getServerContractsFromBuildings } from "@/lib/helpers/uiContract";
 
 export default function ContractBlock({
-  buildings,
   isContractSelected,
   setIsContractSelected,
-  hasContract,
   buildingType,
   building,
 }: {
-  buildings: Building[];
   isContractSelected: boolean;
   setIsContractSelected: React.Dispatch<React.SetStateAction<boolean>>;
-  hasContract: boolean;
   buildingType: string;
   building: Building;
 }) {
-  const contracts = getMergedContracts(building.id);
-  console.log("contracts", contracts);
+  const buildings = useGameStore((s) => s.buildings);
+
+  {
+    /* SUBSCRIBE TO CLIENT AND SERVER CONTRACTS AND MERGE THEM */
+  }
+  const serverContracts = getServerContractsFromBuildings(buildings);
+
+  const clientContracts = useIntentStore((s) => s.contracts)
+    .filter((c) => c.startBuildingId === building.id)
+    .map((c) => ({ ...c, fromServer: false }));
+
+  const serverContractUpdate = useIntentStore((s) => s.serverContractUpdate);
+
+  const contracts = getMergedContracts(
+    serverContracts,
+    clientContracts,
+    building.id,
+    serverContractUpdate
+  );
+
+  console.log(contracts, "contracts");
+  console.log("serverContracts", serverContracts);
+  console.log("client contracts", clientContracts);
 
   return (
     <div className="w-full bg-gray-800 rounded-xl">
@@ -37,12 +54,12 @@ export default function ContractBlock({
         </div>
       </div>
       <div className="w-full">
-        {hasContract ? (
+        {contracts.length > 0 ? (
           <div>
-            {contracts.map((contract, key) => {
+            {contracts.map((contract) => {
               return (
                 <ContractComponent
-                  key={key}
+                  key={contract.id}
                   contract={contract}
                   buildings={buildings}
                 ></ContractComponent>

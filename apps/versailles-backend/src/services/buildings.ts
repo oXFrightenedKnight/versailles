@@ -195,42 +195,6 @@ function calculateBarracks(building: Building, gameCtx: GameCtx) {
     building.trainingTroops = training.filter((_, i) => !idxsToDelete.includes(i));
   }
 }
-export function queueArmyTraining({
-  trainNewArmy,
-  nationId,
-  gameCtx,
-}: {
-  trainNewArmy: { amount: number; barrackId: string }[];
-  nationId: string;
-  gameCtx: GameCtx;
-}) {
-  const { mapHexes, buildings, nations } = gameCtx;
-
-  const buildingsById = new Map<string, Building>(buildings.map((b) => [b.id, b]));
-  const hexByBuilding = new Map<string | null, Hex>(mapHexes.map((hex) => [hex.buildingId, hex]));
-  const nation = nations.find((n) => n.id === nationId);
-  if (!nation) return;
-
-  // map over every request and create a queue
-  for (const newArmy of trainNewArmy) {
-    if (nation.manpower < newArmy.amount) continue; // continue if now enough manpower
-
-    const barrack = buildingsById.get(newArmy.barrackId);
-    const hex = hexByBuilding.get(newArmy.barrackId);
-    if (!barrack || !hex || !hex.population) continue;
-
-    // check ownership
-    if (hex.owner !== nationId) continue;
-
-    if (barrack.trainingTroops) {
-      barrack.trainingTroops.push({ amount: newArmy.amount, progress: 0, nationId });
-    } else {
-      barrack.trainingTroops = [{ amount: newArmy.amount, progress: 0, nationId }];
-    }
-    nation.manpower -= newArmy.amount;
-    hex.population += newArmy.amount;
-  }
-}
 
 function calculateLumberjack(building: Building, gameCtx: GameCtx) {
   const { mapHexes, buildings } = gameCtx;

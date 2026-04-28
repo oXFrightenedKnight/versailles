@@ -1,4 +1,4 @@
-import { roadObject } from "@/app/game/page";
+import { roadObject } from "@/lib/types/game";
 import { hexToPixel } from "./render";
 import { Hex, Road } from "@repo/shared";
 

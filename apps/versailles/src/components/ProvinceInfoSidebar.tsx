@@ -5,27 +5,19 @@ import { Building, findBuildingNameByCategory, getBuilding, Hex } from "@repo/sh
 import { SquarePen, X } from "lucide-react";
 import Image from "next/image";
 import Tooltip from "./tooltip";
-import { useState } from "react";
-import { Contract } from "@/app/game/page";
-import ContractBlock from "./Blocks/ContractBlock";
-import FarmBlock from "./buildingConfig/farmBlock";
-import CivilianBlock from "./buildingConfig/civilianBlock";
-import BarrackBlock from "./buildingConfig/barrackBlock";
-import LumberjackBlock from "./buildingConfig/lumberBlock";
-import WatchtowerBlock from "./buildingConfig/watchtowerBlock";
+import { buildingComponents } from "@/lib/data";
+import NoBuilding from "./buildingConfig/noBuilding";
 
 export default function ProvinceInfoSidebar({
   selectedHex,
   buildings,
   isContractSelected,
   setIsContractSelected,
-  contracts,
 }: {
   selectedHex: Hex | null;
   buildings: Building[];
   isContractSelected: boolean;
   setIsContractSelected: React.Dispatch<React.SetStateAction<boolean>>;
-  contracts: Contract[];
 }) {
   const buildingData = selectedHex?.buildingId
     ? (getBuilding({ buildings, id: selectedHex.buildingId }) ?? null)
@@ -36,6 +28,26 @@ export default function ProvinceInfoSidebar({
         level: buildingData.level,
       })
     : "empty";
+
+  function renderBuildingButtons() {
+    if (!buildingData) return <NoBuilding></NoBuilding>;
+
+    const entry = buildingComponents[buildingData.category];
+
+    if (!entry) return <NoBuilding></NoBuilding>;
+
+    const Component = entry.component;
+
+    return (
+      <Component
+        {...entry.getProps({
+          isContractSelected,
+          setIsContractSelected,
+          building: buildingData,
+        })}
+      />
+    );
+  }
 
   return (
     <div className="h-[90%] w-full absolute left-0 bottom-0 p-2">
@@ -66,29 +78,7 @@ export default function ProvinceInfoSidebar({
               <div className="w-full h-full flex flex-col justify-start p-2 gap-2">
                 <div>Building Configuration</div>
                 <div className="w-full h-full flex flex-col gap-2 min-h-0">
-                  {buildingData?.category === "FARM" ? (
-                    <FarmBlock
-                      contracts={contracts}
-                      setIsContractSelected={setIsContractSelected}
-                      isContractSelected={isContractSelected}
-                      buildings={buildings}
-                      farm={buildingData}
-                    ></FarmBlock>
-                  ) : buildingData?.category === "CIVILIAN" ? (
-                    <CivilianBlock building={buildingData}></CivilianBlock>
-                  ) : buildingData?.category === "BARRACK" ? (
-                    <BarrackBlock building={buildingData}></BarrackBlock>
-                  ) : buildingData?.category === "LUMBERJACK_SETTLEMENT" ? (
-                    <LumberjackBlock
-                      building={buildingData}
-                      buildings={buildings}
-                      contracts={contracts}
-                      isContractSelected={isContractSelected}
-                      setIsContractSelected={setIsContractSelected}
-                    ></LumberjackBlock>
-                  ) : buildingData?.category === "WATCHTOWER" ? (
-                    <WatchtowerBlock building={buildingData}></WatchtowerBlock>
-                  ) : null}
+                  {renderBuildingButtons()}
                 </div>
               </div>
             </div>
