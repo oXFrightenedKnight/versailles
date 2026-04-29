@@ -48,19 +48,23 @@ export default function ConstructingBuilding({ building }: { building: BuildingC
         </div>
         {/* Icon, progress and to which level the building is being built */}
         <div className="flex justify-between items-center w-full gap-2 p-2 bg-gray-800 rounded-md">
-          <div className="flex bg-gray-900 border border-gray-600 p-1 rounded-md text-amber-200 h-full relative justify-center items-center">
+          <div className="flex bg-gray-900 border border-gray-600 p-1 rounded-md text-amber-200 h-full w-[25%] shrink-0 relative justify-center items-center">
             <Icon className=" w-6 h-6 text-amber-200 shrink-0"></Icon>
-            {/*<div className="absolute top-0 left-0 border border-gray-600 rounded-[3px] flex justify-center items-center w-4 h-4 bg-gray-800">
+            <div className="absolute bottom-0.5 right-0.5 border border-gray-600 rounded-[6px] flex justify-center items-center w-4 h-4 bg-gray-800">
               <Hammer className=" w-full h-full"></Hammer>
-            </div>*/}{" "}
+            </div>
             {/* Uncomment when you fix tailwind/css rendering issue */}
           </div>
 
-          <Progress className="bg-gray-600" value={progress}></Progress>
+          <div className="flex flex-col w-full h-full justify-between items-center gap-1">
+            <div className=" flex justify-center items-center w-full h-[50%]">
+              <Progress className="bg-gray-600" value={progress}></Progress>
+            </div>
 
-          <div className="flex bg-gray-900 border border-gray-600 p-1 gap-1 rounded-md text-amber-200 h-full justify-center items-center">
-            <SquareArrowUp className="w-6 h-6 shrink-0"></SquareArrowUp>
-            <span className="text-xl text-white">{building.levelsToUpgrade}</span>
+            <div className="flex bg-gray-900 border border-gray-600 p-1 gap-1 rounded-md text-amber-200 justify-center items-center w-full h-[50%]">
+              <SquareArrowUp className="w-5 h-5 shrink-0"></SquareArrowUp>
+              <span className="text-md text-white">{building.levelsToUpgrade}</span>
+            </div>
           </div>
 
           <div

@@ -245,41 +245,29 @@ function handleRoadBuild(hex: Hex, ctx: ClickCtx) {
 function handleBuildingPlacement(hex: Hex, ctx: ClickCtx) {
   const { buildBuildings, buildMode, buildings, setBuildBuildings, playerNation } = ctx;
 
-  // Add buildings to construction queue
-
-  // These are current queued building objects on client and server in that hex
-  const queuedClientBuilding = buildBuildings.find((obj) => obj.hexId === hex.id);
-  const serverBuilding = hex.build_queue;
-
-  const serverInProgress = serverBuilding?.levels ?? 0;
-  const clientInProgress = queuedClientBuilding?.levelsToUpgrade ?? 0;
-  const total = serverInProgress + clientInProgress;
-  const max = serverBuilding
-    ? (topLevelsByCategory.find((l) => l.category === serverBuilding.building)?.level ?? Infinity)
-    : Infinity; // if no max level was found, default to infinity
-  // if there is a building queued or built already and its type doesn't match - skip
-  if (queuedClientBuilding && queuedClientBuilding.buildingType !== buildMode) return;
-  if (serverBuilding && serverBuilding.building !== buildMode) return;
-  // if the total level of built + in progress + new one is above max - skip
-  if (total + 1 > max) return;
-
-  let buildingOfHex: Building | null = null;
-  // get hex building
-  if (hex.buildingId) {
-    buildingOfHex = getBuilding({ buildings, id: hex.buildingId }) ?? null;
-  }
-
-  // if there is a building built and its category doesn't match - skip
-  if (buildingOfHex && buildingOfHex.category !== buildMode) return;
-
   // return if hex doesn't belong to player
   if (hex.owner !== playerNation?.id) return;
 
-  // if already max possible level - return
+  // These are current queued building objects on client and server in that hex
+  const buildingOfHex = hex.buildingId ? getBuilding({ buildings, id: hex.buildingId }) : undefined;
+  const queuedClientBuilding = buildBuildings.find((obj) => obj.hexId === hex.id);
+  const queuedServerBuilding = hex.build_queue;
+
+  const serverLevels = queuedServerBuilding?.levels ?? 0;
+  const clientLevels = queuedClientBuilding?.levelsToUpgrade ?? 0;
   const currentLevel = buildingOfHex?.level ? buildingOfHex.level : 0;
-  const queuedLevels = queuedClientBuilding?.levelsToUpgrade ?? 0;
-  const maxLevel = topLevelsByCategory.find((obj) => obj.category === buildMode)?.level ?? 0;
-  if (currentLevel + queuedLevels >= maxLevel) return;
+
+  // if there is a building queued or built already and its type doesn't match - skip
+  if (queuedClientBuilding && queuedClientBuilding.buildingType !== buildMode) return;
+  if (queuedServerBuilding && queuedServerBuilding.building !== buildMode) return;
+  if (buildingOfHex && buildingOfHex.category !== buildMode) return;
+
+  const total = serverLevels + clientLevels + currentLevel;
+  const max = topLevelsByCategory.find((l) => l.category === buildMode)?.level ?? Infinity;
+  // if no max level was found, default to infinity
+
+  // if the total level of built + in progress + new one is above max - skip
+  if (total + 1 > max) return;
 
   // update if exists, create if doesn't
   if (queuedClientBuilding) {

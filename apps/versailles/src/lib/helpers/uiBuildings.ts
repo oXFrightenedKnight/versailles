@@ -41,7 +41,8 @@ export function mergeConstructingBuildings(
   serverBuildings: BuildingConstructionVM[],
   clientBuildings: BuildingConstructionVM[]
 ) {
-  return [...serverBuildings, ...clientBuildings];
+  const { server, client } = mergeSameClientToServer(serverBuildings, clientBuildings);
+  return [...server, ...client];
 }
 
 export function cancelServerBuildingIntent(hexId: number) {
@@ -53,6 +54,9 @@ export function cancelServerBuildingIntent(hexId: number) {
     if (!existing) return [...prev, hexId];
     return prev;
   });
+
+  // remove from client in-case if the queue is merged
+  cancelClientBuildingIntent(hexId);
 }
 
 export function cancelClientBuildingIntent(hexId: number) {
@@ -67,4 +71,38 @@ export function cancelClientBuildingIntent(hexId: number) {
     }
     return prev;
   });
+}
+
+// merge client requeusts that build on the same hex with their server equivalents
+function mergeSameClientToServer(
+  serverBuildings: BuildingConstructionVM[],
+  clientBuildings: BuildingConstructionVM[]
+) {
+  const serverIdSet = new Set<number>(serverBuildings.map((b) => b.hexId));
+  const mergeHexIdMap = new Map<number, BuildingConstructionVM>();
+
+  for (const building of clientBuildings) {
+    if (serverIdSet.has(building.hexId)) {
+      mergeHexIdMap.set(building.hexId, building);
+    }
+  }
+
+  const mergedClientBuildings = clientBuildings.filter((b) => !mergeHexIdMap.has(b.hexId));
+  const mergedServerBuildings: BuildingConstructionVM[] = [];
+  for (const building of serverBuildings) {
+    if (mergeHexIdMap.has(building.hexId)) {
+      const clientBuilding = mergeHexIdMap.get(building.hexId);
+      if (!clientBuilding) continue;
+      const merged = {
+        ...clientBuilding,
+        ...building,
+        levelsToUpgrade: building.levelsToUpgrade + clientBuilding?.levelsToUpgrade,
+      } as BuildingConstructionVM;
+      mergedServerBuildings.push(merged);
+    } else {
+      mergedServerBuildings.push(building);
+    }
+  }
+
+  return { server: mergedServerBuildings, client: mergedClientBuildings };
 }

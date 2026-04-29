@@ -3,16 +3,29 @@
 import { Building } from "@repo/shared";
 import TrainingComponent from "./TrainingComponent";
 import { CircleMinus, CirclePlus, Cog } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { numberConverter } from "@/canvas/render";
 import { useGameStore } from "@/lib/gameStore";
 import { useIntentStore } from "@/lib/intentStore";
+import {
+  getTrainingArmyServer,
+  mergeTraining,
+  mergeTrainingArmyClient,
+} from "@/lib/helpers/uiTraining";
 
 export default function TrainingBlock({ building }: { building: Building }) {
   const playerNation = useGameStore((s) => s.playerNation);
   const armyTraining = useIntentStore((s) => s.armyTraining);
   const setArmyTraining = useIntentStore((s) => s.setArmyTraining);
+  const serverTrainingDelete = useIntentStore((s) => s.serverTrainingDelete);
   const [amount, setAmount] = useState<number>(100);
+
+  const serverTraining = getTrainingArmyServer(building);
+  const clientTraining = mergeTrainingArmyClient(building.id, armyTraining);
+
+  const training = useMemo(() => {
+    return mergeTraining(serverTraining, clientTraining);
+  }, [serverTraining, clientTraining, serverTrainingDelete]);
 
   return (
     <div className="w-full bg-gray-800 rounded-xl">
@@ -58,7 +71,13 @@ export default function TrainingBlock({ building }: { building: Building }) {
 
               setArmyTraining((prev) => [
                 ...prev,
-                { amount: amount, progress: 0, barrackId: building.id, owner: playerNation.id },
+                {
+                  id: crypto.randomUUID(),
+                  amount: amount,
+                  progress: 0,
+                  barrackId: building.id,
+                  owner: playerNation.id,
+                },
               ]);
             }}
           >
@@ -67,14 +86,10 @@ export default function TrainingBlock({ building }: { building: Building }) {
         </div>
       </div>
       <div>
-        {armyTraining && armyTraining.length > 0 ? (
+        {training && training.length > 0 ? (
           <div className="w-full flex flex-col gap-2">
-            {armyTraining.map((obj, key) => (
-              <TrainingComponent
-                key={key}
-                amount={obj.amount}
-                progress={obj.progress}
-              ></TrainingComponent>
+            {training.map((obj) => (
+              <TrainingComponent key={obj.id} data={obj}></TrainingComponent>
             ))}
           </div>
         ) : (

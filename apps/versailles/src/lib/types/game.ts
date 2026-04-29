@@ -36,7 +36,13 @@ export type Contract = {
   autoAdjust: boolean;
 };
 export type BuildModeType = "road" | "none" | BUILDINGS_CATEGORY;
-export type ArmyTraining = { amount: number; progress: number; owner: string; barrackId: string };
+export type ArmyTraining = {
+  id: string;
+  amount: number;
+  progress: number;
+  owner: string;
+  barrackId: string;
+};
 
 export type serverData = {
   mapHexes: Hex[];

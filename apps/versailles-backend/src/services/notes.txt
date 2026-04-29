@@ -8,12 +8,9 @@ then offer a button that would track the change in demand and adjust it automati
 (on by default)
 
 list of changes to make next: 
-2. fix issue with weird progress bar behaviour when building multiple levels of
-the same building at once
-(another edge where if you have 1 building built, 1 building building on server, 
-then you can set more buildings to build on client because already-built doesn't count)
-
-3. fix an issue where you can place multiple different buildings on one hex if they are client/server
+2. investigate why manpower increases when you train new army even though no
+population increase happened
+3. add intent for delete building, road cancel building
 3,5. merge client and server logic + update/delete intent
 4. Make logistics system more intuitive. Show how much the building is currently
 consuming, and how much is being send and a progress bar showing progress of delivery
@@ -43,3 +40,6 @@ it on creation/change, instead of having multiple sources of update that
 all require validating
 
 remember to delete/update user intent request first, and then build/add new
+
+maybe think of removing buildings by one if right mouse click happens on the hex
+(start with client intent, then server)
