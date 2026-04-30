@@ -306,6 +306,11 @@ export function buildNationRoads({
       currentPoint.isConstructing = false;
 
       road.constructing.progress = 0;
+
+      // if no more points left to construct - set constructing status to null
+      if (road.points.every((p) => !p.isConstructing)) {
+        road.constructing = null;
+      }
     }
   }
 

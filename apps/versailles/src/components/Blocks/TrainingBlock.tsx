@@ -18,7 +18,7 @@ export default function TrainingBlock({ building }: { building: Building }) {
   const armyTraining = useIntentStore((s) => s.armyTraining);
   const setArmyTraining = useIntentStore((s) => s.setArmyTraining);
   const serverTrainingDelete = useIntentStore((s) => s.serverTrainingDelete);
-  const [amount, setAmount] = useState<number>(100);
+  const [amount, setAmount] = useState<number>(0);
 
   const serverTraining = getTrainingArmyServer(building);
   const clientTraining = mergeTrainingArmyClient(building.id, armyTraining);
@@ -37,9 +37,9 @@ export default function TrainingBlock({ building }: { building: Building }) {
             className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
             onClick={(e) => {
               if (e.shiftKey) {
-                setAmount(Math.max(amount - 1000, 100));
+                setAmount(Math.max(amount - 1000, 0));
               } else {
-                setAmount(Math.max(amount - 100, 100));
+                setAmount(Math.max(amount - 100, 0));
               }
             }}
           >
@@ -68,6 +68,7 @@ export default function TrainingBlock({ building }: { building: Building }) {
             className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
             onClick={() => {
               if (!armyTraining || !setArmyTraining || !playerNation) return;
+              if (amount > playerNation.manpower || amount === 0) return;
 
               setArmyTraining((prev) => [
                 ...prev,

@@ -32,3 +32,26 @@ export function calculateModifiers({
 
   return modValue;
 }
+
+export function addModifier({
+  gameCtx,
+  category,
+  nationId,
+  type,
+  value,
+}: {
+  gameCtx: GameCtx;
+  category: MODIFIER_CATEGORIES;
+  nationId: string;
+  type: "flat" | "percent";
+  value: number;
+}) {
+  const mod: MODIFIER = {
+    category: category,
+    owner: nationId,
+    type,
+    value, // flat: +N, percent: decimal (0.1 = +10%)
+  };
+
+  gameCtx.modifiers.push(mod);
+}

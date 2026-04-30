@@ -1,4 +1,4 @@
-import { BUILDINGS_CATEGORY, Hex } from "@repo/shared";
+import { BUILDINGS_CATEGORY, Hex, Road } from "@repo/shared";
 import { newBuilding } from "../types/game";
 import { useIntentStore } from "../intentStore";
 import { useGameStore } from "../gameStore";

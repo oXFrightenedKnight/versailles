@@ -2,6 +2,7 @@ import { Building, Hex } from "@repo/shared";
 import { getNationById } from "./genNations.js";
 import { getHexById } from "./map.js";
 import { GameCtx } from "../trpc/index.js";
+import { addModifier } from "./modifiers.js";
 
 export function moveArmy({
   hexId,
@@ -157,7 +158,14 @@ export function queueArmyTraining({
         { id: crypto.randomUUID(), amount: newArmy.amount, progress: 0, nationId },
       ];
     }
-    nation.manpower -= newArmy.amount;
-    hex.population += newArmy.amount;
+
+    // create flat manpower modifier to decrease manpower
+    addModifier({
+      gameCtx,
+      category: "manpower",
+      nationId: nation.id,
+      type: "flat",
+      value: -newArmy.amount,
+    });
   }
 }

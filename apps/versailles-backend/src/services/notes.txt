@@ -8,9 +8,8 @@ then offer a button that would track the change in demand and adjust it automati
 (on by default)
 
 list of changes to make next: 
-2. investigate why manpower increases when you train new army even though no
-population increase happened
-3. add intent for delete building, road cancel building
+2. Fix Building menu ui
+3. add intent for delete building, army move
 3,5. merge client and server logic + update/delete intent
 4. Make logistics system more intuitive. Show how much the building is currently
 consuming, and how much is being send and a progress bar showing progress of delivery

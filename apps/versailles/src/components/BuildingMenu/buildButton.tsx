@@ -1,3 +1,5 @@
+"use client";
+
 import { X } from "lucide-react";
 import { ALL_BUILDING_CATEGORIES, BUILDINGS_CATEGORY } from "@repo/shared";
 import ToggleBuilding from "./ToggleBuilding";
@@ -12,6 +14,12 @@ import {
 import { useIntentStore } from "@/lib/intentStore";
 import ConstructingBuilding from "./ConstructingBuilding";
 import { useMemo } from "react";
+import {
+  getBuildingRoadsServer,
+  mergeBuildingRoads,
+  mergeBuildingRoadsClient,
+} from "@/lib/helpers/uiRoads";
+import ConstructingRoad from "./RoadConstructing";
 
 export default function BuildMenu({
   isOpen,
@@ -44,6 +52,17 @@ export default function BuildMenu({
     return mergeConstructingBuildings(serverConstructing, clientConstructing);
   }, [serverCancelBuilding, clientConstructing, serverConstructing]);
 
+  // --- ROADS ---
+  const serverRoads = useGameStore((s) => s.roads);
+  const cancelRoadServer = useIntentStore((s) => s.serverCancelRoadBuilding);
+  const clientRoads = useIntentStore((s) => s.buildRoads);
+  const serverRoadsBuilding = getBuildingRoadsServer(serverRoads, mapHexes);
+  const clientRoadsBuilding = mergeBuildingRoadsClient(clientRoads, mapHexes);
+
+  const buildingRoads = useMemo(() => {
+    return mergeBuildingRoads(serverRoadsBuilding, clientRoadsBuilding);
+  }, [serverRoadsBuilding, clientRoadsBuilding, cancelRoadServer]);
+
   return (
     <div className="w-full h-full">
       {isOpen && (
@@ -75,11 +94,20 @@ export default function BuildMenu({
                 ))}
               </div>
             </div>
-            <div className="w-full flex justify-between items-center bg-gray-900 shadow-md shadow-black rounded-[8px] overflow-y-auto no-scrollbar">
-              <div className="flex flex-col gap-2 w-full h-full">
-                {constructing.map((c, key) => (
-                  <ConstructingBuilding building={c} key={key}></ConstructingBuilding>
-                ))}
+            <div className="w-full h-full max-h-[70%] flex flex-col gap-4">
+              <div className="w-full max-h-[45%] flex justify-between items-center bg-gray-900 shadow-md shadow-black rounded-[8px] overflow-y-auto no-scrollbar">
+                <div className="flex flex-col gap-2 w-full h-full">
+                  {constructing.map((c, key) => (
+                    <ConstructingBuilding building={c} key={key}></ConstructingBuilding>
+                  ))}
+                </div>
+              </div>
+              <div className="w-full max-h-[45%] flex justify-between items-center bg-gray-900 shadow-md shadow-black rounded-[8px] overflow-y-auto no-scrollbar">
+                <div className="flex flex-col gap-2 w-full h-full">
+                  {buildingRoads.map((r, key) => (
+                    <ConstructingRoad road={r} key={key}></ConstructingRoad>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

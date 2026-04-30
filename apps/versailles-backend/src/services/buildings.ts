@@ -185,9 +185,6 @@ function calculateBarracks(building: Building, gameCtx: GameCtx) {
 
         // add index to delete after loop
         idxsToDelete.push(i);
-
-        // recalculate population
-        hex.population -= army.amount;
       }
     }
 
