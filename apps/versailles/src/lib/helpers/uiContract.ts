@@ -1,10 +1,4 @@
-import {
-  Building,
-  BUILDINGS,
-  findBuildingNameByCategory,
-  RESOURCES,
-  SupplyContract,
-} from "@repo/shared";
+import { Building, BUILDINGS, findBuildingNameByCategory, RESOURCES } from "@repo/shared";
 import { MergedContractChanges, ServerContractUpdate, useIntentStore } from "../intentStore";
 import { Contract, MergedContract, ServerContract } from "../types/game";
 
@@ -38,20 +32,26 @@ export function updateServerContractIntent(contractId: string, newChanges: Merge
   });
 }
 
-// turn raw server contracts into canonical mergedContract
+// turn raw server contracts into canonical MergedContract
 export function mergeServerContracts(contractObj: ServerContract) {
   const { contracts, buildingId } = contractObj;
-  return contracts.map((contract) => ({
-    id: contract.id,
-    hexIds: contract.hexIds,
-    startBuildingId: buildingId,
-    endBuildingId: contract.buildingId,
-    amount: contract.amount,
-    progress: contract.progress,
-    resource: contract.resource,
-    autoAdjust: contract.autoAdjust,
-    fromServer: true,
-  })) as MergedContract[];
+
+  const serverContractDelete = useIntentStore.getState().serverContractDelete;
+  const deletedCotractsSet = new Set<string>(serverContractDelete);
+
+  return contracts
+    .filter((c) => !deletedCotractsSet.has(c.id))
+    .map((contract) => ({
+      id: contract.id,
+      hexIds: contract.hexIds,
+      startBuildingId: buildingId,
+      endBuildingId: contract.buildingId,
+      amount: contract.amount,
+      progress: contract.progress,
+      resource: contract.resource,
+      autoAdjust: contract.autoAdjust,
+      fromServer: true,
+    })) as MergedContract[];
 }
 
 export function getServerContractsFromBuildings(buildings: Building[]) {
@@ -135,4 +135,25 @@ export function getFirstFreeResource({
   const availableResource = producing.find((r) => !takenResources.has(r));
   if (!availableResource) return;
   return availableResource;
+}
+
+export function deleteServerContract(id: string) {
+  const setServerContractDelete = useIntentStore.getState().setServerContractDelete;
+
+  setServerContractDelete((prev) => {
+    const existing = prev.find((prevId) => prevId === id);
+
+    if (!existing) {
+      return [...prev, id];
+    }
+    return prev;
+  });
+}
+
+export function deleteClientContract(id: string) {
+  const setContracts = useIntentStore.getState().setContracts;
+
+  setContracts((prev) => {
+    return prev.filter((c) => c.id !== id);
+  });
 }

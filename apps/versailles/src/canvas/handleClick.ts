@@ -15,11 +15,12 @@ import {
 } from "@repo/shared";
 import { pixelToHex } from "./render";
 import { Dispatch, RefObject } from "react";
-import { randomNumber } from "@/lib/utils";
+import { calcAvailableArmy, randomNumber } from "@/lib/utils";
 import { ServerContractUpdate, SetStateAction } from "@/lib/intentStore";
 import { armyIntent, BuildModeType, Contract, newBuilding, roadObject } from "@/lib/types/game";
 import { findHexPathBetween } from "./pathfinding";
 import { getFirstFreeResource, getMergedContracts } from "@/lib/helpers/uiContract";
+import { cancelArmyMove } from "@/lib/helpers/uiArmy";
 
 export type ClickCtx = {
   mouseDownRef: RefObject<boolean>;
@@ -33,7 +34,7 @@ export type ClickCtx = {
   playerNation: Nation | null;
   mapHexes: Hex[];
   roads: Road[];
-  buildings: Building[];
+  BuildingsUI: Building[];
   setIsContractSelected: Dispatch<React.SetStateAction<boolean>>;
   roadStartRef: RefObject<Hex | null>;
   randomIdRef: RefObject<string | null>;
@@ -41,6 +42,7 @@ export type ClickCtx = {
   setBuildMode: Dispatch<React.SetStateAction<BuildModeType>>;
   buildBuildings: newBuilding[];
   setBuildBuildings: SetStateAction<newBuilding[]>;
+  armyMove: armyIntent[];
   setArmyMove: SetStateAction<armyIntent[]>;
   contracts: Contract[];
   setContracts: SetStateAction<Contract[]>;
@@ -54,6 +56,8 @@ export type ClickCtx = {
     a: number;
     b: number;
   };
+  barValue: number;
+  setBarValue: React.Dispatch<React.SetStateAction<number>>;
 };
 
 export type RoadDragCtx = {
@@ -77,6 +81,18 @@ export type RoadDragCtx = {
     a: number;
     b: number;
   };
+  barDragging: boolean;
+  setBarDragging: React.Dispatch<React.SetStateAction<boolean>>;
+  draggingRef: RefObject<boolean>;
+  startPosRef: RefObject<{
+    x: number;
+    y: number;
+  }>;
+  barRef: RefObject<HTMLDivElement | null>;
+  barValue: number;
+  setBarValue: React.Dispatch<React.SetStateAction<number>>;
+  selectedHex: Hex | null;
+  armyMove: armyIntent[];
 };
 
 // This function handles game-actions when players on the map
@@ -113,6 +129,10 @@ function selectHex(hex: Hex, ctx: ClickCtx) {
   ctx.selectedHexIdRef.current = hex.id;
   ctx.setSelectedHex(hex);
 
+  // set barValue to half of the army in tile
+  const army = calcAvailableArmy(hex, ctx.playerNation, ctx.armyMove);
+  ctx.setBarValue(Math.round(army * 0.5));
+
   ctx.startAnimation();
   ctx.redraw();
 }
@@ -121,7 +141,7 @@ function createContract(hex: Hex, ctx: ClickCtx) {
     selectedHex,
     playerNation,
     mapHexes,
-    buildings,
+    BuildingsUI,
     serverContracts,
     serverContractUpdate,
     contracts,
@@ -136,10 +156,17 @@ function createContract(hex: Hex, ctx: ClickCtx) {
   const belongToPlayer = selectedHex?.owner === playerNation?.id && hex.owner === playerNation?.id;
 
   if (startId && endId && belongToPlayer && mapHexes) {
-    const startBuilding = getBuilding({ buildings, id: startId });
-    const endBuilding = getBuilding({ buildings, id: endId });
-    if (!startBuilding || !startBuilding.storage) return;
-    if (!endBuilding || !endBuilding.storage) return;
+    const startBuilding = getBuilding({ buildings: BuildingsUI, id: startId });
+    const endBuilding = getBuilding({ buildings: BuildingsUI, id: endId });
+
+    if (!startBuilding || !startBuilding.storage) {
+      setIsContractSelected(false);
+      return;
+    }
+    if (!endBuilding || !endBuilding.storage) {
+      setIsContractSelected(false);
+      return;
+    }
 
     // merged Server and client contracts for ui
     const merged = getMergedContracts(
@@ -185,7 +212,7 @@ function createContract(hex: Hex, ctx: ClickCtx) {
         length: hexIds.length - 1,
         resource,
         mapHexes,
-        buildings,
+        buildings: BuildingsUI,
       }) ?? 0;
 
     setContracts((prev) => [
@@ -243,13 +270,15 @@ function handleRoadBuild(hex: Hex, ctx: ClickCtx) {
   }
 }
 function handleBuildingPlacement(hex: Hex, ctx: ClickCtx) {
-  const { buildBuildings, buildMode, buildings, setBuildBuildings, playerNation } = ctx;
+  const { buildBuildings, buildMode, BuildingsUI, setBuildBuildings, playerNation } = ctx;
 
   // return if hex doesn't belong to player
   if (hex.owner !== playerNation?.id) return;
 
   // These are current queued building objects on client and server in that hex
-  const buildingOfHex = hex.buildingId ? getBuilding({ buildings, id: hex.buildingId }) : undefined;
+  const buildingOfHex = hex.buildingId
+    ? getBuilding({ buildings: BuildingsUI, id: hex.buildingId })
+    : undefined;
   const queuedClientBuilding = buildBuildings.find((obj) => obj.hexId === hex.id);
   const queuedServerBuilding = hex.build_queue;
 
@@ -293,9 +322,16 @@ function handleBuildingPlacement(hex: Hex, ctx: ClickCtx) {
 
 // RIGHT CLICK
 function handleRightClick(hex: Hex, ctx: ClickCtx) {
-  const { selectedHexIdRef, selectedHex, setArmyMove } = ctx;
+  const {
+    selectedHexIdRef,
+    selectedHex,
+    setArmyMove,
+    armyMove,
+    barValue,
+    setBarValue,
+    playerNation,
+  } = ctx;
 
-  console.log("GOT THE CLICK");
   if (selectedHexIdRef.current === hex.id || !selectedHex) return;
   if (
     !HEX_DIRECTIONS.some(
@@ -303,17 +339,39 @@ function handleRightClick(hex: Hex, ctx: ClickCtx) {
     )
   )
     return;
-  setArmyMove((prev) => [
-    ...prev,
-    {
-      hexId: selectedHex.id,
-      amount: 100,
-      direction: {
-        dq: hex.q - selectedHex.q,
-        dr: hex.r - selectedHex.r,
-      },
-    },
-  ]);
+
+  const dir = { dq: hex.q - selectedHex.q, dr: hex.r - selectedHex.r };
+  const hasIntent = armyMove.find(
+    (a) => a.hexId === selectedHex.id && a.direction.dq === dir.dq && a.direction.dr === dir.dr
+  );
+  const newIntentObj = {
+    hexId: selectedHex.id,
+    amount: barValue,
+    direction: dir,
+  };
+
+  if (!hasIntent) {
+    if (barValue <= 0) return;
+    // Optimistically update bar value
+    const newArmyMove = [...armyMove, newIntentObj];
+    const newAvailable = calcAvailableArmy(selectedHex, playerNation, newArmyMove);
+    setBarValue(Math.min(barValue, newAvailable));
+
+    setArmyMove((prev) => [...prev, newIntentObj]);
+  } else {
+    const filterArmyMove = armyMove.filter(
+      (obj) =>
+        !(
+          obj.hexId === selectedHex.id &&
+          obj.direction.dq === dir.dq &&
+          obj.direction.dr === dir.dr
+        )
+    );
+    const newAvailable = calcAvailableArmy(selectedHex, playerNation, filterArmyMove);
+    setBarValue(Math.min(barValue, newAvailable));
+    // if already had intent to move, then cancel army move intent
+    cancelArmyMove(hasIntent.hexId, hasIntent.direction);
+  }
 }
 
 export function handleRoadDrag(event: MouseEvent, ctx: RoadDragCtx) {
@@ -454,4 +512,30 @@ export function handleRoadDrag(event: MouseEvent, ctx: RoadDragCtx) {
       d2: randomNumber(d.a, d.b),
     });
   }
+}
+
+export function handleBarDrag(event: MouseEvent, ctx: RoadDragCtx) {
+  const { barDragging, barRef, setBarValue, selectedHex, playerNation, armyMove } = ctx;
+
+  // Dragging bar
+
+  if (!barDragging) return;
+
+  const rect = barRef.current?.getBoundingClientRect();
+  if (!rect) return;
+  if (!playerNation) return;
+  if (!selectedHex) return;
+
+  const totalArmy = calcAvailableArmy(selectedHex, playerNation, armyMove);
+
+  const mouseX = event.clientX - rect.left;
+  const step = Math.min(totalArmy, 5); // set 5 as a default step
+  const value = (mouseX / rect.width) * totalArmy;
+  const snappedValue = Math.round(value / step) * step;
+
+  setBarValue(Math.max(0, Math.min(totalArmy, snappedValue)));
+}
+
+export function stopBarDrag(setBarDragging: React.Dispatch<React.SetStateAction<boolean>>) {
+  setBarDragging(false);
 }

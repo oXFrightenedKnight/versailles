@@ -8,9 +8,7 @@ then offer a button that would track the change in demand and adjust it automati
 (on by default)
 
 list of changes to make next: 
-2. Fix Building menu ui
-3. add intent for delete building, army move
-3,5. merge client and server logic + update/delete intent
+3. allow player to decide how much army they want to send in a specific hex
 4. Make logistics system more intuitive. Show how much the building is currently
 consuming, and how much is being send and a progress bar showing progress of delivery
 5. Add option to delete contracts, army trainings, unfinished buildings
@@ -42,3 +40,6 @@ remember to delete/update user intent request first, and then build/add new
 
 maybe think of removing buildings by one if right mouse click happens on the hex
 (start with client intent, then server)
+
+keep in mind that when you apply optimistic update to deleted buildings on client,
+a hex that this building belonged to still holds the reference to it.

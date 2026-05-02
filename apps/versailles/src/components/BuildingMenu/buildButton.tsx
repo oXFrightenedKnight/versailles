@@ -94,20 +94,19 @@ export default function BuildMenu({
                 ))}
               </div>
             </div>
-            <div className="w-full h-full max-h-[70%] flex flex-col gap-4">
-              <div className="w-full max-h-[45%] flex justify-between items-center bg-gray-900 shadow-md shadow-black rounded-[8px] overflow-y-auto no-scrollbar">
-                <div className="flex flex-col gap-2 w-full h-full">
-                  {constructing.map((c, key) => (
-                    <ConstructingBuilding building={c} key={key}></ConstructingBuilding>
-                  ))}
-                </div>
+            <div className="w-full h-[70%] flex flex-col justify-start items-center  bg-gray-900 shadow-md shadow-black rounded-[8px] overflow-y-auto no-scrollbar gap-2">
+              <div
+                className={`flex flex-col gap-2 w-full ${constructing.length > 0 && buildingRoads.length > 0 ? "border-b pb-2" : ""}`}
+              >
+                {constructing.map((c, key) => (
+                  <ConstructingBuilding building={c} key={key}></ConstructingBuilding>
+                ))}
               </div>
-              <div className="w-full max-h-[45%] flex justify-between items-center bg-gray-900 shadow-md shadow-black rounded-[8px] overflow-y-auto no-scrollbar">
-                <div className="flex flex-col gap-2 w-full h-full">
-                  {buildingRoads.map((r, key) => (
-                    <ConstructingRoad road={r} key={key}></ConstructingRoad>
-                  ))}
-                </div>
+
+              <div className="flex flex-col gap-2 w-full">
+                {buildingRoads.map((r, key) => (
+                  <ConstructingRoad road={r} key={key}></ConstructingRoad>
+                ))}
               </div>
             </div>
           </div>

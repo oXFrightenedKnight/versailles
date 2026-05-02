@@ -55,7 +55,7 @@ export default function FarmBlock({
       <StorageBlock building={building} buildingType={name}></StorageBlock>
 
       {/* Info Block */}
-      <InfoBlock info={info}></InfoBlock>
+      <InfoBlock info={info} building={building}></InfoBlock>
     </div>
   );
 }

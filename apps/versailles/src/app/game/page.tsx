@@ -20,10 +20,12 @@ import { Descriptions } from "@/lib/data";
 import { useGameStore } from "@/lib/gameStore";
 import { useIntentStore } from "@/lib/intentStore";
 import { useCameraController } from "@/hooks/useCameraController";
-import { dispatchMapTap, handleRoadDrag } from "@/canvas/handleClick";
+import { dispatchMapTap, handleBarDrag, handleRoadDrag, stopBarDrag } from "@/canvas/handleClick";
 import { calculateOptimisticGold, calculateOptimisticManpower } from "@/lib/utils";
 import { BuildModeType, roadObject } from "@/lib/types/game";
 import { getServerContractsFromBuildings } from "@/lib/helpers/uiContract";
+import { getNonDeletedBuildings } from "@/lib/helpers/uiBuildings";
+import DragBar from "@/components/DragBar";
 
 export default function Home() {
   const mapHexes = useGameStore((state) => state.mapHexes);
@@ -32,7 +34,6 @@ export default function Home() {
   const turn = useGameStore((state) => state.turn);
   const roads = useGameStore((state) => state.roads);
   const buildings = useGameStore((state) => state.buildings);
-  const [selectedHex, setSelectedHex] = useState<Hex | null>(null);
 
   // player army intent
   const armyMove = useIntentStore((state) => state.armyMove);
@@ -45,6 +46,8 @@ export default function Home() {
   // new buildings
   const buildBuildings = useIntentStore((state) => state.buildBuildings);
   const setBuildBuildings = useIntentStore((state) => state.setBuildBuildings);
+  // delete buildings intent
+  const serverBuildingsDelete = useIntentStore((state) => state.serverBuildingsDelete);
 
   // contracts
   const contracts = useIntentStore((state) => state.contracts);
@@ -54,7 +57,6 @@ export default function Home() {
 
   // troop training
   const armyTraining = useIntentStore((state) => state.armyTraining);
-  const setArmyTraining = useIntentStore((state) => state.setArmyTraining);
 
   // MENUS
   const [buildMenuOpen, setBuildMenuOpen] = useState<boolean>(false);
@@ -62,6 +64,10 @@ export default function Home() {
   // ui states
   const [buildMode, setBuildMode] = useState<BuildModeType>("none");
   const [isContractSelected, setIsContractSelected] = useState<boolean>(false);
+  const [selectedHex, setSelectedHex] = useState<Hex | null>(null);
+  // army split value
+  const [barValue, setBarValue] = useState<number>(0);
+  const [barDragging, setBarDragging] = useState<boolean>(false);
 
   // DATA FETCH
   const mapData = trpc.generateHexMap.useMutation({
@@ -77,13 +83,10 @@ export default function Home() {
     },
   });
   const nextTurn = trpc.nextTurn.useMutation();
+
   function cleanTempStates() {
-    setBuildBuildings([]);
-    setBuildRoads([]);
-    setArmyTraining([]);
-    setContracts([]);
-    setArmyMove([]);
-    setBuildRoads([]);
+    useGameStore.getState().reset();
+    useIntentStore.getState().reset();
   }
 
   // generate map
@@ -113,6 +116,9 @@ export default function Home() {
   const tempRoadRef = useRef<roadObject | null>(null);
   const randomIdRef = useRef<string | null>(null);
 
+  // drag bar ref
+  const barRef = useRef<HTMLDivElement | null>(null);
+
   // animation refs
   const blinkTimeRef = useRef(0);
   const lastTimeRef = useRef(0);
@@ -120,18 +126,26 @@ export default function Home() {
   const rafRef = useRef<number | null>(null);
 
   // --- MEMOs --- (values updated when deps change)
+
+  // remaining buildings to render after filtering out deleted by intent
+  const BuildingsUI = useMemo(() => {
+    return getNonDeletedBuildings(buildings);
+  }, [buildings, serverBuildingsDelete]);
+
   const effectiveManpower = useMemo(() => {
     return calculateOptimisticManpower(armyTraining, playerNation);
   }, [playerNation, armyTraining]);
 
   const effectiveGold = useMemo(() => {
-    return calculateOptimisticGold(mapHexes, buildBuildings, buildings, playerNation);
-  }, [playerNation, buildBuildings, mapHexes, buildings]);
+    return calculateOptimisticGold(mapHexes, buildBuildings, BuildingsUI, playerNation);
+  }, [playerNation, buildBuildings, mapHexes, BuildingsUI]);
 
   // --- CAMERA CONTROLING ---
   const {
     cameraRef,
     mouseDownRef,
+    draggingRef,
+    startPosRef,
     handleWheel,
     handleMouseDown,
     handleMouseMove,
@@ -240,7 +254,7 @@ export default function Home() {
         playerNation,
         mapHexes,
         roads,
-        buildings,
+        BuildingsUI,
         setIsContractSelected,
         roadStartRef,
         randomIdRef,
@@ -248,6 +262,7 @@ export default function Home() {
         setBuildMode,
         buildBuildings,
         setBuildBuildings,
+        armyMove,
         setArmyMove,
         contracts,
         setContracts,
@@ -255,6 +270,8 @@ export default function Home() {
         serverContracts,
         serverContractUpdate,
         d,
+        barValue,
+        setBarValue,
       };
 
       dispatchMapTap(worldX, worldY, event.button, ctx);
@@ -269,7 +286,7 @@ export default function Home() {
       setBuildBuildings,
 
       playerNation,
-      buildings,
+      BuildingsUI,
       isContractSelected,
       mapHexes,
       roads,
@@ -279,6 +296,7 @@ export default function Home() {
 
       setBuildRoads,
 
+      armyMove,
       setArmyMove,
 
       cameraRef,
@@ -286,6 +304,9 @@ export default function Home() {
 
       serverContracts,
       serverContractUpdate,
+
+      barValue,
+      setBarValue,
     ]
   );
 
@@ -294,9 +315,19 @@ export default function Home() {
       const wasDragging = handleMouseUp(e); // from useCameraController
       if (!wasDragging) {
         handleCanvasClick(e); // your map tap dispatcher
+      } else {
+        stopBarDrag(setBarDragging);
       }
     },
     [handleMouseUp, handleCanvasClick]
+  );
+  const onWindowMouseUp = useCallback(
+    (e: MouseEvent) => {
+      if (barDragging) {
+        stopBarDrag(setBarDragging);
+      }
+    },
+    [barDragging]
   );
 
   const onMouseMove = useCallback(
@@ -315,9 +346,19 @@ export default function Home() {
         roads,
         buildRoads,
         d,
+        barDragging,
+        setBarDragging,
+        draggingRef,
+        startPosRef,
+        barRef,
+        barValue,
+        setBarValue,
+        selectedHex,
+        armyMove,
       };
       // wire road and dragging
       handleRoadDrag(e, ctx);
+      handleBarDrag(e, ctx);
       handleMouseMove(e);
     },
     [
@@ -334,6 +375,70 @@ export default function Home() {
       roads,
       buildRoads,
       handleMouseMove,
+      barDragging,
+      setBarDragging,
+      draggingRef,
+      startPosRef,
+      barRef,
+      barValue,
+      setBarValue,
+      selectedHex,
+      armyMove,
+    ]
+  );
+  const onWidnowMouseMove = useCallback(
+    (e: MouseEvent) => {
+      const ctx = {
+        buildMode,
+        mouseDownRef,
+        roadStartRef,
+        mapHexesRef,
+        tempRoadRef,
+        hitCanvasRef,
+        mapHexes,
+        randomIdRef,
+        cameraRef,
+        playerNation,
+        roads,
+        buildRoads,
+        d,
+        barDragging,
+        setBarDragging,
+        draggingRef,
+        startPosRef,
+        barRef,
+        barValue,
+        setBarValue,
+        selectedHex,
+        armyMove,
+      };
+      // handle bar drag
+      if (barDragging) {
+        handleBarDrag(e, ctx);
+      }
+    },
+    [
+      buildMode,
+      mouseDownRef,
+      roadStartRef,
+      mapHexesRef,
+      tempRoadRef,
+      hitCanvasRef,
+      mapHexes,
+      randomIdRef,
+      cameraRef,
+      playerNation,
+      roads,
+      buildRoads,
+      barDragging,
+      setBarDragging,
+      draggingRef,
+      startPosRef,
+      barRef,
+      barValue,
+      setBarValue,
+      selectedHex,
+      armyMove,
     ]
   );
 
@@ -374,6 +479,9 @@ export default function Home() {
     hitCanvas.addEventListener("mouseup", onMouseUp);
     hitCanvas.addEventListener("mouseleave", handleMouseLeave);
     hitCanvas.addEventListener("contextmenu", preventContextMenu);
+    // event listener for bar dragging
+    window.addEventListener("mousemove", onWidnowMouseMove);
+    window.addEventListener("mouseup", onWindowMouseUp);
 
     return () => {
       window.removeEventListener("resize", resize);
@@ -383,6 +491,8 @@ export default function Home() {
       hitCanvas.removeEventListener("mouseup", onMouseUp);
       hitCanvas.removeEventListener("mouseleave", handleMouseLeave);
       hitCanvas.removeEventListener("contextmenu", preventContextMenu);
+      window.removeEventListener("mousemove", onWidnowMouseMove);
+      window.removeEventListener("mouseup", onWindowMouseUp);
     };
   }, [
     handleMouseDown,
@@ -394,6 +504,8 @@ export default function Home() {
     resize,
     onMouseUp,
     onMouseMove,
+    onWidnowMouseMove,
+    onWindowMouseUp,
   ]);
 
   useEffect(() => {
@@ -403,7 +515,7 @@ export default function Home() {
 
   return (
     <>
-      <div className="relative w-screen h-screen">
+      <div className="relative w-screen h-screen select-none">
         <canvas ref={hitCanvasRef} className="absolute inset-0 z-10" />
         <canvas ref={canvasRef} className="absolute inset-0 z-0" />
 
@@ -434,7 +546,7 @@ export default function Home() {
           <div className="w-[300px] max-w-[300px] h-full relative">
             <ProvinceInfoSidebar
               selectedHex={selectedHex}
-              buildings={buildings}
+              buildings={BuildingsUI}
               setIsContractSelected={setIsContractSelected}
               isContractSelected={isContractSelected}
             ></ProvinceInfoSidebar>
@@ -444,6 +556,20 @@ export default function Home() {
               setBuildMode={setBuildMode}
               buildMode={buildMode}
             ></BuildMenu>
+          </div>
+
+          <div className="w-full h-[10%] relative bottom-20 flex justify-center items-center">
+            <div className="w-[450px] max-w-[450px] h-full">
+              {selectedHex && selectedHex.army && playerNation && (
+                <DragBar
+                  value={barValue}
+                  selectedHex={selectedHex}
+                  playerNation={playerNation}
+                  setBarDragging={setBarDragging}
+                  barRef={barRef}
+                ></DragBar>
+              )}
+            </div>
           </div>
 
           <div className="absolute left-0 top-0 pointer-events-auto h-[10%] w-full">

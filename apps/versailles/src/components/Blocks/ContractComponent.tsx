@@ -16,9 +16,10 @@ import {
   ChevronDown,
   CircleMinus,
   CirclePlus,
+  Trash2,
   X,
 } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import Tooltip from "../tooltip";
 import { Progress } from "../ui/progress";
 import { Dropdown, DropdownItem } from "../dropdown";
@@ -26,6 +27,8 @@ import { useGameStore } from "@/lib/gameStore";
 import { MergedContractChanges, useIntentStore } from "@/lib/intentStore";
 import { MergedContract } from "@/lib/types/game";
 import {
+  deleteClientContract,
+  deleteServerContract,
   getMergedContracts,
   getServerContractsFromBuildings,
   updateServerContractIntent,
@@ -115,6 +118,13 @@ export default function ContractComponent({
     },
     [updateContract, contract]
   );
+  const deleteContract = useCallback(() => {
+    if (contract.fromServer) {
+      deleteServerContract(contract.id);
+    } else {
+      deleteClientContract(contract.id);
+    }
+  }, [contract]);
   const recalculateAmount = useCallback(() => {
     if (startBuilding && endBuilding && mapHexes) {
       const newAmount = calculateExportAmount({
@@ -150,9 +160,6 @@ export default function ContractComponent({
     [updateMergedContract]
   );
 
-  console.log("exported resource link", getResourceImage(contract.resource));
-  console.log("contract progress", contract.progress);
-
   return (
     <div className="w-full h-[75px] bg-gray-800 rounded-xl flex justify-center items-center gap-1 p-1">
       <div className="flex flex-col h-full bg-gray-900 items-center justify-between p-2 rounded-md relative group">
@@ -173,6 +180,11 @@ export default function ContractComponent({
           <div
             className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
             onClick={(e) => {
+              // delete contract if it's at 0
+              if (contract.amount === 0) {
+                deleteContract();
+              }
+
               if (e.shiftKey) {
                 setAmount(Math.max(contract.amount - 100, 0));
               } else {
@@ -181,7 +193,11 @@ export default function ContractComponent({
               setAutoAdjust(false);
             }}
           >
-            <CircleMinus className="w-4 h-4 text-amber-200 "></CircleMinus>
+            {contract.amount === 0 ? (
+              <Trash2 className="w-4 h-4 text-red-400 "></Trash2>
+            ) : (
+              <CircleMinus className="w-4 h-4 text-amber-200 "></CircleMinus>
+            )}
           </div>
           {/* Display amount */}
           <div className="bg-gray-800 text-white rounded-md p-1 w-15 flex justify-center items-center">

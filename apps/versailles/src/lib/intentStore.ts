@@ -54,22 +54,37 @@ export type StoreType = {
 
   armyMove: armyIntent[];
   setArmyMove: SetStateAction<armyIntent[]>;
+
+  reset: () => void;
+};
+
+const initialState = {
+  armyTraining: [],
+  serverTrainingDelete: [],
+  contracts: [],
+  serverContractUpdate: [],
+  serverContractDelete: [],
+  buildBuildings: [],
+  serverBuildingsDelete: [],
+  serverCancelBuilding: [],
+  buildRoads: [],
+  serverCancelRoadBuilding: [],
+  armyMove: [],
 };
 
 export const useIntentStore = create<StoreType>((set) => ({
-  armyTraining: [],
+  ...initialState,
+
   setArmyTraining: (value) =>
     set((state) => ({
       armyTraining: resolveValue(value, state.armyTraining),
     })),
-  serverTrainingDelete: [],
   setServerTrainingDelete: (value) =>
     set((state) => ({
       serverTrainingDelete: resolveValue(value, state.serverTrainingDelete),
     })),
 
   // contracts
-  contracts: [],
   setContracts: (value) =>
     set((state) => ({
       contracts: resolveValue(value, state.contracts),
@@ -78,48 +93,42 @@ export const useIntentStore = create<StoreType>((set) => ({
     set((state) => ({
       contracts: state.contracts.map((c) => (c.id === id ? { ...c, ...newData } : c)),
     })),
-  serverContractUpdate: [],
   setServerContractUpdate: (value) =>
     set((state) => ({
       serverContractUpdate: resolveValue(value, state.serverContractUpdate),
     })),
-  serverContractDelete: [],
   setServerContractDelete: (value) =>
     set((state) => ({
       serverContractDelete: resolveValue(value, state.serverContractDelete),
     })),
 
   // buildings
-  buildBuildings: [],
   setBuildBuildings: (value) =>
     set((state) => ({
       buildBuildings: resolveValue(value, state.buildBuildings),
     })),
-  serverBuildingsDelete: [],
   setServerBuildingsDelete: (value) =>
     set((state) => ({
       serverBuildingsDelete: resolveValue(value, state.serverBuildingsDelete),
     })),
-  serverCancelBuilding: [],
   setServerCancelBuilding: (value) =>
     set((state) => ({
       serverCancelBuilding: resolveValue(value, state.serverCancelBuilding),
     })),
 
-  buildRoads: [],
   setBuildRoads: (value) =>
     set((state) => ({
       buildRoads: resolveValue(value, state.buildRoads),
     })),
-  serverCancelRoadBuilding: [],
   setServerCancelRoadBuilding: (value) =>
     set((state) => ({
       serverCancelRoadBuilding: resolveValue(value, state.serverCancelRoadBuilding),
     })),
 
-  armyMove: [],
   setArmyMove: (value) =>
     set((state) => ({
       armyMove: resolveValue(value, state.armyMove),
     })),
+
+  reset: () => set(initialState),
 }));

@@ -7,6 +7,7 @@ import Image from "next/image";
 import Tooltip from "./tooltip";
 import { buildingComponents } from "@/lib/data";
 import NoBuilding from "./buildingConfig/noBuilding";
+import { getNonDeletedBuildings } from "@/lib/helpers/uiBuildings";
 
 export default function ProvinceInfoSidebar({
   selectedHex,

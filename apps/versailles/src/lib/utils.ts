@@ -1,4 +1,4 @@
-import { ArmyTraining, Contract, newBuilding } from "./types/game";
+import { armyIntent, ArmyTraining, Contract, newBuilding } from "./types/game";
 import {
   Building,
   BUILDINGS,
@@ -87,4 +87,14 @@ export function calculateOptimisticGold(
     totalCost += cost;
   }
   return playerNation?.gold ? playerNation.gold - totalCost : 0;
+}
+
+export function calcAvailableArmy(hex: Hex, playerNation: Nation | null, armyMove: armyIntent[]) {
+  const armyInTile = playerNation
+    ? (hex?.army.find((obj) => obj.nationId === playerNation.id)?.amount ?? 0)
+    : 0;
+  const movedArmy = armyMove
+    .filter((obj) => obj.hexId === hex.id)
+    .reduce((acc, curr) => acc + curr.amount, 0);
+  return armyInTile - movedArmy;
 }

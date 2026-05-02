@@ -1,4 +1,4 @@
-import { BUILDINGS_CATEGORY, Hex, Road } from "@repo/shared";
+import { Building, BUILDINGS_CATEGORY, Hex, Road } from "@repo/shared";
 import { newBuilding } from "../types/game";
 import { useIntentStore } from "../intentStore";
 import { useGameStore } from "../gameStore";
@@ -105,4 +105,23 @@ function mergeSameClientToServer(
   }
 
   return { server: mergedServerBuildings, client: mergedClientBuildings };
+}
+
+// DELETE SERVER BUILDINGS
+export function deleteBuilding(buildingId: string) {
+  const setServerBuildingsDelete = useIntentStore.getState().setServerBuildingsDelete;
+
+  setServerBuildingsDelete((prev) => {
+    const existing = prev.find((id) => id === buildingId);
+    if (!existing) {
+      return [...prev, buildingId];
+    }
+    return prev;
+  });
+}
+
+export function getNonDeletedBuildings(buildings: Building[]) {
+  const serverBuildingsDelete = useIntentStore.getState().serverBuildingsDelete;
+
+  return buildings.filter((b) => !serverBuildingsDelete.includes(b.id));
 }

@@ -10,9 +10,10 @@ export type StoreType = {
   buildings: Building[];
   playerNation: Nation | null;
   setGameData: (data: serverData) => void;
+  reset: () => void;
 };
 
-export const useGameStore = create<StoreType>((set) => ({
+export const initialState = {
   // immutable server data
   mapHexes: [],
   nations: [],
@@ -20,6 +21,11 @@ export const useGameStore = create<StoreType>((set) => ({
   turn: 0,
   roads: [],
   buildings: [],
+};
+
+export const useGameStore = create<StoreType>((set) => ({
+  ...initialState,
+
   setGameData: (data) =>
     set({
       mapHexes: data.mapHexes,
@@ -29,4 +35,6 @@ export const useGameStore = create<StoreType>((set) => ({
       roads: data.roads,
       buildings: data.buildings,
     }),
+
+  reset: () => set(initialState),
 }));

@@ -1,10 +1,12 @@
-import { Contract } from "@/lib/types/game";
+"use client";
+
 import { Building } from "@repo/shared";
 import { SquarePen } from "lucide-react";
 import ContractComponent from "./ContractComponent";
 import { useGameStore } from "@/lib/gameStore";
 import { useIntentStore } from "@/lib/intentStore";
 import { getMergedContracts, getServerContractsFromBuildings } from "@/lib/helpers/uiContract";
+import { useMemo } from "react";
 
 export default function ContractBlock({
   isContractSelected,
@@ -23,19 +25,16 @@ export default function ContractBlock({
     /* SUBSCRIBE TO CLIENT AND SERVER CONTRACTS AND MERGE THEM */
   }
   const serverContracts = getServerContractsFromBuildings(buildings);
+  const serverContractDelete = useIntentStore((s) => s.serverContractDelete);
+  const serverContractUpdate = useIntentStore((s) => s.serverContractUpdate);
 
   const clientContracts = useIntentStore((s) => s.contracts)
     .filter((c) => c.startBuildingId === building.id)
     .map((c) => ({ ...c, fromServer: false }));
 
-  const serverContractUpdate = useIntentStore((s) => s.serverContractUpdate);
-
-  const contracts = getMergedContracts(
-    serverContracts,
-    clientContracts,
-    building.id,
-    serverContractUpdate
-  );
+  const contracts = useMemo(() => {
+    return getMergedContracts(serverContracts, clientContracts, building.id, serverContractUpdate);
+  }, [serverContracts, clientContracts, building, serverContractUpdate, serverContractDelete]);
 
   console.log(contracts, "contracts");
   console.log("serverContracts", serverContracts);
