@@ -1,24 +1,10 @@
-import { RESOURCES } from "@repo/shared";
+import { MergedContractChanges, RESOURCES, ServerContractUpdate } from "@repo/shared";
 import { create } from "zustand";
 import { resolveValue } from "./utils";
 import { armyIntent, ArmyTraining, Contract, newBuilding, roadObject } from "./types/game";
 
 // custom react-like setState function type for zustland store
 export type SetStateAction<T> = (value: T | ((prev: T) => T)) => void;
-
-export type ServerContractUpdate = {
-  contractId: string;
-  changes: MergedContractChanges;
-};
-
-// ensuring both contracts are able to handle "updatable" fields
-export type MergedContractChanges = Partial<{
-  // contract id
-  amount: number;
-  resource: RESOURCES;
-  progress: number;
-  autoAdjust: boolean;
-}>;
 
 type ContractId = string;
 type BuildingId = string;

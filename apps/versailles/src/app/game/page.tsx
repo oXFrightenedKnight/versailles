@@ -42,21 +42,25 @@ export default function Home() {
   // road building intent storage
   const buildRoads = useIntentStore((state) => state.buildRoads); // UPDATE WITH SERVER DATA LATER
   const setBuildRoads = useIntentStore((state) => state.setBuildRoads);
+  const serverCancelRoadBuilding = useIntentStore((state) => state.serverCancelRoadBuilding);
 
   // new buildings
   const buildBuildings = useIntentStore((state) => state.buildBuildings);
   const setBuildBuildings = useIntentStore((state) => state.setBuildBuildings);
   // delete buildings intent
   const serverBuildingsDelete = useIntentStore((state) => state.serverBuildingsDelete);
+  const serverBuildingsCancel = useIntentStore((state) => state.serverCancelBuilding);
 
   // contracts
   const contracts = useIntentStore((state) => state.contracts);
   const setContracts = useIntentStore((state) => state.setContracts);
   const serverContracts = getServerContractsFromBuildings(buildings);
   const serverContractUpdate = useIntentStore((state) => state.serverContractUpdate);
+  const serverContractDelete = useIntentStore((state) => state.serverContractDelete);
 
   // troop training
   const armyTraining = useIntentStore((state) => state.armyTraining);
+  const serverTrainingDelete = useIntentStore((state) => state.serverTrainingDelete);
 
   // MENUS
   const [buildMenuOpen, setBuildMenuOpen] = useState<boolean>(false);
@@ -533,6 +537,12 @@ export default function Home() {
                     amount: a.amount,
                     barrackId: a.barrackId,
                   })),
+                  deleteArmyTrain: serverTrainingDelete,
+                  buildingCancel: serverBuildingsCancel,
+                  buildingDelete: serverBuildingsDelete,
+                  cancelRoadBuild: serverCancelRoadBuilding,
+                  deleteContracts: serverContractDelete,
+                  updateContracts: serverContractUpdate,
                 });
                 mapData.mutate();
                 console.log(selectedHex);

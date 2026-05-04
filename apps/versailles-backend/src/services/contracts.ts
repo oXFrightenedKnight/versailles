@@ -6,35 +6,44 @@ import {
   getBuilding,
   getHexByAxial,
   Hex,
+  Nation,
   resources,
   RESOURCES,
   Road,
+  ServerContractUpdate,
   startDijkstrasAlgo,
 } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
 
+export type newContract = {
+  startBuildingId: string;
+  endBuildingId: string;
+  amount: number;
+  resource: RESOURCES;
+  autoAdjust: boolean;
+};
+
 export function createContracts({
   contracts,
   gameCtx,
+  nation,
 }: {
-  contracts: {
-    startBuildingId: string;
-    endBuildingId: string;
-    amount: number;
-    resource: RESOURCES;
-    autoAdjust: boolean;
-  }[];
+  contracts: newContract[];
   gameCtx: GameCtx;
+  nation: Nation;
 }) {
   const { mapHexes, buildings, roads } = gameCtx;
 
   // check whether starting building is allowed to have contracts
   for (const contract of contracts) {
+    if (!resources.includes(contract.resource)) continue;
+
     const startBuilding = getBuilding({ buildings, id: contract.startBuildingId });
     const startingHex = mapHexes.find((h) => h.buildingId === contract.startBuildingId);
     const endHex = mapHexes.find((h) => h.buildingId === contract.endBuildingId);
     const endBuilding = getBuilding({ buildings, id: contract.endBuildingId });
     if (!startBuilding || !endHex?.buildingId || !startingHex || !endHex || !endBuilding) continue;
+    if (startingHex.owner !== nation.id || endHex.owner !== nation.id) continue;
 
     // -- VALIDATION --
     // check if building produces anything to export
@@ -193,6 +202,65 @@ export function recalculateContractsAmounts({ buildings, mapHexes }: GameCtx) {
 
       console.log(`amount for ${endHex}:`, amount);
       contract.amount = amount;
+    }
+  }
+}
+
+export function updateContracts(
+  ctx: GameCtx,
+  updateIntent: ServerContractUpdate[],
+  nation: Nation
+) {
+  const buildings = ctx.buildings.filter((b) => b.contracts);
+  const hexBuildingMap = new Map(
+    ctx.mapHexes.filter((h) => h.buildingId).map((h) => [h.buildingId!, h])
+  );
+  const contractMap = new Map(
+    buildings.flatMap((b) => b.contracts!.map((c) => [c.id, { building: b, contract: c }]))
+  ); // contractId: { building, contract }
+
+  for (const contractUpdate of updateIntent) {
+    if (contractUpdate.changes.resource && !resources.includes(contractUpdate.changes.resource))
+      continue;
+    const contractObj = contractMap.get(contractUpdate.contractId);
+
+    if (!contractObj) continue;
+    const hex = hexBuildingMap.get(contractObj.building.id);
+    if (!hex || hex.owner !== nation.id) continue;
+
+    // update contract
+    Object.assign(contractObj.contract, contractUpdate.changes, {
+      progress: 0,
+    });
+  }
+}
+
+// cancel army training by the object id
+export function deleteContracts(ctx: GameCtx, deleteIds: string[], nation: Nation) {
+  const buildings = ctx.buildings.filter((b) => b.contracts);
+  const hexBuildingMap = new Map(
+    ctx.mapHexes.filter((h) => h.buildingId).map((h) => [h.buildingId!, h])
+  );
+  const contractMap = new Map(
+    buildings.flatMap((b) => b.contracts!.map((c) => [c.id, { building: b, contract: c }]))
+  ); // contractId: { building, contract }
+
+  for (const id of deleteIds) {
+    const contractObj = contractMap.get(id);
+    if (!contractObj) continue;
+
+    const { building, contract } = contractObj;
+    const hex = hexBuildingMap.get(building.id);
+    if (!hex || hex.owner !== nation.id) continue;
+
+    // delete contract
+    const contracts = building.contracts;
+    if (!contracts) continue;
+
+    const idx = contracts.indexOf(contract);
+
+    if (idx !== -1) {
+      contracts.splice(idx, 1);
     }
   }
 }

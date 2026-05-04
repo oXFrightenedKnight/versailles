@@ -432,12 +432,14 @@ export const WOOD_MOD = {
 export const resources = ["wheat", "wood"] as const;
 export type RESOURCES = (typeof resources)[number];
 
-export type BUILDINGS_CATEGORY =
-  | "CIVILIAN"
-  | "BARRACK"
-  | "FARM"
-  | "WATCHTOWER"
-  | "LUMBERJACK_SETTLEMENT";
+export const building_categoires = [
+  "CIVILIAN",
+  "BARRACK",
+  "FARM",
+  "WATCHTOWER",
+  "LUMBERJACK_SETTLEMENT",
+] as const;
+export type BUILDINGS_CATEGORY = (typeof building_categoires)[number];
 
 export type MODIFIER_CATEGORIES = "manpower";
 export type MOD_TYPE = "percent" | "flat";
@@ -577,13 +579,15 @@ export type Building = {
   // farm
 
   // barrack
-  trainingTroops?: { id: string; amount: number; progress: number; nationId: string }[];
+  trainingTroops?: ArmyTrainingObject[];
   // lumberjack settlement
 
   // common properties
   contracts?: SupplyContract[];
   storage?: { type: RESOURCES; amount: number }[];
 };
+
+export type ArmyTrainingObject = { id: string; amount: number; progress: number; nationId: string };
 
 export type SupplyContract = {
   id: string;
@@ -595,6 +599,19 @@ export type SupplyContract = {
   //  and when it reaches 1 or above add resource to destination
   autoAdjust: boolean;
 };
+
+export type ServerContractUpdate = {
+  contractId: string;
+  changes: MergedContractChanges;
+};
+
+// ensuring both contracts are able to handle "updatable" fields
+export type MergedContractChanges = Partial<{
+  // contract id
+  amount: number;
+  resource: RESOURCES;
+  autoAdjust: boolean;
+}>;
 
 // create building data map
 export const BUILDINGS_DATA = createBuildingMap();

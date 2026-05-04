@@ -8,6 +8,7 @@ import {
   calculateExportAmount,
   findBuildingNameByCategory,
   getBuilding,
+  MergedContractChanges,
 } from "@repo/shared";
 import {
   ArrowBigDown,
@@ -24,7 +25,7 @@ import Tooltip from "../tooltip";
 import { Progress } from "../ui/progress";
 import { Dropdown, DropdownItem } from "../dropdown";
 import { useGameStore } from "@/lib/gameStore";
-import { MergedContractChanges, useIntentStore } from "@/lib/intentStore";
+import { useIntentStore } from "@/lib/intentStore";
 import { MergedContract } from "@/lib/types/game";
 import {
   deleteClientContract,

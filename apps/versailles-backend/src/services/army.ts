@@ -1,4 +1,4 @@
-import { Building, Hex } from "@repo/shared";
+import { ArmyTrainingObject, Building, Hex, Nation } from "@repo/shared";
 import { getNationById } from "./genNations.js";
 import { getHexById } from "./map.js";
 import { GameCtx } from "../trpc/index.js";
@@ -167,5 +167,29 @@ export function queueArmyTraining({
       type: "flat",
       value: -newArmy.amount,
     });
+  }
+}
+
+// cancel army training by the object id
+export function cancelArmyTraining(ctx: GameCtx, cancelIds: string[], nation: Nation) {
+  const armyTrainMap = new Map(
+    ctx.buildings
+      .filter((b) => b.category === "BARRACK" && b.trainingTroops)
+      .flatMap((b) => b.trainingTroops!.map((t) => [t.id, { troop: t, building: b }]))
+  );
+
+  for (const id of cancelIds) {
+    const armyToDelete = armyTrainMap.get(id);
+
+    if (!armyToDelete) continue;
+    if (armyToDelete.troop.nationId !== nation.id) continue;
+
+    // delete training object
+    const troops = armyToDelete.building.trainingTroops!;
+    const idx = troops.indexOf(armyToDelete.troop);
+
+    if (idx !== -1) {
+      troops.splice(idx, 1);
+    }
   }
 }

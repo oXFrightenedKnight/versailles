@@ -1,4 +1,14 @@
-import { Building, Hex, Nation, Road } from "@repo/shared";
+import { inferProcedureInput } from "@trpc/server";
+import { Building, Hex, MODIFIER, Nation, Road } from "@repo/shared";
+export type GameCtx = {
+  mapHexes: Hex[];
+  nations: Nation[];
+  turn: number;
+  roads: Road[];
+  buildings: Building[];
+  modifiers: MODIFIER[];
+};
+export type IntentInput = inferProcedureInput<AppRouter["nextTurn"]>;
 export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
   {
     ctx: {
@@ -27,6 +37,8 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
           buildingType: string;
           levelsToUpgrade: number;
         }[];
+        buildingCancel: number[];
+        buildingDelete: string[];
         movePlayerArmy: {
           hexId: number;
           amount: number;
@@ -44,6 +56,7 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
             d2: number;
           }[];
         }[];
+        cancelRoadBuild: string[];
         createNewContracts: {
           startBuildingId: string;
           endBuildingId: string;
@@ -51,10 +64,20 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
           resource: string;
           autoAdjust: boolean;
         }[];
+        deleteContracts: string[];
+        updateContracts: {
+          contractId: string;
+          changes: {
+            amount?: number | undefined;
+            resource?: string | undefined;
+            autoAdjust?: boolean | undefined;
+          };
+        }[];
         trainNewArmy: {
           amount: number;
           barrackId: string;
         }[];
+        deleteArmyTrain: string[];
       };
       output: void;
       meta: object;

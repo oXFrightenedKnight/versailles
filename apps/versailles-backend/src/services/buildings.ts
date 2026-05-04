@@ -18,42 +18,6 @@ import { roundToNearestDecimal } from "../lib/helpers.js";
 import { getNationById } from "./genNations.js";
 import { GameCtx } from "../trpc/index.js";
 
-{
-  /*export function calculateSupply(buildings: Building[], mapHexes: Hex[]) {
-  // find all buildings that have some sort of contract
-  const deliveryBuildings = buildings.filter((b) => b.contracts && b.contracts.length > 0);
-  // calculate contract progress for every contract of every building
-  for (const building of deliveryBuildings) {
-    for (const contract of building.contracts!) {
-      const total = contract.hexIds.length;
-      const increase = 1 / total;
-      contract.progress += increase;
-
-      if (contract.progress === 1) {
-        const building = getBuilding({ buildings, id: contract.buildingId });
-        if (!building) continue;
-        const name = findBuildingNameByCategory({
-          buildingCategory: building.category,
-          level: building.level,
-        });
-        if (!name) continue;
-
-        // check if building has enough space to store
-        const resourceStorage = building.storage?.find((s) => s.type === contract.resource);
-        const maxStorage =
-          Object.entries(BUILDINGS[name].storageCap).find(
-            ([type, amount]) => type === contract.resource
-          )?.[1] ?? 0;
-        if (!resourceStorage) continue;
-        if (resourceStorage.amount + contract.amount > maxStorage) continue;
-        resourceStorage.amount += contract.amount;
-        contract.progress = 0;
-      }
-    }
-  }
-} */
-}
-
 export function buildingOutput(gameCtx: GameCtx) {
   const { buildings } = gameCtx;
   // sort buildings into different groups
@@ -349,4 +313,39 @@ function calculateAverageConsumption(consumptionMod: Record<string, number>) {
   }
 
   return avgConsumption;
+}
+
+export function cancelBuilding(ctx: GameCtx, hexIds: number[], nation: Nation) {
+  const hexIdMap = new Map(ctx.mapHexes.filter((h) => h.build_queue).map((h) => [h.id, h]));
+
+  for (const id of hexIds) {
+    const hex = hexIdMap.get(id);
+    if (!hex || !hex.build_queue) continue;
+    if (hex.owner !== nation.id) continue;
+
+    // cancel building
+    hex.build_queue = null;
+  }
+}
+
+// delete buildings by their id
+export function deleteBuilding(ctx: GameCtx, deleteIds: string[], nation: Nation) {
+  const buildingHexMap = new Map(
+    ctx.mapHexes.filter((h) => h.buildingId).map((h) => [h.buildingId!, h])
+  );
+  const buildingIdMap = new Map(ctx.buildings.map((b) => [b.id, b]));
+
+  for (const id of deleteIds) {
+    const building = buildingIdMap.get(id);
+    const hex = buildingHexMap.get(id);
+    if (!building || !hex) continue;
+    if (hex.owner !== nation.id) continue;
+
+    // delete building
+    const idx = ctx.buildings.indexOf(building);
+    if (idx !== -1) {
+      ctx.buildings.splice(idx, 1);
+      hex.buildingId = null;
+    }
+  }
 }

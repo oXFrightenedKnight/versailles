@@ -4,11 +4,12 @@ import { generateHexMap } from "../services/map.js";
 import { memoryStore } from "../server/memoryStore.js";
 import {
   buildNationBuildings,
-  buildNationRoads,
+  executeIntents,
   generateNations,
   newBuildings,
+  runIntentForEachNation,
 } from "../services/genNations.js";
-import { TRPCError } from "@trpc/server";
+import { inferProcedureInput, TRPCError } from "@trpc/server";
 import { moveArmy, queueArmyTraining } from "../services/army.js";
 import {
   ALL_BUILDING_CATEGORIES,
@@ -28,6 +29,7 @@ import {
 } from "../services/contracts.js";
 import { buildingOutput } from "../services/buildings.js";
 import { nationsUpdateManpower } from "../services/manpower.js";
+import { buildNationRoads } from "../services/road.js";
 
 export type GameCtx = {
   mapHexes: Hex[];
@@ -37,6 +39,8 @@ export type GameCtx = {
   buildings: Building[];
   modifiers: MODIFIER[];
 };
+
+export type IntentInput = inferProcedureInput<AppRouter["nextTurn"]>;
 
 export const appRouter = router({
   // Init game
@@ -98,6 +102,8 @@ export const appRouter = router({
             levelsToUpgrade: z.int().min(1),
           })
         ),
+        buildingCancel: z.array(z.number()),
+        buildingDelete: z.array(z.string()),
         movePlayerArmy: z.array(
           z.object({
             hexId: z.int(),
@@ -121,6 +127,7 @@ export const appRouter = router({
             ),
           })
         ),
+        cancelRoadBuild: z.array(z.string()),
         createNewContracts: z.array(
           z.object({
             startBuildingId: z.string(), // export from
@@ -130,15 +137,27 @@ export const appRouter = router({
             autoAdjust: z.boolean(),
           })
         ),
+        deleteContracts: z.array(z.string()),
+        updateContracts: z.array(
+          z.object({
+            contractId: z.string(),
+            changes: z.object({
+              amount: z.number().optional(),
+              resource: z.string().optional(),
+              autoAdjust: z.boolean().optional(),
+            }),
+          })
+        ),
         trainNewArmy: z.array(
           z.object({
             amount: z.int().min(0),
             barrackId: z.string(),
           })
         ),
+        deleteArmyTrain: z.array(z.string()),
       })
     )
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ input }) => {
       // create gameCtx
       const gameCtx: GameCtx = {
         mapHexes: memoryStore.maps.get("mapHexes"),
@@ -148,14 +167,11 @@ export const appRouter = router({
         buildings: memoryStore.maps.get("buildings"),
         modifiers: memoryStore.maps.get("modifiers"),
       };
+      const playerIntentCtx: IntentInput = {
+        ...input,
+      };
 
       const playerNationId = gameCtx.nations.find((nation) => nation.isPlayer)?.id;
-      const buildRoads = input.buildRoads;
-      const createNewContracts = input.createNewContracts.map((c) => ({
-        ...c,
-        resource: c.resource as RESOURCES,
-      }));
-      const trainNewArmy = input.trainNewArmy;
 
       // checks
       if (
@@ -171,57 +187,14 @@ export const appRouter = router({
 
       // step 1: calculate ai decisions (build, attack, move)
 
-      // step 1.5: queue buildings that are going to be built & finish building
-      for (const nation of gameCtx.nations) {
-        if (!nation.isPlayer) continue; // execute for player nation only
-        // check if all new queued buildings categories exist
-        if (
-          !input.newQueuedBuildings.every((obj) =>
-            ALL_BUILDING_CATEGORIES.includes(obj.buildingType as BUILDINGS_CATEGORY)
-          )
-        )
-          throw new TRPCError({ code: "NOT_FOUND" });
-        gameCtx.mapHexes = buildNationBuildings({
-          nation: nation,
-          gameCtx,
-          newBuildings: input.newQueuedBuildings as newBuildings,
-        });
-
-        // build roads (only allow to build from building to building or road to building or road to road)
-        const roadsToBuild = buildRoads.map((r) => ({
-          ...r,
-          points: r.points.map((p) => ({
-            ...p,
-            isConstructing: true,
-          })),
-          constructing: null,
-        }));
-        buildNationRoads({ gameCtx, buildRoads: roadsToBuild, nationId: nation.id });
-      }
-
-      // step 1.6: queue army training (player, then ai)
-      queueArmyTraining({ trainNewArmy, nationId: playerNationId, gameCtx }); // for player country (client request)
-      // map over all other ai nations and execute this function for each
-
-      // step 2: army movement (player + ai)
-      // player first
-      const movePlayerArmy = input.movePlayerArmy;
-
-      for (const hexObj of movePlayerArmy) {
-        moveArmy({
-          hexId: hexObj.hexId,
-          amount: hexObj.amount,
-          direction: hexObj.direction,
-          nationId: playerNationId,
-          gameCtx,
-        });
-      }
-      // ai movement
+      // step 2: apply intents
+      // merge ai intents in here later
+      const intents = [{ input: playerIntentCtx, nationId: playerNationId }];
+      runIntentForEachNation(gameCtx, intents);
 
       // step 3: calculate battle outcomes
 
-      // step 4: create & calculate contract exports
-      createContracts({ contracts: createNewContracts, gameCtx });
+      // step 4: calculate contracts
       executeContracts(gameCtx);
 
       // step 5: calculate gold & building output
