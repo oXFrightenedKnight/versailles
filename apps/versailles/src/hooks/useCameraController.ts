@@ -1,4 +1,3 @@
-import { RoadDragCtx } from "@/canvas/handleClick";
 import { useCallback, useRef } from "react";
 
 // this hook ONLY works with camera objects

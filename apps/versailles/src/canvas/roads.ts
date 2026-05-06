@@ -1,6 +1,7 @@
 import { roadObject } from "@/lib/types/game";
 import { hexToPixel } from "./render";
 import { Hex, Road } from "@repo/shared";
+import { RenderRoad, RoadConstructionVM } from "@/lib/helpers/uiRoads";
 
 export function mergeRoads(r1: roadObject, r2: roadObject, key: string) {
   const isStart1 = `${r1.points[0].q},${r1.points[0].r}` === key;
@@ -279,14 +280,12 @@ function strokeRoadPath({
 }
 
 export function drawAllRoads({
-  roadObjectArray,
   roads,
   tempRoad,
   mapHexes,
   ctx,
 }: {
-  roadObjectArray: roadObject[];
-  roads: Road[];
+  roads: RenderRoad[];
   tempRoad: roadObject | null;
   mapHexes: Hex[];
   ctx: CanvasRenderingContext2D;
@@ -295,11 +294,8 @@ export function drawAllRoads({
   if (tempRoad) {
     callDrawRoad({ roads: [tempRoad], ctx, opacity: 1, color: "white" });
   }
-  // DRAW QUEUED ROADS that haven't been sent to server yet
-  callDrawRoad({ roads: roadObjectArray, ctx, opacity: 0.7 });
 
-  // DRAW REAL ROADS
-  // map over built roads to turn them into function-compatible format
+  // DRAW MERGED ROADS
   const roadsInProgress = roads.map((r) => {
     const firstConstructingIndex = r.points.findIndex((p) => p.isConstructing);
 

@@ -136,5 +136,14 @@ export function cancelRoadBuild(ctx: GameCtx, cancelIds: string[], nation: Natio
     // cancel building road further
     road.points = road.points.filter((p) => !p.isConstructing);
     road.constructing = null;
+
+    // delete road if it's 1 or fewer points long
+    if (road.points.length <= 1) {
+      const idx = ctx.roads.indexOf(road);
+
+      if (idx !== -1) {
+        ctx.roads.splice(idx, 1);
+      }
+    }
   }
 }

@@ -6,19 +6,10 @@ import ToggleBuilding from "./ToggleBuilding";
 import { BuildingDescriptions, BuildingIcons } from "@/lib/data";
 import { BuildModeType } from "@/lib/types/game";
 import { useGameStore } from "@/lib/gameStore";
-import {
-  getConstructingBuildingsServer,
-  mergeConstructingBuildings,
-  mergeConstructingBuildingsClient,
-} from "@/lib/helpers/uiBuildings";
+import { mergeConstructingBuildings } from "@/lib/helpers/uiBuildings";
 import { useIntentStore } from "@/lib/intentStore";
 import ConstructingBuilding from "./ConstructingBuilding";
-import { useMemo } from "react";
-import {
-  getBuildingRoadsServer,
-  mergeBuildingRoads,
-  mergeBuildingRoadsClient,
-} from "@/lib/helpers/uiRoads";
+import { mergeBuildingRoads } from "@/lib/helpers/uiRoads";
 import ConstructingRoad from "./RoadConstructing";
 
 export default function BuildMenu({
@@ -43,25 +34,17 @@ export default function BuildMenu({
 
   // Display server + client constructing buildings
   const mapHexes = useGameStore((s) => s.mapHexes);
-  const serverConstructing = getConstructingBuildingsServer(mapHexes);
   const buildBuildings = useIntentStore((s) => s.buildBuildings);
-  const clientConstructing = mergeConstructingBuildingsClient(buildBuildings);
   const serverCancelBuilding = useIntentStore((s) => s.serverCancelBuilding);
 
-  const constructing = useMemo(() => {
-    return mergeConstructingBuildings(serverConstructing, clientConstructing);
-  }, [serverCancelBuilding, clientConstructing, serverConstructing]);
+  const uiConstructing = mergeConstructingBuildings(mapHexes, serverCancelBuilding, buildBuildings);
 
   // --- ROADS ---
-  const serverRoads = useGameStore((s) => s.roads);
+  const roads = useGameStore((s) => s.roads);
   const cancelRoadServer = useIntentStore((s) => s.serverCancelRoadBuilding);
-  const clientRoads = useIntentStore((s) => s.buildRoads);
-  const serverRoadsBuilding = getBuildingRoadsServer(serverRoads, mapHexes);
-  const clientRoadsBuilding = mergeBuildingRoadsClient(clientRoads, mapHexes);
+  const buildRoads = useIntentStore((s) => s.buildRoads);
 
-  const buildingRoads = useMemo(() => {
-    return mergeBuildingRoads(serverRoadsBuilding, clientRoadsBuilding);
-  }, [serverRoadsBuilding, clientRoadsBuilding, cancelRoadServer]);
+  const buildingRoads = mergeBuildingRoads(roads, mapHexes, cancelRoadServer, buildRoads);
 
   return (
     <div className="w-full h-full">
@@ -96,9 +79,9 @@ export default function BuildMenu({
             </div>
             <div className="w-full h-[70%] flex flex-col justify-start items-center  bg-gray-900 shadow-md shadow-black rounded-[8px] overflow-y-auto no-scrollbar gap-2">
               <div
-                className={`flex flex-col gap-2 w-full ${constructing.length > 0 && buildingRoads.length > 0 ? "border-b pb-2" : ""}`}
+                className={`flex flex-col gap-2 w-full ${uiConstructing.length > 0 && buildingRoads.length > 0 ? "border-b pb-2" : ""}`}
               >
-                {constructing.map((c, key) => (
+                {uiConstructing.map((c, key) => (
                   <ConstructingBuilding building={c} key={key}></ConstructingBuilding>
                 ))}
               </div>

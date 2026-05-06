@@ -2,6 +2,7 @@ import { getHexByAxial, Hex, Road } from "@repo/shared";
 import { useIntentStore } from "../intentStore";
 import { roadObject } from "../types/game";
 
+// roads that are used to display for build menu
 export type RoadConstructionVM = {
   id: string;
   hexIds: number[];
@@ -10,34 +11,46 @@ export type RoadConstructionVM = {
   finsishedAmount: number;
 };
 
+// roads that are used to be rendered on a map
+export type RenderRoad = {
+  id: string;
+  points: {
+    q: number;
+    r: number;
+    d1: number;
+    d2: number;
+    isConstructing: boolean;
+  }[];
+  fromServer: boolean;
+};
+
 // --- ROADS ---
-export function getBuildingRoadsServer(roads: Road[], mapHexes: Hex[]) {
-  const serverCancelRoadBuilding = useIntentStore.getState().serverCancelRoadBuilding;
+function getBuildingRoadsServer(
+  roads: Road[],
+  mapHexes: Hex[],
+  serverCancelRoadBuilding: string[]
+) {
+  return roads
+    .filter((r) => r.constructing && !serverCancelRoadBuilding.includes(r.id))
+    .map((r) => {
+      const hexIds = [];
+      for (const point of r.points) {
+        const hex = getHexByAxial(point.q, point.r, mapHexes);
+        if (hex) hexIds.push(hex.id);
+      }
 
-  return (
-    roads
-      // leave only hexes with build queue, and are not included in cancel intent
-      .filter((r) => r.constructing && !serverCancelRoadBuilding.includes(r.id))
-      .map((r) => {
-        const hexIds = [];
-        for (const point of r.points) {
-          const hex = getHexByAxial(point.q, point.r, mapHexes);
-          if (hex) hexIds.push(hex.id);
-        }
+      const finishedPoints = r.points.filter((p) => !p.isConstructing);
 
-        const finishedPoints = r.points.filter((p) => !p.isConstructing);
-
-        return {
-          id: r.id,
-          hexIds: hexIds,
-          fromServer: true,
-          finsishedAmount: finishedPoints.length,
-        };
-      }) as RoadConstructionVM[]
-  );
+      return {
+        id: r.id,
+        hexIds: hexIds,
+        fromServer: true,
+        finsishedAmount: finishedPoints.length,
+      };
+    }) as RoadConstructionVM[];
 }
 
-export function mergeBuildingRoadsClient(buildRoads: roadObject[], mapHexes: Hex[]) {
+function mergeBuildingRoadsClient(buildRoads: roadObject[], mapHexes: Hex[]) {
   return buildRoads.map((r) => {
     const hexIds = [];
     for (const point of r.points) {
@@ -55,9 +68,13 @@ export function mergeBuildingRoadsClient(buildRoads: roadObject[], mapHexes: Hex
 }
 
 export function mergeBuildingRoads(
-  serverRoads: RoadConstructionVM[],
-  clientRoads: RoadConstructionVM[]
+  roads: Road[],
+  mapHexes: Hex[],
+  serverCancelRoadBuilding: string[],
+  buildRoads: roadObject[]
 ) {
+  const serverRoads = getBuildingRoadsServer(roads, mapHexes, serverCancelRoadBuilding);
+  const clientRoads = mergeBuildingRoadsClient(buildRoads, mapHexes);
   return [...serverRoads, ...clientRoads];
 }
 
@@ -84,4 +101,47 @@ export function cancelRoadBuildingClient(roadId: string) {
     }
     return prev;
   });
+}
+
+// --- RENDERING ROADS ---
+function getRoadsServer(roads: Road[], serverCancelRoadBuilding: string[]) {
+  return roads.map((r) => {
+    const points = [];
+    for (const point of r.points) {
+      if (serverCancelRoadBuilding.includes(r.id) && point.isConstructing) continue;
+      points.push(point);
+    }
+
+    return {
+      id: r.id,
+      points: points,
+      fromServer: true,
+    };
+  }) as RenderRoad[];
+}
+
+function getRoadsClient(buildRoads: roadObject[]) {
+  return buildRoads.map((r) => {
+    const points = r.points.map((p) => ({
+      ...p,
+      isConstructing: true,
+    }));
+
+    return {
+      id: r.id,
+      points,
+      fromServer: false,
+    };
+  }) as RenderRoad[];
+}
+
+export function getRenderRoads(
+  roads: Road[],
+  serverCancelRoadBuilding: string[],
+  buildRoads: roadObject[]
+) {
+  const serverRoads = getRoadsServer(roads, serverCancelRoadBuilding);
+  const clientRoads = getRoadsClient(buildRoads);
+
+  return [...serverRoads, ...clientRoads];
 }

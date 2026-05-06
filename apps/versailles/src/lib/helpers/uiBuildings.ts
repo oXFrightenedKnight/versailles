@@ -1,9 +1,9 @@
 import { Building, BUILDINGS_CATEGORY, Hex, Road } from "@repo/shared";
 import { newBuilding } from "../types/game";
 import { useIntentStore } from "../intentStore";
-import { useGameStore } from "../gameStore";
 
 export type BuildingConstructionVM = {
+  id: string;
   hexId: number;
   buildingType: BUILDINGS_CATEGORY;
   levelsToUpgrade: number;
@@ -11,8 +11,7 @@ export type BuildingConstructionVM = {
   fromServer: boolean;
 };
 
-export function getConstructingBuildingsServer(mapHexes: Hex[]) {
-  const serverCancelBuilding = useIntentStore.getState().serverCancelBuilding;
+function getConstructingBuildingsServer(mapHexes: Hex[], serverCancelBuilding: number[]) {
   return (
     mapHexes
       // leave only hexes with build queue, and are not included in cancel intent
@@ -27,7 +26,7 @@ export function getConstructingBuildingsServer(mapHexes: Hex[]) {
   );
 }
 
-export function mergeConstructingBuildingsClient(buildings: newBuilding[]) {
+function mergeConstructingBuildingsClient(buildings: newBuilding[]) {
   return buildings.map((b) => ({
     hexId: b.hexId,
     buildingType: b.buildingType,
@@ -38,9 +37,13 @@ export function mergeConstructingBuildingsClient(buildings: newBuilding[]) {
 }
 
 export function mergeConstructingBuildings(
-  serverBuildings: BuildingConstructionVM[],
-  clientBuildings: BuildingConstructionVM[]
+  mapHexes: Hex[],
+  serverCancelBuilding: number[],
+  buildBuildings: newBuilding[]
 ) {
+  const serverBuildings = getConstructingBuildingsServer(mapHexes, serverCancelBuilding);
+  const clientBuildings = mergeConstructingBuildingsClient(buildBuildings);
+
   const { server, client } = mergeSameClientToServer(serverBuildings, clientBuildings);
   return [...server, ...client];
 }
@@ -120,8 +123,6 @@ export function deleteBuilding(buildingId: string) {
   });
 }
 
-export function getNonDeletedBuildings(buildings: Building[]) {
-  const serverBuildingsDelete = useIntentStore.getState().serverBuildingsDelete;
-
+export function getUIBuildings(buildings: Building[], serverBuildingsDelete: string[]) {
   return buildings.filter((b) => !serverBuildingsDelete.includes(b.id));
 }

@@ -24,8 +24,9 @@ import { dispatchMapTap, handleBarDrag, handleRoadDrag, stopBarDrag } from "@/ca
 import { calculateOptimisticGold, calculateOptimisticManpower } from "@/lib/utils";
 import { BuildModeType, roadObject } from "@/lib/types/game";
 import { getServerContractsFromBuildings } from "@/lib/helpers/uiContract";
-import { getNonDeletedBuildings } from "@/lib/helpers/uiBuildings";
+import { getUIBuildings } from "@/lib/helpers/uiBuildings";
 import DragBar from "@/components/DragBar";
+import { getRenderRoads, mergeBuildingRoads } from "@/lib/helpers/uiRoads";
 
 export default function Home() {
   const mapHexes = useGameStore((state) => state.mapHexes);
@@ -132,9 +133,8 @@ export default function Home() {
   // --- MEMOs --- (values updated when deps change)
 
   // remaining buildings to render after filtering out deleted by intent
-  const BuildingsUI = useMemo(() => {
-    return getNonDeletedBuildings(buildings);
-  }, [buildings, serverBuildingsDelete]);
+  const BuildingsUI = getUIBuildings(buildings, serverBuildingsDelete);
+  const RoadsUI = getRenderRoads(roads, serverCancelRoadBuilding, buildRoads);
 
   const effectiveManpower = useMemo(() => {
     return calculateOptimisticManpower(armyTraining, playerNation);
@@ -192,13 +192,12 @@ export default function Home() {
       map,
       nationList,
       armyMove,
-      buildRoads, // array of roads to BE built
       tempRoadRef.current, // temporary road drawn by player
-      roads // real road
+      RoadsUI
     );
 
     ctxs.forEach((c) => c.restore());
-  }, [armyMove, buildRoads, roads, cameraRef]);
+  }, [armyMove, RoadsUI, cameraRef]);
 
   const startAnimation = useCallback(() => {
     if (animatingRef.current) return;
@@ -276,6 +275,7 @@ export default function Home() {
         d,
         barValue,
         setBarValue,
+        serverBuildingsCancel,
       };
 
       dispatchMapTap(worldX, worldY, event.button, ctx);
@@ -288,6 +288,7 @@ export default function Home() {
 
       buildBuildings,
       setBuildBuildings,
+      serverBuildingsCancel,
 
       playerNation,
       BuildingsUI,

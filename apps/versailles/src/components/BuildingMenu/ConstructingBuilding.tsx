@@ -6,22 +6,29 @@ import {
   BuildingConstructionVM,
   cancelClientBuildingIntent,
   cancelServerBuildingIntent,
+  getUIBuildings,
 } from "@/lib/helpers/uiBuildings";
 import { Hammer, SquareArrowUp, X } from "lucide-react";
 import { BUILDINGS, findBuildingNameByCategory, getBuilding } from "@repo/shared";
 import { useGameStore } from "@/lib/gameStore";
 import { useCallback } from "react";
+import { useIntentStore } from "@/lib/intentStore";
 
 export default function ConstructingBuilding({ building }: { building: BuildingConstructionVM }) {
   const mapHexes = useGameStore((s) => s.mapHexes);
   const buildings = useGameStore((s) => s.buildings);
+  const serverBuildingsDelete = useIntentStore((s) => s.serverBuildingsDelete);
+
+  const uiBuildings = getUIBuildings(buildings, serverBuildingsDelete);
 
   const Icon = BuildingIcons[building.buildingType];
   const hex = mapHexes.find((h) => h.id === building.hexId);
 
   // find buildCost of next level of this building category and compare to current progress
   const existingBuilding =
-    hex && hex?.buildingId ? getBuilding({ buildings, id: hex.buildingId }) : null;
+    hex && hex?.buildingId
+      ? getBuilding({ buildings: uiBuildings, id: hex.buildingId })
+      : undefined;
 
   const name = findBuildingNameByCategory({
     buildingCategory: building.buildingType,

@@ -2,6 +2,7 @@ import { findNeighbors, Hex, Nation, NATION_NAMES, Road } from "@repo/shared";
 import { Biome, BIOME_COLOR, HEX_SIZE } from "./map_data";
 import { armyIntent, roadObject } from "@/lib/types/game";
 import { drawAllRoads } from "./roads";
+import { RenderRoad, RoadConstructionVM } from "@/lib/helpers/uiRoads";
 
 const biomePatterns: Partial<Record<Biome, CanvasPattern>> = {};
 const texturePatterns: Partial<Record<string, CanvasPattern>> = {};
@@ -326,9 +327,8 @@ export function renderMap(
   mapHexes: Hex[],
   nations: Nation[],
   armyMove: armyIntent[],
-  buildRoads: roadObject[],
   tempRoad: roadObject | null,
-  roads: Road[]
+  roadsUI: RenderRoad[]
 ) {
   // set of neighbor ids
   const neighbors = new Set<number>();
@@ -419,9 +419,8 @@ export function renderMap(
   drawAllRoads({
     ctx: clickCtx,
     mapHexes,
-    roadObjectArray: buildRoads,
     tempRoad,
-    roads,
+    roads: roadsUI,
   });
 }
 

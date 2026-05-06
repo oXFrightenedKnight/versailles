@@ -1,21 +1,16 @@
 
 
 list of changes to make next:
-1. fix bug where player can't build after canceling server building and fix bug
-that occurs after you try to build on hex that you had deleted building on this turn
-2. when canceling roads, make sure no 1-pointers are left. and make sure to
-optimistically update road rendering when deleting roads
 3. Reduce population when deleting building
-4. Make logistics system more intuitive. Show how much the building is currently
-consuming
-5. Add option to delete contracts, army trainings, unfinished buildings
 6. Add basic diplomacy (at least 1 button - declare war)
 7. start working on ai
 8. Update war mechanics. add surrendering.
 9. setup a database to store game state in
-10. bug fixes + ui polishment + refactor clicking handler on client
-11. Music, sound effects, reusable components
-11. deploy
+10. Make logistics system more intuitive. Show how much the building is currently
+consuming
+11. bug fixes + ui polishment + refactor clicking handler on client
+12. Music, sound effects, reusable components
+13. deploy
 
 also good to add modifier support for other parts of the game, not just manpower
 

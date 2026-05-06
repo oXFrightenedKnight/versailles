@@ -9,6 +9,7 @@ import {
   HEX_DIRECTIONS,
   Nation,
   Road,
+  ServerContractUpdate,
   startDijkstrasAlgo,
   SupplyContract,
   topLevelsByCategory,
@@ -16,11 +17,12 @@ import {
 import { pixelToHex } from "./render";
 import { Dispatch, RefObject } from "react";
 import { calcAvailableArmy, randomNumber } from "@/lib/utils";
-import { ServerContractUpdate, SetStateAction } from "@/lib/intentStore";
+import { SetStateAction } from "@/lib/intentStore";
 import { armyIntent, BuildModeType, Contract, newBuilding, roadObject } from "@/lib/types/game";
 import { findHexPathBetween } from "./pathfinding";
 import { getFirstFreeResource, getMergedContracts } from "@/lib/helpers/uiContract";
 import { cancelArmyMove } from "@/lib/helpers/uiArmy";
+import { mergeConstructingBuildings } from "@/lib/helpers/uiBuildings";
 
 export type ClickCtx = {
   mouseDownRef: RefObject<boolean>;
@@ -58,6 +60,7 @@ export type ClickCtx = {
   };
   barValue: number;
   setBarValue: React.Dispatch<React.SetStateAction<number>>;
+  serverBuildingsCancel: number[];
 };
 
 export type RoadDragCtx = {
@@ -270,7 +273,15 @@ function handleRoadBuild(hex: Hex, ctx: ClickCtx) {
   }
 }
 function handleBuildingPlacement(hex: Hex, ctx: ClickCtx) {
-  const { buildBuildings, buildMode, BuildingsUI, setBuildBuildings, playerNation } = ctx;
+  const {
+    buildBuildings,
+    buildMode,
+    BuildingsUI,
+    setBuildBuildings,
+    playerNation,
+    serverBuildingsCancel,
+    mapHexes,
+  } = ctx;
 
   // return if hex doesn't belong to player
   if (hex.owner !== playerNation?.id) return;
@@ -279,19 +290,21 @@ function handleBuildingPlacement(hex: Hex, ctx: ClickCtx) {
   const buildingOfHex = hex.buildingId
     ? getBuilding({ buildings: BuildingsUI, id: hex.buildingId })
     : undefined;
-  const queuedClientBuilding = buildBuildings.find((obj) => obj.hexId === hex.id);
-  const queuedServerBuilding = hex.build_queue;
+  const optimisticConstruction = mergeConstructingBuildings(
+    mapHexes,
+    serverBuildingsCancel,
+    buildBuildings
+  );
+  const constructingBuilding = optimisticConstruction.find((obj) => obj.hexId === hex.id);
 
-  const serverLevels = queuedServerBuilding?.levels ?? 0;
-  const clientLevels = queuedClientBuilding?.levelsToUpgrade ?? 0;
+  const queuedLevels = constructingBuilding?.levelsToUpgrade ?? 0;
   const currentLevel = buildingOfHex?.level ? buildingOfHex.level : 0;
 
   // if there is a building queued or built already and its type doesn't match - skip
-  if (queuedClientBuilding && queuedClientBuilding.buildingType !== buildMode) return;
-  if (queuedServerBuilding && queuedServerBuilding.building !== buildMode) return;
+  if (constructingBuilding && constructingBuilding.buildingType !== buildMode) return;
   if (buildingOfHex && buildingOfHex.category !== buildMode) return;
 
-  const total = serverLevels + clientLevels + currentLevel;
+  const total = queuedLevels + currentLevel;
   const max = topLevelsByCategory.find((l) => l.category === buildMode)?.level ?? Infinity;
   // if no max level was found, default to infinity
 
@@ -299,25 +312,26 @@ function handleBuildingPlacement(hex: Hex, ctx: ClickCtx) {
   if (total + 1 > max) return;
 
   // update if exists, create if doesn't
-  if (queuedClientBuilding) {
-    setBuildBuildings((prev) =>
-      prev.map((obj) =>
-        obj.hexId === queuedClientBuilding.hexId
-          ? { ...obj, levelsToUpgrade: obj.levelsToUpgrade + 1 }
-          : obj
-      )
-    );
-  } else {
-    if (buildMode === "road" || buildMode === "none") return;
-    setBuildBuildings((prev) => [
+  setBuildBuildings((prev) => {
+    if (buildMode === "road" || buildMode === "none") return prev;
+
+    const exists = prev.some((obj) => obj.hexId === hex.id);
+
+    if (exists) {
+      return prev.map((obj) =>
+        obj.hexId === hex.id ? { ...obj, levelsToUpgrade: obj.levelsToUpgrade + 1 } : obj
+      );
+    }
+
+    return [
       ...prev,
       {
         hexId: hex.id,
         levelsToUpgrade: 1,
         buildingType: buildMode,
       },
-    ]);
-  }
+    ];
+  });
 }
 
 // RIGHT CLICK

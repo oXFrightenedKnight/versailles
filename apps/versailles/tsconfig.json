@@ -31,7 +31,8 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts",
-    "src/canvas/render.js"
+    "src/canvas/render.js",
+    "**/*.d.ts"
   ],
   "exclude": ["node_modules"],
   "extends": "../../tsconfig.base.json"
