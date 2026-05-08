@@ -1,23 +1,13 @@
 import { findNeighbors, Hex, Nation, NATION_NAMES, Road } from "@repo/shared";
 import { Biome, BIOME_COLOR, HEX_SIZE } from "./map_data";
 import { armyIntent, roadObject } from "@/lib/types/game";
-import { drawAllRoads } from "./roads";
-import { RenderRoad, RoadConstructionVM } from "@/lib/helpers/uiRoads";
+import { drawAllRoads } from "./roads/roads";
+import { RenderRoad, RoadConstructionVM } from "@/lib/UI/mergeData/uiRoads";
+import { getFlagImage } from "@/lib/helpers/flags";
+import { numberConverter } from "@/lib/utils";
 
 const biomePatterns: Partial<Record<Biome, CanvasPattern>> = {};
 const texturePatterns: Partial<Record<string, CanvasPattern>> = {};
-
-const flagCache: Record<string, HTMLImageElement> = {};
-
-function getFlag(nationName: string) {
-  if (!flagCache[nationName]) {
-    const img = new Image();
-    img.src = `/flags/${nationName}_flag.png`;
-    flagCache[nationName] = img;
-  }
-
-  return flagCache[nationName];
-}
 
 export function initBiomePatterns(ctx: CanvasRenderingContext2D): Promise<void> {
   return new Promise((resolve) => {
@@ -393,15 +383,11 @@ export function renderMap(
     }
 
     if (hex.army.length !== 0) {
-      const array = hex.army.map((obj) => {
-        const nationName = getNationName({ id: obj.nationId });
-
-        return {
-          text: obj.amount.toString(),
-          icon: getFlag(nationName), // getting image from cash to avoid
-          // creating too many images
-        };
-      });
+      const array = hex.army.map((obj) => ({
+        text: obj.amount.toString(),
+        icon: getFlagImage(obj.nationId), // getting image from cash to avoid
+        // creating too many images
+      }));
       drawLabelArray(ctx, array, mapCenterX + x, mapCenterY + y);
     }
 
@@ -422,24 +408,6 @@ export function renderMap(
     tempRoad,
     roads: roadsUI,
   });
-}
-
-export function getNationName({ id }: { id: string }) {
-  const entry = Object.entries(NATION_NAMES).find(([_, value]) => value === id);
-
-  const key = entry?.[0] ? entry?.[0] : "tribes";
-  return key;
-}
-
-export function numberConverter(number: string) {
-  if (Number(number)) {
-    if (Number(number) >= 1000000) {
-      return `${(Number(number) / 1000000).toFixed(1)}M`;
-    } else if (Number(number) >= 1000) {
-      return `${(Number(number) / 1000).toFixed(1)}k`;
-    }
-  }
-  return `${number}`; // return unchanged if not a number
 }
 
 function drawLabel(

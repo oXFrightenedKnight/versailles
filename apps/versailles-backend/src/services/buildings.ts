@@ -1,4 +1,5 @@
 import {
+  BASE_HEX_POPULATION,
   baseGoldRate,
   baseTrainingProgress,
   baseWheatRate,
@@ -346,6 +347,7 @@ export function deleteBuilding(ctx: GameCtx, deleteIds: string[], nation: Nation
     if (idx !== -1) {
       ctx.buildings.splice(idx, 1);
       hex.buildingId = null;
+      hex.population = BASE_HEX_POPULATION;
     }
   }
 }

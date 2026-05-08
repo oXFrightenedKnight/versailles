@@ -1,12 +1,3 @@
-import { armyIntent, ArmyTraining, Contract, newBuilding } from "./types/game";
-import {
-  Building,
-  BUILDINGS,
-  findBuildingNameByCategory,
-  getBuilding,
-  Hex,
-  Nation,
-} from "@repo/shared";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -20,17 +11,6 @@ export function isLastElement(array: unknown[], element: unknown) {
 
   // Return true if the index is the last index in the array
   return index !== -1 && index === array.length - 1;
-}
-
-export function getHexById(id: number, mapHexes: Hex[]) {
-  // switch to db request later
-
-  for (const hex of mapHexes) {
-    if (hex.id === id) {
-      return hex as Hex;
-    }
-  }
-  return null;
 }
 
 export function lerp(a: number, b: number, t: number) {
@@ -49,48 +29,13 @@ export function resolveValue<T>(value: T | ((prev: T) => T), prev: T): T {
   return value;
 }
 
-export function calculateOptimisticManpower(
-  armyTraining: ArmyTraining[],
-  playerNation: Nation | null
-) {
-  let totalArmy = 0;
-  for (const army of armyTraining) {
-    totalArmy += army.amount;
+export function numberConverter(number: string) {
+  if (Number(number)) {
+    if (Number(number) >= 1000000) {
+      return `${(Number(number) / 1000000).toFixed(1)}M`;
+    } else if (Number(number) >= 1000) {
+      return `${(Number(number) / 1000).toFixed(1)}k`;
+    }
   }
-
-  return playerNation?.manpower ? playerNation.manpower - totalArmy : 0;
-}
-
-export function calculateOptimisticGold(
-  mapHexes: Hex[],
-  buildBuildings: newBuilding[],
-  buildings: Building[],
-  playerNation: Nation | null
-) {
-  let totalCost = 0;
-  for (const building of buildBuildings) {
-    const hex = mapHexes?.find((h) => h.id === building.hexId);
-    if (!hex) continue;
-    const existingLevel = hex.buildingId
-      ? (getBuilding({ buildings, id: hex.buildingId })?.level ?? 0)
-      : 0;
-    const totalLevel = existingLevel + building.levelsToUpgrade;
-    const name = findBuildingNameByCategory({
-      buildingCategory: building.buildingType,
-      level: totalLevel,
-    });
-    const cost = BUILDINGS[name].buildCost;
-    totalCost += cost;
-  }
-  return playerNation?.gold ? playerNation.gold - totalCost : 0;
-}
-
-export function calcAvailableArmy(hex: Hex, playerNation: Nation | null, armyMove: armyIntent[]) {
-  const armyInTile = playerNation
-    ? (hex?.army.find((obj) => obj.nationId === playerNation.id)?.amount ?? 0)
-    : 0;
-  const movedArmy = armyMove
-    .filter((obj) => obj.hexId === hex.id)
-    .reduce((acc, curr) => acc + curr.amount, 0);
-  return armyInTile - movedArmy;
+  return `${number}`; // return unchanged if not a number
 }

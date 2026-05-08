@@ -3,30 +3,33 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { trpc } from "../_trpc/client";
 import Image from "next/image";
-import {
-  getNationName,
-  initBiomePatterns,
-  numberConverter,
-  renderMap,
-  initTextures,
-} from "../../canvas/render";
+import { initBiomePatterns, renderMap, initTextures } from "../../canvas/render";
 import { type Hex, type Nation } from "@repo/shared";
 import { Button } from "@/components/ui/button";
 import { d } from "@/canvas/map_data";
-import ProvinceInfoSidebar from "@/components/ProvinceInfoSidebar";
-import BuildMenu from "@/components/BuildingMenu/buildButton";
-import Tooltip from "@/components/tooltip";
-import { Descriptions } from "@/lib/data";
-import { useGameStore } from "@/lib/gameStore";
-import { useIntentStore } from "@/lib/intentStore";
+import ProvinceInfoSidebar from "@/components/SideMenus/ProvinceMenu/ProvinceInfoSidebar";
+import Tooltip from "@/components/GameComponents/tooltip";
+import { Descriptions, OpenMenus } from "@/lib/data";
+import { useGameStore } from "@/lib/stores/gameStore";
+import { useIntentStore } from "@/lib/stores/intentStore";
 import { useCameraController } from "@/hooks/useCameraController";
-import { dispatchMapTap, handleBarDrag, handleRoadDrag, stopBarDrag } from "@/canvas/handleClick";
-import { calculateOptimisticGold, calculateOptimisticManpower } from "@/lib/utils";
+import {
+  dispatchMapTap,
+  handleBarDrag,
+  handleRoadDrag,
+  stopBarDrag,
+} from "@/canvas/click/handleClick";
 import { BuildModeType, roadObject } from "@/lib/types/game";
-import { getServerContractsFromBuildings } from "@/lib/helpers/uiContract";
-import { getUIBuildings } from "@/lib/helpers/uiBuildings";
-import DragBar from "@/components/DragBar";
-import { getRenderRoads, mergeBuildingRoads } from "@/lib/helpers/uiRoads";
+import { getServerContractsFromBuildings } from "@/lib/UI/mergeData/uiContract";
+import { getUIBuildings } from "@/lib/UI/mergeData/uiBuildings";
+import DragBar from "@/components/GameComponents/DragBar";
+import { getRenderRoads, mergeBuildingRoads } from "@/lib/UI/mergeData/uiRoads";
+import DiplomacyMenu from "@/components/SideMenus/DiplomacyMenu/MainMenu";
+import { calculateOptimisticManpower } from "@/lib/UI/optimisticCalc/manpower";
+import { calculateOptimisticGold } from "@/lib/UI/optimisticCalc/gold";
+import BuildMenu from "@/components/SideMenus/BuildingMenu/buildButton";
+import { getNationName } from "@/lib/helpers/nations";
+import { numberConverter } from "@/lib/utils";
 
 export default function Home() {
   const mapHexes = useGameStore((state) => state.mapHexes);
@@ -64,7 +67,7 @@ export default function Home() {
   const serverTrainingDelete = useIntentStore((state) => state.serverTrainingDelete);
 
   // MENUS
-  const [buildMenuOpen, setBuildMenuOpen] = useState<boolean>(false);
+  const [openMenu, setOpenMenu] = useState<OpenMenus>("none");
 
   // ui states
   const [buildMode, setBuildMode] = useState<BuildModeType>("none");
@@ -557,16 +560,20 @@ export default function Home() {
           <div className="w-[300px] max-w-[300px] h-full relative">
             <ProvinceInfoSidebar
               selectedHex={selectedHex}
-              buildings={BuildingsUI}
+              buildingsUI={BuildingsUI}
               setIsContractSelected={setIsContractSelected}
               isContractSelected={isContractSelected}
+              serverBuildingsDelete={serverBuildingsDelete}
             ></ProvinceInfoSidebar>
-            <BuildMenu
-              isOpen={buildMenuOpen}
-              setIsOpen={setBuildMenuOpen}
-              setBuildMode={setBuildMode}
-              buildMode={buildMode}
-            ></BuildMenu>
+            {openMenu === "build" ? (
+              <BuildMenu
+                setOpenMenu={setOpenMenu}
+                setBuildMode={setBuildMode}
+                buildMode={buildMode}
+              ></BuildMenu>
+            ) : openMenu === "diplo" ? (
+              <DiplomacyMenu setOpenMenu={setOpenMenu}></DiplomacyMenu>
+            ) : null}
           </div>
 
           <div className="w-full h-[10%] relative bottom-20 flex justify-center items-center">
@@ -623,11 +630,18 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="h-full flex items-center justify-center border">
-                    <div className="flex items-center justify-center border mr-2">
+                    <div className="flex items-center justify-center border mr-2 gap-2">
                       <Button
-                        onClick={() => {
-                          setBuildMenuOpen(!buildMenuOpen);
-                        }}
+                        onClick={() =>
+                          openMenu === "diplo" ? setOpenMenu("none") : setOpenMenu("diplo")
+                        }
+                      >
+                        Diplomacy
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          openMenu === "build" ? setOpenMenu("none") : setOpenMenu("build")
+                        }
                       >
                         Build
                       </Button>

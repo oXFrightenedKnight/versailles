@@ -1,7 +1,7 @@
-import { numberConverter } from "@/canvas/render";
 import { Building, BUILDINGS, findBuildingNameByCategory, RESOURCES } from "@repo/shared";
 import Image from "next/image";
-import Tooltip from "../tooltip";
+import Tooltip from "../GameComponents/tooltip";
+import { numberConverter } from "@/lib/utils";
 
 export default function StorageComponent({
   amount,

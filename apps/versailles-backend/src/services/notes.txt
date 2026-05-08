@@ -1,37 +1,30 @@
 
 
 list of changes to make next:
-3. Reduce population when deleting building
 6. Add basic diplomacy (at least 1 button - declare war)
-7. start working on ai
-8. Update war mechanics. add surrendering.
-9. setup a database to store game state in
-10. Make logistics system more intuitive. Show how much the building is currently
+7. Update war mechanics. add surrendering.
+8. don't allow player to build anything unless they have enough gold
+(client + server)
+9. start working on ai
+10. setup a database to store game state in
+11. Make logistics system more intuitive. Show how much the building is currently
 consuming
-11. bug fixes + ui polishment + refactor clicking handler on client
-12. Music, sound effects, reusable components
-13. deploy
+12. bug fixes + ui polishment + refactor clicking handler on client, clean up architecture
+13. Music, sound effects, reusable components
+14. deploy
 
-also good to add modifier support for other parts of the game, not just manpower
+--- NON-URGENT TASKS ---
+1. Make sure nation flags and assets are pre-loaded so player doesn't wait
+for them to load (which can take up to a second)
+2. Implement modifier support for other variables
+3. Make UI store to store changes
+4. Transfer building construction state from hexes into separate objects
+5. Create a single function for creating and validating instead of having multiple
+sources where its required to validate every time.
+6. Reduce amount of building levels on building if right click has happened on hex
 
-also think what you will do with hex population after recruiting manpower
-do you remove manpower from hexes, or leave it as it is like it was always in reserve?
-
-consider making uistore to contain all ui changes cleanly
-
-change construction handling into separate object or store inside buildings
-instead of storing inside hexes
-
-fix negative gold count after building on client
-
-maybe think about making a single function for creating AND validating
-it on creation/change, instead of having multiple sources of update that
-all require validating
-
-remember to delete/update user intent request first, and then build/add new
-
-maybe think of removing buildings by one if right mouse click happens on the hex
-(start with client intent, then server)
+--- RULES ---
+1. Delete/Update first, Build/Add second.
 
 keep in mind that when you apply optimistic update to deleted buildings on client,
 a hex that this building belonged to still holds the reference to it.

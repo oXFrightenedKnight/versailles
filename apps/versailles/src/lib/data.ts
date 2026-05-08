@@ -13,7 +13,6 @@ import {
   TrainTrack,
   Wheat,
 } from "lucide-react";
-import { Contract } from "./types/game";
 import { Dispatch } from "react";
 export type BuildingNames = keyof typeof BUILDINGS;
 
@@ -105,3 +104,7 @@ export const buildingComponents: Record<string, BuildingComponentEntry> = {
     }),
   },
 };
+
+export const FALLBACK_POPULATION = 1000; // displayed when no hex is selected
+
+export type OpenMenus = "none" | "build" | "diplo";

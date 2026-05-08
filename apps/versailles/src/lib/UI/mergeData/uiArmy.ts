@@ -1,4 +1,4 @@
-import { useIntentStore } from "../intentStore";
+import { useIntentStore } from "../../stores/intentStore";
 
 export function cancelArmyMove(hexId: number, direction: { dq: number; dr: number }) {
   const setArmyMove = useIntentStore.getState().setArmyMove;

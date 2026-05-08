@@ -1,57 +1,48 @@
 "use client";
 
 import { BuildingIcons } from "@/lib/data";
-import { Progress } from "../ui/progress";
-import {
-  BuildingConstructionVM,
-  cancelClientBuildingIntent,
-  cancelServerBuildingIntent,
-  getUIBuildings,
-} from "@/lib/helpers/uiBuildings";
-import { Hammer, SquareArrowUp, X } from "lucide-react";
-import { BUILDINGS, findBuildingNameByCategory, getBuilding } from "@repo/shared";
-import { useGameStore } from "@/lib/gameStore";
+import { Hammer, Hash, X } from "lucide-react";
+import { useGameStore } from "@/lib/stores/gameStore";
 import { useCallback } from "react";
-import { useIntentStore } from "@/lib/intentStore";
+import {
+  cancelRoadBuildingClient,
+  cancelRoadBuildingServer,
+  RoadConstructionVM,
+} from "@/lib/UI/mergeData/uiRoads";
+import { Progress } from "@/components/ui/progress";
 
-export default function ConstructingBuilding({ building }: { building: BuildingConstructionVM }) {
+export default function ConstructingRoad({ road }: { road: RoadConstructionVM }) {
   const mapHexes = useGameStore((s) => s.mapHexes);
-  const buildings = useGameStore((s) => s.buildings);
-  const serverBuildingsDelete = useIntentStore((s) => s.serverBuildingsDelete);
 
-  const uiBuildings = getUIBuildings(buildings, serverBuildingsDelete);
+  const Icon = BuildingIcons["road"];
 
-  const Icon = BuildingIcons[building.buildingType];
-  const hex = mapHexes.find((h) => h.id === building.hexId);
+  // progress is a value from 0 to 1 representing how
+  // much of the total road has been completed
+  const progress = (road.finsishedAmount / road.hexIds.length) * 100;
 
-  // find buildCost of next level of this building category and compare to current progress
-  const existingBuilding =
-    hex && hex?.buildingId
-      ? getBuilding({ buildings: uiBuildings, id: hex.buildingId })
-      : undefined;
+  const firstHex = mapHexes.find((h) => h.id === road.hexIds[0]);
+  const lastHex = mapHexes.find((h) => h.id === road.hexIds.at(-1));
 
-  const name = findBuildingNameByCategory({
-    buildingCategory: building.buildingType,
-    level: existingBuilding?.level ? existingBuilding.level + 1 : 1,
-  });
-
-  const progress = (building.progress / BUILDINGS[name].buildTime) * 100;
+  // REPLACE LATER WHEN
+  const finishedAmount = road.finsishedAmount;
+  const leftAmount = road.hexIds.length - finishedAmount;
 
   // FUNCTIONS
   const cancelMergedConstruction = useCallback(() => {
-    if (building.fromServer) {
-      cancelServerBuildingIntent(building.hexId);
+    if (road.fromServer) {
+      cancelRoadBuildingServer(road.id);
     } else {
-      cancelClientBuildingIntent(building.hexId);
+      cancelRoadBuildingClient(road.id);
     }
-  }, [building]);
+  }, [road]);
 
   return (
     <div className="w-full h-[75px] flex justify-center items-center text-white">
       <div className="flex flex-row w-full h-full bg-gray-900 rounded-md p-1 gap-1">
         {/* Display City Name/HexId */}
-        <div className="flex justify-center items-center p-1 w-1/5 bg-gray-800 rounded-md">
-          {building.hexId}
+        <div className="flex flex-col justify-center items-center p-1 w-1/5 bg-gray-800 rounded-md">
+          <span>{firstHex?.id ?? 0}...</span>
+          <span>...{lastHex?.id ?? 0}</span>
         </div>
         {/* Icon, progress and to which level the building is being built */}
         <div className="flex justify-between items-center w-full gap-2 p-2 bg-gray-800 rounded-md">
@@ -69,8 +60,8 @@ export default function ConstructingBuilding({ building }: { building: BuildingC
             </div>
 
             <div className="flex bg-gray-900 border border-gray-600 p-1 gap-1 rounded-md text-amber-200 justify-center items-center w-full h-[50%]">
-              <SquareArrowUp className="w-5 h-5 shrink-0"></SquareArrowUp>
-              <span className="text-md text-white">{building.levelsToUpgrade}</span>
+              <Hash className="w-5 h-5 shrink-0"></Hash>
+              <span className="text-md text-white">{leftAmount}</span>
             </div>
           </div>
 

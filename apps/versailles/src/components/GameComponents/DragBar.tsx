@@ -1,5 +1,5 @@
-import { useIntentStore } from "@/lib/intentStore";
-import { calcAvailableArmy } from "@/lib/utils";
+import { useIntentStore } from "@/lib/stores/intentStore";
+import { calcAvailableArmy } from "@/lib/UI/optimisticCalc/army";
 import { Hex, Nation } from "@repo/shared";
 import { RefObject } from "react";
 

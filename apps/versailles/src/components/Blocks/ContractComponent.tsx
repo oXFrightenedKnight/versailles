@@ -1,6 +1,5 @@
 "use client";
 
-import { numberConverter } from "@/canvas/render";
 import { BuildingIcons, getResourceImage } from "@/lib/data";
 import {
   Building,
@@ -21,11 +20,11 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useState } from "react";
-import Tooltip from "../tooltip";
+import Tooltip from "../GameComponents/tooltip";
 import { Progress } from "../ui/progress";
-import { Dropdown, DropdownItem } from "../dropdown";
-import { useGameStore } from "@/lib/gameStore";
-import { useIntentStore } from "@/lib/intentStore";
+import { Dropdown, DropdownItem } from "../GameComponents/dropdown";
+import { useGameStore } from "@/lib/stores/gameStore";
+import { useIntentStore } from "@/lib/stores/intentStore";
 import { MergedContract } from "@/lib/types/game";
 import {
   deleteClientContract,
@@ -33,7 +32,8 @@ import {
   getMergedContracts,
   getServerContractsFromBuildings,
   updateServerContractIntent,
-} from "@/lib/helpers/uiContract";
+} from "@/lib/UI/mergeData/uiContract";
+import { numberConverter } from "@/lib/utils";
 
 export default function ContractComponent({
   contract,

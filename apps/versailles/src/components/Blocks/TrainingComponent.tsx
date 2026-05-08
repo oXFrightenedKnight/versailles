@@ -1,10 +1,14 @@
 import { Progress } from "../ui/progress";
 import { Field, FieldLabel } from "../ui/field";
 import Image from "next/image";
-import { numberConverter } from "@/canvas/render";
 import { X } from "lucide-react";
-import { cancelClientTraining, cancelServerTraining, TrainingVM } from "@/lib/helpers/uiTraining";
+import {
+  cancelClientTraining,
+  cancelServerTraining,
+  TrainingVM,
+} from "@/lib/UI/mergeData/uiTraining";
 import { useCallback } from "react";
+import { numberConverter } from "@/lib/utils";
 
 export default function TrainingComponent({ data }: { data: TrainingVM }) {
   const value = Math.round((data.progress / data.amount) * 100);

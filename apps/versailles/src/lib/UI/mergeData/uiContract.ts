@@ -6,8 +6,8 @@ import {
   RESOURCES,
   ServerContractUpdate,
 } from "@repo/shared";
-import { useIntentStore } from "../intentStore";
-import { Contract, MergedContract, ServerContract } from "../types/game";
+import { useIntentStore } from "../../stores/intentStore";
+import { Contract, MergedContract, ServerContract } from "../../types/game";
 
 // function that automatically updates contractUpdateIntent in intentStore
 export function updateServerContractIntent(contractId: string, newChanges: MergedContractChanges) {

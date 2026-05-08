@@ -4,14 +4,14 @@ import { Building } from "@repo/shared";
 import TrainingComponent from "./TrainingComponent";
 import { CircleMinus, CirclePlus, Cog } from "lucide-react";
 import { useMemo, useState } from "react";
-import { numberConverter } from "@/canvas/render";
-import { useGameStore } from "@/lib/gameStore";
-import { useIntentStore } from "@/lib/intentStore";
+import { useGameStore } from "@/lib/stores/gameStore";
+import { useIntentStore } from "@/lib/stores/intentStore";
 import {
   getTrainingArmyServer,
   mergeTraining,
   mergeTrainingArmyClient,
-} from "@/lib/helpers/uiTraining";
+} from "@/lib/UI/mergeData/uiTraining";
+import { numberConverter } from "@/lib/utils";
 
 export default function TrainingBlock({ building }: { building: Building }) {
   const playerNation = useGameStore((s) => s.playerNation);

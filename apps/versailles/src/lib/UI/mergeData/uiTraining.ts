@@ -1,6 +1,6 @@
 import { Building } from "@repo/shared";
-import { useIntentStore } from "../intentStore";
-import { ArmyTraining } from "../types/game";
+import { useIntentStore } from "../../stores/intentStore";
+import { ArmyTraining } from "../../types/game";
 
 export type TrainingVM = {
   barrackId: string;

@@ -1,26 +1,36 @@
 "use client";
 
-import { getNationName, numberConverter } from "@/canvas/render";
-import { Building, findBuildingNameByCategory, getBuilding, Hex } from "@repo/shared";
-import { SquarePen, X } from "lucide-react";
+import {
+  BASE_HEX_POPULATION,
+  Building,
+  findBuildingNameByCategory,
+  getBuilding,
+  Hex,
+} from "@repo/shared";
+import { X } from "lucide-react";
 import Image from "next/image";
-import Tooltip from "./tooltip";
+import Tooltip from "../../GameComponents/tooltip";
 import { buildingComponents } from "@/lib/data";
-import NoBuilding from "./buildingConfig/noBuilding";
+import NoBuilding from "../../buildingConfig/noBuilding";
+import { getOptimisticPopulation } from "@/lib/UI/optimisticCalc/population";
+import { getNationFlagURL } from "@/lib/helpers/flags";
+import { getNationName } from "@/lib/helpers/nations";
 
 export default function ProvinceInfoSidebar({
   selectedHex,
-  buildings,
+  buildingsUI,
   isContractSelected,
   setIsContractSelected,
+  serverBuildingsDelete,
 }: {
   selectedHex: Hex | null;
-  buildings: Building[];
+  buildingsUI: Building[];
   isContractSelected: boolean;
   setIsContractSelected: React.Dispatch<React.SetStateAction<boolean>>;
+  serverBuildingsDelete: string[];
 }) {
   const buildingData = selectedHex?.buildingId
-    ? (getBuilding({ buildings, id: selectedHex.buildingId }) ?? null)
+    ? (getBuilding({ buildings: buildingsUI, id: selectedHex.buildingId }) ?? null)
     : null;
   const buildingName = buildingData?.category
     ? findBuildingNameByCategory({
@@ -28,6 +38,8 @@ export default function ProvinceInfoSidebar({
         level: buildingData.level,
       })
     : "empty";
+
+  const population = getOptimisticPopulation(selectedHex, serverBuildingsDelete);
 
   function renderBuildingButtons() {
     if (!buildingData) return <NoBuilding></NoBuilding>;
@@ -56,7 +68,7 @@ export default function ProvinceInfoSidebar({
           <div className="flex w-full justify-between items-start">
             <div className="w-[50%] h-auto bg-amber-200 m-2 rounded-[5px]">
               <Image
-                src={`/flags/${getNationName({ id: selectedHex?.owner ?? "tribes" })}_flag.png`}
+                src={getNationFlagURL(selectedHex?.owner ?? "tribes")}
                 alt="nation flag"
                 width={1463}
                 height={962}
@@ -109,7 +121,7 @@ export default function ProvinceInfoSidebar({
               </div>
             </div>
             <div className="bg-gray-900 shadow-md shadow-black rounded-lg text-white h-full flex justify-center items-center text-2xl">
-              {numberConverter(selectedHex?.population?.toString() ?? "1000")}
+              {population}
               <Image
                 src="/icons/population.png"
                 alt="population icon"

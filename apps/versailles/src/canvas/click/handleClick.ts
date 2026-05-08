@@ -14,15 +14,16 @@ import {
   SupplyContract,
   topLevelsByCategory,
 } from "@repo/shared";
-import { pixelToHex } from "./render";
+import { pixelToHex } from "../render";
 import { Dispatch, RefObject } from "react";
-import { calcAvailableArmy, randomNumber } from "@/lib/utils";
-import { SetStateAction } from "@/lib/intentStore";
+import { randomNumber } from "@/lib/utils";
+import { SetStateAction } from "@/lib/stores/intentStore";
 import { armyIntent, BuildModeType, Contract, newBuilding, roadObject } from "@/lib/types/game";
-import { findHexPathBetween } from "./pathfinding";
-import { getFirstFreeResource, getMergedContracts } from "@/lib/helpers/uiContract";
-import { cancelArmyMove } from "@/lib/helpers/uiArmy";
-import { mergeConstructingBuildings } from "@/lib/helpers/uiBuildings";
+import { findHexPathBetween } from "../pathfinding";
+import { getFirstFreeResource, getMergedContracts } from "@/lib/UI/mergeData/uiContract";
+import { cancelArmyMove } from "@/lib/UI/mergeData/uiArmy";
+import { mergeConstructingBuildings } from "@/lib/UI/mergeData/uiBuildings";
+import { calcAvailableArmy } from "@/lib/UI/optimisticCalc/army";
 
 export type ClickCtx = {
   mouseDownRef: RefObject<boolean>;

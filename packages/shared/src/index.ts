@@ -421,6 +421,8 @@ export type Hex = {
   wood: number;
 };
 
+export const BASE_HEX_POPULATION = 10; // population after deleting a building
+
 export const BIOMES: Biome[] = ["desert", "plains", "forest", "mountains"];
 
 export const WOOD_MOD = {
