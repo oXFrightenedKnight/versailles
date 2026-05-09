@@ -47,7 +47,7 @@ export default function TrainingBlock({ building }: { building: Building }) {
           </div>
           {/* Display amount */}
           <div className="bg-gray-800 text-white rounded-md p-1 w-16 flex justify-center items-center">
-            {numberConverter(amount.toString())}
+            {numberConverter(amount)}
           </div>
           {/* Addition */}
           <div

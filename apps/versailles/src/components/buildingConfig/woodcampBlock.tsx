@@ -5,7 +5,7 @@ import { Info } from "../Blocks/InfoComponent";
 import StorageBlock from "../Blocks/StorageBlock";
 import InfoBlock from "../Blocks/InfoBlock";
 
-export default function LumberjackBlock({
+export default function WoodcampBlock({
   setIsContractSelected,
   isContractSelected,
 

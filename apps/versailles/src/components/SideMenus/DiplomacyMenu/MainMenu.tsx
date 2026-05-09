@@ -48,7 +48,14 @@ export default function DiplomacyMenu({
           )}
 
           {/* NATION INFO BLOCK */}
-          {chosenNation && <NationInfo nationId={chosenNation}></NationInfo>}
+
+          <div className="w-full h-full max-w-full min-h-0">
+            {chosenNation && (
+              <div className="flex justify-center items-center h-full w-full ">
+                <NationInfo nationId={chosenNation}></NationInfo>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </>

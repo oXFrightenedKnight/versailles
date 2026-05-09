@@ -1,7 +1,7 @@
 import BarrackBlock from "@/components/buildingConfig/barrackBlock";
 import CivilianBlock from "@/components/buildingConfig/civilianBlock";
 import FarmBlock from "@/components/buildingConfig/farmBlock";
-import LumberjackBlock from "@/components/buildingConfig/lumberBlock";
+import WoodcampBlock from "@/components/buildingConfig/woodcampBlock";
 import WatchtowerBlock from "@/components/buildingConfig/watchtowerBlock";
 import { Building, BUILDINGS, BUILDINGS_CATEGORY, RESOURCES } from "@repo/shared";
 import {
@@ -22,7 +22,7 @@ export const BuildingIcons: Record<"road" | BUILDINGS_CATEGORY, LucideIcon> = {
   BARRACK: BrickWallShield,
   WATCHTOWER: RadioTower,
   road: TrainTrack,
-  LUMBERJACK_SETTLEMENT: Axe,
+  WOODCAMP: Axe,
 };
 export const BuildingDescriptions: Record<"road" | BUILDINGS_CATEGORY, string> = {
   FARM: "Construct a farm",
@@ -30,7 +30,7 @@ export const BuildingDescriptions: Record<"road" | BUILDINGS_CATEGORY, string> =
   BARRACK: "Construct a military barrack",
   WATCHTOWER: "Construct a watchtower",
   road: "Construct road path",
-  LUMBERJACK_SETTLEMENT: "Construct lumberjack settlement",
+  WOODCAMP: "Construct a woodcamp",
 };
 export function getResourceImage(resource: RESOURCES) {
   return customResourceImages[resource] ?? `/icons/resources/${resource}.png`;
@@ -75,8 +75,8 @@ export const buildingComponents: Record<string, BuildingComponentEntry> = {
       building: data.building,
     }),
   },
-  LUMBERJACK_SETTLEMENT: {
-    component: LumberjackBlock,
+  WOODCAMP: {
+    component: WoodcampBlock,
     getProps: (data: buildingPropData) => ({
       setIsContractSelected: data.setIsContractSelected,
       isContractSelected: data.isContractSelected,

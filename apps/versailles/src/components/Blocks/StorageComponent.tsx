@@ -32,8 +32,8 @@ export default function StorageComponent({
 
         <Tooltip text={`${type}`} position="top"></Tooltip>
         <div className="m-1 bg-gray-800 text-white text-xs w-full rounded-sm flex justify-center items-center flex flex-col pr-1.25 pl-1.25">
-          <p className="border-b w-full flex items-center justify-center border-gray-400">{`${numberConverter(amount.toString()) ?? amount}`}</p>
-          <p>{`${numberConverter(max.toString())}`}</p>
+          <p className="border-b w-full flex items-center justify-center border-gray-400">{`${numberConverter(amount) ?? amount}`}</p>
+          <p>{`${numberConverter(max)}`}</p>
         </div>
       </div>
     </>

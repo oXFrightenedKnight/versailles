@@ -33,7 +33,7 @@ export default function TrainingComponent({ data }: { data: TrainingVM }) {
             height={32}
             className="h-5 w-5 shrink-0"
           ></Image>
-          <span className="text-[14px]">{numberConverter(data.amount.toString())}</span>
+          <span className="text-[14px]">{numberConverter(data.amount)}</span>
         </div>
         <Field className="w-full h-full max-w-sm bg-gray-900 border-gray-600 border rounded-md p-1">
           <FieldLabel htmlFor="progress-upload">

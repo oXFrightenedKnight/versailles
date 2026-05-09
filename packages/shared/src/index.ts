@@ -439,7 +439,7 @@ export const building_categoires = [
   "BARRACK",
   "FARM",
   "WATCHTOWER",
-  "LUMBERJACK_SETTLEMENT",
+  "WOODCAMP",
 ] as const;
 export type BUILDINGS_CATEGORY = (typeof building_categoires)[number];
 
@@ -543,8 +543,8 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     consumptionMod: {},
   },
 
-  lumberjack_settlement: {
-    category: "LUMBERJACK_SETTLEMENT",
+  woodcamp: {
+    category: "WOODCAMP",
     level: 1,
     popCap: 200,
     buildTime: 10,
@@ -559,7 +559,7 @@ const baseConsumeRate = 0.025; // base consumption rate
 // assuming that 1 person consumes 0.025 of resource per 1 modifier
 export const baseGoldRate = 0.0125; // 0.0125 gold per person
 export const baseWheatRate = 0.32; // 50 wheat bags for every 80 farmers
-export const baseWoodRate = 0.07; // 0.07 wood per lumberjack
+export const baseWoodRate = 0.07; // 0.07 wood per woodcamp
 export const baseTrainingProgress = 0.1; // full training in 10 turns 0.1x10
 
 export const MANPOWER_RATE = 0.075; // % of population that is eligibile for recruitment
@@ -582,7 +582,7 @@ export type Building = {
 
   // barrack
   trainingTroops?: ArmyTrainingObject[];
-  // lumberjack settlement
+  // woodcamp
 
   // common properties
   contracts?: SupplyContract[];

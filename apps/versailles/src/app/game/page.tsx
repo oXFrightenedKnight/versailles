@@ -610,9 +610,7 @@ export default function Home() {
                         height={408}
                         className="w-[30px] h-[30px] flex items-center justify-center"
                       ></Image>
-                      <p className="text-white text-2xl">
-                        {numberConverter(effectiveGold.toString())}
-                      </p>
+                      <p className="text-white text-2xl">{numberConverter(effectiveGold)}</p>
                       <Tooltip text={Descriptions["gold"]} position="bottom"></Tooltip>
                     </div>
                     <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1 relative group">
@@ -623,9 +621,7 @@ export default function Home() {
                         height={408}
                         className="w-[30px] h-[30px] flex items-center justify-center"
                       ></Image>
-                      <p className="text-white text-2xl">
-                        {numberConverter(effectiveManpower.toString())}
-                      </p>
+                      <p className="text-white text-2xl">{numberConverter(effectiveManpower)}</p>
                       <Tooltip text={Descriptions["manpower"]} position="bottom"></Tooltip>
                     </div>
                   </div>

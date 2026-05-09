@@ -202,7 +202,7 @@ export default function ContractComponent({
           </div>
           {/* Display amount */}
           <div className="bg-gray-800 text-white rounded-md p-1 w-15 flex justify-center items-center">
-            {numberConverter(contract.amount.toString())}
+            {numberConverter(contract.amount)}
           </div>
           {/* Addition */}
           <div

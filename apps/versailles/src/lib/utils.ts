@@ -29,13 +29,12 @@ export function resolveValue<T>(value: T | ((prev: T) => T), prev: T): T {
   return value;
 }
 
-export function numberConverter(number: string) {
-  if (Number(number)) {
-    if (Number(number) >= 1000000) {
-      return `${(Number(number) / 1000000).toFixed(1)}M`;
-    } else if (Number(number) >= 1000) {
-      return `${(Number(number) / 1000).toFixed(1)}k`;
-    }
+export function numberConverter(number: number) {
+  if (number >= 1000000) {
+    return `${(number / 1000000).toFixed(1)}M`;
+  } else if (Number(number) >= 1000) {
+    return `${(number / 1000).toFixed(1)}k`;
   }
+
   return `${number}`; // return unchanged if not a number
 }

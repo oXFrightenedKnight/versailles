@@ -25,7 +25,7 @@ export function buildingOutput(gameCtx: GameCtx) {
   const civilian = buildings.filter((b) => b.category === "CIVILIAN");
   const farms = buildings.filter((b) => b.category === "FARM");
   const barracks = buildings.filter((b) => b.category === "BARRACK");
-  const lumber_sets = buildings.filter((b) => b.category === "LUMBERJACK_SETTLEMENT");
+  const woodcamps = buildings.filter((b) => b.category === "WOODCAMP");
   const watchtowers = buildings.filter((b) => b.category === "WATCHTOWER");
 
   // calculate output for every building (farms and)
@@ -38,8 +38,8 @@ export function buildingOutput(gameCtx: GameCtx) {
   for (const barrack of barracks) {
     calculateBarracks(barrack, gameCtx);
   }
-  for (const lumber_set of lumber_sets) {
-    calculateLumberjack(lumber_set, gameCtx);
+  for (const woodcamp of woodcamps) {
+    calculateWoodcamp(woodcamp, gameCtx);
   }
   for (const tower of watchtowers) {
     calculateWatchtower(tower, gameCtx);
@@ -158,7 +158,7 @@ function calculateBarracks(building: Building, gameCtx: GameCtx) {
   }
 }
 
-function calculateLumberjack(building: Building, gameCtx: GameCtx) {
+function calculateWoodcamp(building: Building, gameCtx: GameCtx) {
   const { mapHexes, buildings } = gameCtx;
 
   // apply resource consumption
