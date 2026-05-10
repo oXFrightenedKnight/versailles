@@ -1,7 +1,9 @@
 
 
 list of changes to make next:
-6. Add basic diplomacy (at least 1 button - declare war)
+6. Add basic diplomacy (at least 1 button - declare war) and don't forget to
+check whether you are at war with the country when moving army
+7. add peace requests and peace time
 7. Update war mechanics. add surrendering.
 8. don't allow player to build anything unless they have enough gold
 (client + server)

@@ -193,3 +193,17 @@ export function cancelArmyTraining(ctx: GameCtx, cancelIds: string[], nation: Na
     }
   }
 }
+
+// DON'T FORGET TO CHECK FOR PEACE TIME BEFORE DECLARING WAR
+export function declareWar(ctx: GameCtx, declareWar: string[], nation: Nation) {
+  const nationIdMap = new Map(ctx.nations.map((n) => [n.id, n]));
+  for (const id of declareWar) {
+    if (nation.id === id) continue;
+
+    const enemy = nationIdMap.get(id);
+    if (!enemy) continue;
+
+    nation.atWar.push(id);
+    enemy.atWar.push(nation.id);
+  }
+}

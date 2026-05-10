@@ -28,7 +28,7 @@ import {
   updateContracts,
 } from "./contracts.js";
 import { GameCtx, IntentInput } from "../trpc/index.js";
-import { cancelArmyTraining, moveArmy, queueArmyTraining } from "./army.js";
+import { cancelArmyTraining, declareWar, moveArmy, queueArmyTraining } from "./army.js";
 import { buildNationRoads, cancelRoadBuild } from "./road.js";
 
 export type newBuildings = {
@@ -241,17 +241,19 @@ export function executeIntents(ctx: GameCtx, nation: Nation, intentCtx: IntentIn
 
   // 6. update contracts
   updateContracts(ctx, intentCtx.updateContracts as ServerContractUpdate[], nation);
-  // 7. queue buildings
+  // 7. declare wars on others
+  declareWar(ctx, intentCtx.declareWar, nation);
+  // 8. queue buildings
   buildNationBuildings({
     gameCtx: ctx,
     newBuildings: intentCtx.newQueuedBuildings as newBuildings,
     nation,
   });
-  // 8. queue roads
+  // 9. queue roads
   buildNationRoads({ gameCtx: ctx, buildRoads: roadsToBuild, nationId: nation.id });
-  // 9. queue army training
+  // 10. queue army training
   queueArmyTraining({ trainNewArmy: intentCtx.trainNewArmy, nationId: nation.id, gameCtx: ctx });
-  // 10. move nation army
+  // 11. move nation army
   for (const hexObj of intentCtx.movePlayerArmy) {
     moveArmy({
       hexId: hexObj.hexId,
@@ -261,7 +263,7 @@ export function executeIntents(ctx: GameCtx, nation: Nation, intentCtx: IntentIn
       gameCtx: ctx,
     });
   }
-  // 11. create new contracts
+  // 12. create new contracts
   createContracts({
     contracts: intentCtx.createNewContracts as newContract[],
     gameCtx: ctx,

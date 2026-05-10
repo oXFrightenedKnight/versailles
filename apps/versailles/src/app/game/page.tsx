@@ -66,6 +66,9 @@ export default function Home() {
   const armyTraining = useIntentStore((state) => state.armyTraining);
   const serverTrainingDelete = useIntentStore((state) => state.serverTrainingDelete);
 
+  // War declaration
+  const declareWar = useIntentStore((state) => state.declareWar);
+
   // MENUS
   const [openMenu, setOpenMenu] = useState<OpenMenus>("none");
 
@@ -547,6 +550,7 @@ export default function Home() {
                   cancelRoadBuild: serverCancelRoadBuilding,
                   deleteContracts: serverContractDelete,
                   updateContracts: serverContractUpdate,
+                  declareWar: declareWar,
                 });
                 mapData.mutate();
                 console.log(selectedHex);

@@ -10,7 +10,7 @@ import {
   runIntentForEachNation,
 } from "../services/genNations.js";
 import { inferProcedureInput, TRPCError } from "@trpc/server";
-import { moveArmy, queueArmyTraining } from "../services/army.js";
+import { declareWar, moveArmy, queueArmyTraining } from "../services/army.js";
 import {
   ALL_BUILDING_CATEGORIES,
   Building,
@@ -155,6 +155,7 @@ export const appRouter = router({
           })
         ),
         deleteArmyTrain: z.array(z.string()),
+        declareWar: z.array(z.string()),
       })
     )
     .mutation(async ({ input }) => {

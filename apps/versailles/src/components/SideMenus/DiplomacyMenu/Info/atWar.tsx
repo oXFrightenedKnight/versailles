@@ -4,9 +4,9 @@ import Image from "next/image";
 
 export default function NationsAtWar({ nations, atWar }: { nations: Nation[]; atWar: string[] }) {
   return (
-    <div className="w-full h-12 border flex justify-between items-center gap-2 p-1">
+    <div className="w-full h-12 bg-gray-800 border border-gray-600 flex justify-between items-center rounded-md gap-2 p-1 shrink-0">
       <span className="text-white shrink-0">At War:</span>
-      <div className="w-full h-full border flex justify-start items-center gap-1 p-1 overflow-x-auto no-scrollbar">
+      <div className="w-full h-full border border-gray-600 bg-gray-900 flex justify-start items-center gap-1 p-1 overflow-x-auto no-scrollbar rounded-md">
         {atWar.map((id) => {
           const enemy = nations.find((n) => n.id === id);
           if (!enemy) return null;

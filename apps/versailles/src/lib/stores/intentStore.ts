@@ -11,6 +11,7 @@ type BuildingId = string;
 type armyTrainId = string;
 type HexId = number;
 type RoadId = string;
+type nationId = string;
 
 export type StoreType = {
   armyTraining: ArmyTraining[];
@@ -41,6 +42,9 @@ export type StoreType = {
   armyMove: armyIntent[];
   setArmyMove: SetStateAction<armyIntent[]>;
 
+  declareWar: nationId[];
+  setDeclareWar: SetStateAction<nationId[]>;
+
   reset: () => void;
 };
 
@@ -56,6 +60,7 @@ const initialState = {
   buildRoads: [],
   serverCancelRoadBuilding: [],
   armyMove: [],
+  declareWar: [],
 };
 
 export const useIntentStore = create<StoreType>((set) => ({
@@ -114,6 +119,11 @@ export const useIntentStore = create<StoreType>((set) => ({
   setArmyMove: (value) =>
     set((state) => ({
       armyMove: resolveValue(value, state.armyMove),
+    })),
+
+  setDeclareWar: (value) =>
+    set((state) => ({
+      declareWar: resolveValue(value, state.declareWar),
     })),
 
   reset: () => set(initialState),

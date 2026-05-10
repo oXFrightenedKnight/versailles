@@ -78,6 +78,7 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
           barrackId: string;
         }[];
         deleteArmyTrain: string[];
+        declareWar: string[];
       };
       output: void;
       meta: object;
