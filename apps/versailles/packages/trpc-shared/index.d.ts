@@ -1,5 +1,5 @@
 import { inferProcedureInput } from "@trpc/server";
-import { Building, Hex, MODIFIER, Nation, Road } from "@repo/shared";
+import { Building, Hex, Mail, MODIFIER, Nation, Road } from "@repo/shared";
 export type GameCtx = {
   mapHexes: Hex[];
   nations: Nation[];
@@ -7,6 +7,7 @@ export type GameCtx = {
   roads: Road[];
   buildings: Building[];
   modifiers: MODIFIER[];
+  mails: Mail[];
 };
 export type IntentInput = inferProcedureInput<AppRouter["nextTurn"]>;
 export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
@@ -27,6 +28,7 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
         turn: number;
         roads: Road[];
         buildings: Building[];
+        mails: Mail[];
       };
       meta: object;
     }>;

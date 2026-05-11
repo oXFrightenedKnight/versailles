@@ -3,7 +3,7 @@ import CivilianBlock from "@/components/buildingConfig/civilianBlock";
 import FarmBlock from "@/components/buildingConfig/farmBlock";
 import WoodcampBlock from "@/components/buildingConfig/woodcampBlock";
 import WatchtowerBlock from "@/components/buildingConfig/watchtowerBlock";
-import { Building, BUILDINGS, BUILDINGS_CATEGORY, RESOURCES } from "@repo/shared";
+import { Building, BUILDINGS, BUILDINGS_CATEGORY, Mail, RESOURCES } from "@repo/shared";
 import {
   Axe,
   BrickWallShield,
@@ -108,3 +108,10 @@ export const buildingComponents: Record<string, BuildingComponentEntry> = {
 export const FALLBACK_POPULATION = 1000; // displayed when no hex is selected
 
 export type OpenMenus = "none" | "build" | "diplo";
+
+export const MailTexts = {
+  WAR: (mail: Mail) => `${mail.fromNation} declared war on ${mail.toNation}!`,
+  PEACE_OFFER: (mail: Mail) =>
+    `${mail.fromNation} wants to sign peace treaty with ${mail.toNation}.`,
+  PEACE_ACCEPT: (mail: Mail) => `${mail.fromNation} accepted ${mail.toNation}'s peace treaty.`,
+};

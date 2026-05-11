@@ -30,6 +30,7 @@ import { calculateOptimisticGold } from "@/lib/UI/optimisticCalc/gold";
 import BuildMenu from "@/components/SideMenus/BuildingMenu/buildButton";
 import { getNationName } from "@/lib/helpers/nations";
 import { numberConverter } from "@/lib/utils";
+import MailMenu from "@/components/SideMenus/Mails/MainMenu";
 
 export default function Home() {
   const mapHexes = useGameStore((state) => state.mapHexes);
@@ -560,24 +561,36 @@ export default function Home() {
               Next Turn (turn: {turn})
             </Button>
           </div>
-          {/* MENUS */}
-          <div className="w-[300px] max-w-[300px] h-full relative">
-            <ProvinceInfoSidebar
-              selectedHex={selectedHex}
-              buildingsUI={BuildingsUI}
-              setIsContractSelected={setIsContractSelected}
-              isContractSelected={isContractSelected}
-              serverBuildingsDelete={serverBuildingsDelete}
-            ></ProvinceInfoSidebar>
-            {openMenu === "build" ? (
-              <BuildMenu
-                setOpenMenu={setOpenMenu}
-                setBuildMode={setBuildMode}
-                buildMode={buildMode}
-              ></BuildMenu>
-            ) : openMenu === "diplo" ? (
-              <DiplomacyMenu setOpenMenu={setOpenMenu}></DiplomacyMenu>
-            ) : null}
+
+          <div className="w-full h-full relative">
+            {/* LEFT-MENUS */}
+            <div className="w-[300px] max-w-[300px] h-full absolute left-0 border">
+              <div className="w-full h-full relative">
+                <ProvinceInfoSidebar
+                  selectedHex={selectedHex}
+                  buildingsUI={BuildingsUI}
+                  setIsContractSelected={setIsContractSelected}
+                  isContractSelected={isContractSelected}
+                  serverBuildingsDelete={serverBuildingsDelete}
+                ></ProvinceInfoSidebar>
+                {openMenu === "build" ? (
+                  <BuildMenu
+                    setOpenMenu={setOpenMenu}
+                    setBuildMode={setBuildMode}
+                    buildMode={buildMode}
+                  ></BuildMenu>
+                ) : openMenu === "diplo" ? (
+                  <DiplomacyMenu setOpenMenu={setOpenMenu}></DiplomacyMenu>
+                ) : null}
+              </div>
+            </div>
+
+            {/* RIGHT-MENUS */}
+            <div className="w-[300px] max-w-[300px] h-full absolute right-0 border">
+              <div className="w-full h-full relative">
+                <MailMenu></MailMenu>
+              </div>
+            </div>
           </div>
 
           <div className="w-full h-[10%] relative bottom-20 flex justify-center items-center">

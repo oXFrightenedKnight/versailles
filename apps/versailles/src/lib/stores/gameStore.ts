@@ -1,5 +1,5 @@
 import { serverData } from "../types/game";
-import { Building, Hex, Nation, Road } from "@repo/shared";
+import { Building, Hex, Mail, Nation, Road } from "@repo/shared";
 import { create } from "zustand";
 
 export type StoreType = {
@@ -9,6 +9,7 @@ export type StoreType = {
   roads: Road[];
   buildings: Building[];
   playerNation: Nation | null;
+  mails: Mail[];
   setGameData: (data: serverData) => void;
   reset: () => void;
 };
@@ -21,6 +22,7 @@ export const initialState = {
   turn: 0,
   roads: [],
   buildings: [],
+  mails: [],
 };
 
 export const useGameStore = create<StoreType>((set) => ({
@@ -34,6 +36,7 @@ export const useGameStore = create<StoreType>((set) => ({
       turn: data.turn,
       roads: data.roads,
       buildings: data.buildings,
+      mails: data.mails,
     }),
 
   reset: () => set(initialState),

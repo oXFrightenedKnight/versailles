@@ -707,3 +707,25 @@ export type Road = {
     owner: string; // the owner of this construction
   } | null;
 };
+
+// mail types describe action that this mail is delivering
+// war - mail describing war between you and other nation
+// peace_offer - mail coming from another nation requesting peace
+// peace_accept - mail to inform peace offer was accepted
+export type MailTypes = "WAR" | "PEACE_OFFER" | "PEACE_ACCEPT";
+
+export type Mail = {
+  id: string;
+  toNation: string;
+  fromNation?: string;
+  type: MailTypes;
+  createdAt: number; // turn
+  read: boolean;
+  requireAnswer?: boolean;
+  expire?: number; // number if turns before expiry
+  metadata?: {
+    hexId?: string;
+    amount?: number;
+    nationIds?: string[];
+  };
+};

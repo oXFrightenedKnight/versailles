@@ -2,6 +2,7 @@ import {
   Building,
   BUILDINGS_CATEGORY,
   Hex,
+  Mail,
   Nation,
   RESOURCES,
   Road,
@@ -50,6 +51,7 @@ export type serverData = {
   turn: number;
   roads: Road[];
   buildings: Building[];
+  mails: Mail[];
 };
 
 export interface MergedContract extends Contract {

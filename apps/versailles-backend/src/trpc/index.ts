@@ -2,34 +2,12 @@ import z from "zod";
 import { authedProcedure, router } from "./trpc.js";
 import { generateHexMap } from "../services/map.js";
 import { memoryStore } from "../server/memoryStore.js";
-import {
-  buildNationBuildings,
-  executeIntents,
-  generateNations,
-  newBuildings,
-  runIntentForEachNation,
-} from "../services/genNations.js";
+import { generateNations, runIntentForEachNation } from "../services/genNations.js";
 import { inferProcedureInput, TRPCError } from "@trpc/server";
-import { declareWar, moveArmy, queueArmyTraining } from "../services/army.js";
-import {
-  ALL_BUILDING_CATEGORIES,
-  Building,
-  BUILDINGS_CATEGORY,
-  Hex,
-  MAP_RADIUS,
-  MODIFIER,
-  Nation,
-  RESOURCES,
-  Road,
-} from "@repo/shared";
-import {
-  createContracts,
-  executeContracts,
-  recalculateContractsAmounts,
-} from "../services/contracts.js";
+import { Building, Hex, Mail, MAP_RADIUS, MODIFIER, Nation, Road } from "@repo/shared";
+import { executeContracts, recalculateContractsAmounts } from "../services/contracts.js";
 import { buildingOutput } from "../services/buildings.js";
 import { nationsUpdateManpower } from "../services/manpower.js";
-import { buildNationRoads } from "../services/road.js";
 
 export type GameCtx = {
   mapHexes: Hex[];
@@ -38,6 +16,7 @@ export type GameCtx = {
   roads: Road[];
   buildings: Building[];
   modifiers: MODIFIER[];
+  mails: Mail[];
 };
 
 export type IntentInput = inferProcedureInput<AppRouter["nextTurn"]>;
@@ -51,6 +30,7 @@ export const appRouter = router({
     let roads: Road[] = [];
     let buildings: Building[] = [];
     let modifiers: MODIFIER[] = [];
+    let mails: Mail[] = [];
 
     if (memoryStore.maps.has("mapHexes")) {
       mapHexes = memoryStore.maps.get("mapHexes");
@@ -84,13 +64,20 @@ export const appRouter = router({
       memoryStore.maps.set("buildings", buildings);
     }
 
+    // DO NOT SEND MODIFIERS TO CLIENT FOR NOW
     if (memoryStore.maps.has("modifiers")) {
       modifiers = memoryStore.maps.get("modifiers");
     } else {
       memoryStore.maps.set("modifiers", modifiers);
     }
 
-    return { mapHexes, nations, turn, roads, buildings };
+    if (memoryStore.maps.has("mails")) {
+      mails = memoryStore.maps.get("mails");
+    } else {
+      memoryStore.maps.set("mails", mails);
+    }
+
+    return { mapHexes, nations, turn, roads, buildings, mails };
   }),
   nextTurn: authedProcedure
     .input(
@@ -167,6 +154,7 @@ export const appRouter = router({
         roads: memoryStore.maps.get("roads"),
         buildings: memoryStore.maps.get("buildings"),
         modifiers: memoryStore.maps.get("modifiers"),
+        mails: memoryStore.maps.get("mails"),
       };
       const playerIntentCtx: IntentInput = {
         ...input,
@@ -217,6 +205,7 @@ export const appRouter = router({
       memoryStore.maps.set("nations", gameCtx.nations);
       memoryStore.maps.set("buildings", gameCtx.buildings);
       memoryStore.maps.set("modifiers", gameCtx.modifiers);
+      memoryStore.maps.set("mails", gameCtx.mails);
     }),
 });
 // Export type router type signature,
