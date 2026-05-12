@@ -20,16 +20,17 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
     transformer: false;
   },
   import("@trpc/server").TRPCDecorateCreateRouterOptions<{
-    generateHexMap: import("@trpc/server").TRPCMutationProcedure<{
+    initialLoad: import("@trpc/server").TRPCMutationProcedure<{
       input: void;
       output: {
+        mails: Mail[];
+        modifiers: MODIFIER[];
         mapHexes: Hex[];
         nations: Nation[];
         turn: number;
         roads: Road[];
         buildings: Building[];
-        mails: Mail[];
-      };
+      } | null;
       meta: object;
     }>;
     nextTurn: import("@trpc/server").TRPCMutationProcedure<{
@@ -82,7 +83,15 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
         deleteArmyTrain: string[];
         declareWar: string[];
       };
-      output: void;
+      output: {
+        mails: Mail[];
+        modifiers: MODIFIER[];
+        mapHexes: Hex[];
+        nations: Nation[];
+        turn: number;
+        roads: Road[];
+        buildings: Building[];
+      } | null;
       meta: object;
     }>;
   }>

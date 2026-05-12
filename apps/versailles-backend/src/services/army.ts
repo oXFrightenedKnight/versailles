@@ -3,6 +3,7 @@ import { getNationById } from "./genNations.js";
 import { getHexById } from "./map.js";
 import { GameCtx } from "../trpc/index.js";
 import { addModifier } from "./modifiers.js";
+import { addMail, createWarMail } from "./mails.js";
 
 export function moveArmy({
   hexId,
@@ -205,5 +206,7 @@ export function declareWar(ctx: GameCtx, declareWar: string[], nation: Nation) {
 
     nation.atWar.push(id);
     enemy.atWar.push(nation.id);
+
+    addMail(ctx, createWarMail(ctx, nation.id, id));
   }
 }

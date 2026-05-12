@@ -3,7 +3,17 @@ import CivilianBlock from "@/components/buildingConfig/civilianBlock";
 import FarmBlock from "@/components/buildingConfig/farmBlock";
 import WoodcampBlock from "@/components/buildingConfig/woodcampBlock";
 import WatchtowerBlock from "@/components/buildingConfig/watchtowerBlock";
-import { Building, BUILDINGS, BUILDINGS_CATEGORY, Mail, RESOURCES } from "@repo/shared";
+import {
+  Building,
+  BUILDINGS,
+  BUILDINGS_CATEGORY,
+  Mail,
+  MailTypes,
+  PeaceOfferMail,
+  PeaceSignedMail,
+  RESOURCES,
+  WarEventMail,
+} from "@repo/shared";
 import {
   Axe,
   BrickWallShield,
@@ -14,6 +24,7 @@ import {
   Wheat,
 } from "lucide-react";
 import { Dispatch } from "react";
+import { nationText, NationTextObject } from "./helpers/mails";
 export type BuildingNames = keyof typeof BUILDINGS;
 
 export const BuildingIcons: Record<"road" | BUILDINGS_CATEGORY, LucideIcon> = {
@@ -109,9 +120,34 @@ export const FALLBACK_POPULATION = 1000; // displayed when no hex is selected
 
 export type OpenMenus = "none" | "build" | "diplo";
 
+export type MailText = {
+  header: string;
+  body: string;
+};
+
 export const MailTexts = {
-  WAR: (mail: Mail) => `${mail.fromNation} declared war on ${mail.toNation}!`,
-  PEACE_OFFER: (mail: Mail) =>
-    `${mail.fromNation} wants to sign peace treaty with ${mail.toNation}.`,
-  PEACE_ACCEPT: (mail: Mail) => `${mail.fromNation} accepted ${mail.toNation}'s peace treaty.`,
+  WAR: (mail: WarEventMail, playerId: string) => {
+    const attacker = nationText(mail.metadata.attackerNation, playerId);
+    const defender = nationText(mail.metadata.defenderNation, playerId);
+    return {
+      header: "War declaration!",
+      body: `${attacker.subject} declared war on ${defender.subject}!`,
+    };
+  },
+  PEACE_OFFER: (mail: PeaceOfferMail, playerId: string) => {
+    const from = nationText(mail.metadata.fromNation, playerId);
+    const to = nationText(mail.metadata.toNation, playerId);
+    return {
+      header: "Peace Offer",
+      body: `${from.subject} wants to sign peace treaty with ${to.subject}.`,
+    };
+  },
+  PEACE_SIGNED: (mail: PeaceSignedMail, playerId: string) => {
+    const from = nationText(mail.metadata.fromNation, playerId);
+    const to = nationText(mail.metadata.toNation, playerId);
+    return {
+      header: "Peace Signed",
+      body: `${from.subject} accepted ${to.possesive} peace treaty.`,
+    };
+  },
 };

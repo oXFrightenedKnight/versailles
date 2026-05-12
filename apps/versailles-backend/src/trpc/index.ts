@@ -1,13 +1,14 @@
 import z from "zod";
 import { authedProcedure, router } from "./trpc.js";
 import { generateHexMap } from "../services/map.js";
-import { memoryStore } from "../server/memoryStore.js";
+import { memoryStore, populateGameCtx } from "../server/memoryStore.js";
 import { generateNations, runIntentForEachNation } from "../services/genNations.js";
 import { inferProcedureInput, TRPCError } from "@trpc/server";
 import { Building, Hex, Mail, MAP_RADIUS, MODIFIER, Nation, Road } from "@repo/shared";
 import { executeContracts, recalculateContractsAmounts } from "../services/contracts.js";
 import { buildingOutput } from "../services/buildings.js";
 import { nationsUpdateManpower } from "../services/manpower.js";
+import { filterPlayerLogic } from "../services/player.js";
 
 export type GameCtx = {
   mapHexes: Hex[];
@@ -23,61 +24,13 @@ export type IntentInput = inferProcedureInput<AppRouter["nextTurn"]>;
 
 export const appRouter = router({
   // Init game
-  generateHexMap: authedProcedure.mutation(async () => {
-    let mapHexes: Hex[] = [];
-    let nations: Nation[] = [];
-    let turn: number = 0;
-    let roads: Road[] = [];
-    let buildings: Building[] = [];
-    let modifiers: MODIFIER[] = [];
-    let mails: Mail[] = [];
+  initialLoad: authedProcedure.mutation(async () => {
+    const ctx = populateGameCtx();
 
-    if (memoryStore.maps.has("mapHexes")) {
-      mapHexes = memoryStore.maps.get("mapHexes");
-    } else {
-      mapHexes = generateHexMap(MAP_RADIUS, buildings);
-      memoryStore.maps.set("mapHexes", mapHexes);
-    }
+    // FILTERING/FOG OF WAR LOGIC
+    const data = filterPlayerLogic(ctx);
 
-    if (memoryStore.maps.has("nations")) {
-      nations = memoryStore.maps.get("nations");
-    } else {
-      nations = generateNations({ buildings });
-      memoryStore.maps.set("nations", nations);
-    }
-
-    if (memoryStore.maps.has("turn")) {
-      turn = memoryStore.maps.get("turn");
-    } else {
-      memoryStore.maps.set("turn", turn);
-    }
-
-    if (memoryStore.maps.has("roads")) {
-      roads = memoryStore.maps.get("roads");
-    } else {
-      memoryStore.maps.set("roads", roads);
-    }
-
-    if (memoryStore.maps.has("buildings")) {
-      buildings = memoryStore.maps.get("buildings");
-    } else {
-      memoryStore.maps.set("buildings", buildings);
-    }
-
-    // DO NOT SEND MODIFIERS TO CLIENT FOR NOW
-    if (memoryStore.maps.has("modifiers")) {
-      modifiers = memoryStore.maps.get("modifiers");
-    } else {
-      memoryStore.maps.set("modifiers", modifiers);
-    }
-
-    if (memoryStore.maps.has("mails")) {
-      mails = memoryStore.maps.get("mails");
-    } else {
-      memoryStore.maps.set("mails", mails);
-    }
-
-    return { mapHexes, nations, turn, roads, buildings, mails };
+    return data;
   }),
   nextTurn: authedProcedure
     .input(
@@ -147,15 +100,7 @@ export const appRouter = router({
     )
     .mutation(async ({ input }) => {
       // create gameCtx
-      const gameCtx: GameCtx = {
-        mapHexes: memoryStore.maps.get("mapHexes"),
-        nations: memoryStore.maps.get("nations"),
-        turn: memoryStore.maps.get("turn"),
-        roads: memoryStore.maps.get("roads"),
-        buildings: memoryStore.maps.get("buildings"),
-        modifiers: memoryStore.maps.get("modifiers"),
-        mails: memoryStore.maps.get("mails"),
-      };
+      const gameCtx = populateGameCtx();
       const playerIntentCtx: IntentInput = {
         ...input,
       };
@@ -196,6 +141,8 @@ export const appRouter = router({
       nationsUpdateManpower(gameCtx);
 
       // step 8: increase turn
+      // fine for now, but when adding db/reddis, consider special
+      // functions to update state
       gameCtx.turn++;
       memoryStore.maps.set("turn", gameCtx.turn);
 
@@ -206,6 +153,10 @@ export const appRouter = router({
       memoryStore.maps.set("buildings", gameCtx.buildings);
       memoryStore.maps.set("modifiers", gameCtx.modifiers);
       memoryStore.maps.set("mails", gameCtx.mails);
+
+      // step 10: filter logic for player
+      const data = filterPlayerLogic(gameCtx);
+      return data;
     }),
 });
 // Export type router type signature,

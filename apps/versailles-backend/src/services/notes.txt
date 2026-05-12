@@ -1,6 +1,7 @@
 
 
 list of changes to make next:
+5. Don't let player to declare war twice on same country
 6. Add basic diplomacy (at least 1 button - declare war) and don't forget to
 check whether you are at war with the country when moving army
 7. add peace requests and peace time

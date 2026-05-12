@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
-import { trpc } from "../_trpc/client";
+import { GameData, trpc } from "../_trpc/client";
 import Image from "next/image";
 import { initBiomePatterns, renderMap, initTextures } from "../../canvas/render";
 import { type Hex, type Nation } from "@repo/shared";
@@ -82,26 +82,33 @@ export default function Home() {
   const [barDragging, setBarDragging] = useState<boolean>(false);
 
   // DATA FETCH
-  const mapData = trpc.generateHexMap.useMutation({
-    onSuccess(data) {
-      // clean up old data
-      cleanTempStates();
+  function cleanAndUpdateData(data: GameData) {
+    if (!data) return;
+    // clean up old data
+    cleanTempStates();
 
-      useGameStore.getState().setGameData(data);
+    useGameStore.getState().setGameData(data);
 
-      setSelectedHex(
-        prevId !== null ? (data.mapHexes.find((hex) => hex.id === prevId) ?? null) : null
-      );
-    },
-  });
-  const nextTurn = trpc.nextTurn.useMutation();
-
+    setSelectedHex(
+      prevId !== null ? (data.mapHexes.find((hex) => hex.id === prevId) ?? null) : null
+    );
+  }
   function cleanTempStates() {
     useGameStore.getState().reset();
     useIntentStore.getState().reset();
   }
+  const mapData = trpc.initialLoad.useMutation({
+    onSuccess(data) {
+      cleanAndUpdateData(data);
+    },
+  });
+  const nextTurn = trpc.nextTurn.useMutation({
+    onSuccess(data) {
+      cleanAndUpdateData(data);
+    },
+  });
 
-  // generate map
+  // initially generate map
   useEffect(() => {
     mapData.mutate();
   }, []);
@@ -553,9 +560,6 @@ export default function Home() {
                   updateContracts: serverContractUpdate,
                   declareWar: declareWar,
                 });
-                mapData.mutate();
-                console.log(selectedHex);
-                console.log(selectedHexIdRef.current);
               }}
             >
               Next Turn (turn: {turn})
