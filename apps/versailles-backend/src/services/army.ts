@@ -1,9 +1,12 @@
-import { ArmyTrainingObject, Building, Hex, Nation } from "@repo/shared";
-import { getNationById } from "./genNations.js";
-import { getHexById } from "./map.js";
+import { Building } from "@repo/shared/data/buildings";
 import { GameCtx } from "../trpc/index.js";
-import { addModifier } from "./modifiers.js";
+import { getNationById } from "./genNations.js";
 import { addMail, createWarMail } from "./mails.js";
+import { getHexById } from "./map.js";
+import { addModifier } from "./modifiers.js";
+
+import { Hex } from "@repo/shared/data/hex_map.js";
+import { Nation } from "@repo/shared/data/nations.js";
 
 export function moveArmy({
   hexId,
@@ -118,7 +121,6 @@ export function calculateWar(hexId: number) {
     }
   }
 }
-
 // create army training object in a barrack
 export function queueArmyTraining({
   trainNewArmy,

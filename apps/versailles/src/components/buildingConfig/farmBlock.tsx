@@ -1,9 +1,10 @@
 import ContractBlock from "../Blocks/ContractBlock";
-import { Building, BUILDINGS, findBuildingNameByCategory } from "@repo/shared";
 import { Contract } from "@/lib/types/game";
 import { Info } from "../Blocks/InfoComponent";
 import StorageBlock from "../Blocks/StorageBlock";
 import InfoBlock from "../Blocks/InfoBlock";
+import { Building, BUILDINGS } from "@repo/shared/data/buildings";
+import { findBuildingNameByCategory } from "@repo/shared/helpers/buildings";
 
 export default function FarmBlock({
   setIsContractSelected,

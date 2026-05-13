@@ -1,6 +1,8 @@
-import { getHexByAxial, Hex, Road } from "@repo/shared";
+import { Hex } from "@repo/shared/data/hex_map";
 import { useIntentStore } from "../../stores/intentStore";
 import { roadObject } from "../../types/game";
+import { Road } from "@repo/shared/data/roads";
+import { getHexByAxial } from "@repo/shared/helpers/hex_map";
 
 // roads that are used to display for build menu
 export type RoadConstructionVM = {

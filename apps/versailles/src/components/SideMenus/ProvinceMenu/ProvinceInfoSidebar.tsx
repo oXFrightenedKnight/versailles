@@ -1,12 +1,5 @@
 "use client";
 
-import {
-  BASE_HEX_POPULATION,
-  Building,
-  findBuildingNameByCategory,
-  getBuilding,
-  Hex,
-} from "@repo/shared";
 import { X } from "lucide-react";
 import Image from "next/image";
 import Tooltip from "../../GameComponents/tooltip";
@@ -15,6 +8,9 @@ import NoBuilding from "../../buildingConfig/noBuilding";
 import { getOptimisticPopulation } from "@/lib/UI/optimisticCalc/population";
 import { getNationFlagURL } from "@/lib/helpers/flags";
 import { getNationName } from "@/lib/helpers/nations";
+import { Hex } from "@repo/shared/data/hex_map";
+import { Building } from "@repo/shared/data/buildings";
+import { findBuildingNameByCategory, getBuilding } from "@repo/shared/helpers/buildings";
 
 export default function ProvinceInfoSidebar({
   selectedHex,

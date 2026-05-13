@@ -1,5 +1,4 @@
 import {
-  BASE_HEX_POPULATION,
   baseGoldRate,
   baseTrainingProgress,
   baseWheatRate,
@@ -7,17 +6,14 @@ import {
   Building,
   BUILDINGS,
   BUILDINGS_CATEGORY,
-  estimateConsumption,
-  findBuildingNameByCategory,
-  getBuilding,
-  Hex,
-  Nation,
-  RESOURCES,
-} from "@repo/shared";
-import { calculatePopulationChange, getHexById } from "./map.js";
+} from "@repo/shared/data/buildings.js";
+import { estimateConsumption } from "@repo/shared/helpers/contracts.js";
+import { BASE_HEX_POPULATION, Hex, RESOURCES } from "@repo/shared/data/hex_map.js";
+import { Nation } from "@repo/shared/data/nations.js";
+import { findBuildingNameByCategory } from "@repo/shared/helpers/buildings.js";
 import { roundToNearestDecimal } from "../lib/helpers.js";
-import { getNationById } from "./genNations.js";
 import { GameCtx } from "../trpc/index.js";
+import { calculatePopulationChange } from "./map.js";
 
 export function buildingOutput(gameCtx: GameCtx) {
   const { buildings } = gameCtx;

@@ -1,8 +1,3 @@
 {
-  "compilerOptions": {
-    "paths": {
-      "@repo/shared": ["./packages/shared/src/index.ts"],
-      "@repo/shared/*": ["./packages/shared/src/*"]
-    }
-  }
+  "compilerOptions": {}
 }

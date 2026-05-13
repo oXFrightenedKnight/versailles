@@ -1,6 +1,6 @@
 import { FALLBACK_POPULATION } from "@/lib/data";
 import { numberConverter } from "@/lib/utils";
-import { BASE_HEX_POPULATION, Hex } from "@repo/shared";
+import { BASE_HEX_POPULATION, Hex } from "@repo/shared/data/hex_map";
 
 export function getOptimisticPopulation(selectedHex: Hex | null, serverBuildingsDelete: string[]) {
   if (!selectedHex) return numberConverter(FALLBACK_POPULATION);

@@ -8,11 +8,12 @@ import {
   getUIBuildings,
 } from "@/lib/UI/mergeData/uiBuildings";
 import { Hammer, SquareArrowUp, X } from "lucide-react";
-import { BUILDINGS, findBuildingNameByCategory, getBuilding } from "@repo/shared";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useCallback } from "react";
 import { useIntentStore } from "@/lib/stores/intentStore";
 import { Progress } from "@/components/ui/progress";
+import { findBuildingNameByCategory, getBuilding } from "@repo/shared/helpers/buildings";
+import { BUILDINGS } from "@repo/shared/data/buildings";
 
 export default function ConstructingBuilding({ building }: { building: BuildingConstructionVM }) {
   const mapHexes = useGameStore((s) => s.mapHexes);

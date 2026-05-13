@@ -1,12 +1,12 @@
 "use client";
 
-import { Building } from "@repo/shared";
 import { SquarePen } from "lucide-react";
 import ContractComponent from "./ContractComponent";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
 import { getMergedContracts, getServerContractsFromBuildings } from "@/lib/UI/mergeData/uiContract";
 import { useMemo } from "react";
+import { Building } from "@repo/shared/data/buildings";
 
 export default function ContractBlock({
   isContractSelected,

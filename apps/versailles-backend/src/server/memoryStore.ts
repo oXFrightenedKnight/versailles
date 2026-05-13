@@ -1,7 +1,7 @@
-import { MAP_RADIUS } from "@repo/shared";
 import { generateHexMap } from "../services/map.js";
 import { generateNations } from "../services/genNations.js";
 import { GameCtx } from "../trpc/index.js";
+import { MAP_RADIUS } from "@repo/shared/data/hex_map.js";
 
 export const memoryStore = {
   maps: new Map<string, any>(),

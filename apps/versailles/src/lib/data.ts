@@ -1,19 +1,11 @@
 import BarrackBlock from "@/components/buildingConfig/barrackBlock";
 import CivilianBlock from "@/components/buildingConfig/civilianBlock";
 import FarmBlock from "@/components/buildingConfig/farmBlock";
-import WoodcampBlock from "@/components/buildingConfig/woodcampBlock";
 import WatchtowerBlock from "@/components/buildingConfig/watchtowerBlock";
-import {
-  Building,
-  BUILDINGS,
-  BUILDINGS_CATEGORY,
-  Mail,
-  MailTypes,
-  PeaceOfferMail,
-  PeaceSignedMail,
-  RESOURCES,
-  WarEventMail,
-} from "@repo/shared";
+import WoodcampBlock from "@/components/buildingConfig/woodcampBlock";
+import { Building, BUILDINGS, BUILDINGS_CATEGORY } from "@repo/shared/data/buildings";
+import { RESOURCES } from "@repo/shared/data/hex_map";
+import { PeaceOfferMail, PeaceSignedMail, WarEventMail } from "@repo/shared/data/mail";
 import {
   Axe,
   BrickWallShield,
@@ -24,7 +16,7 @@ import {
   Wheat,
 } from "lucide-react";
 import { Dispatch } from "react";
-import { nationText, NationTextObject } from "./helpers/mails";
+import { nationText } from "./helpers/mails";
 export type BuildingNames = keyof typeof BUILDINGS;
 
 export const BuildingIcons: Record<"road" | BUILDINGS_CATEGORY, LucideIcon> = {

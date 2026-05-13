@@ -1,8 +1,9 @@
-import { Building, BUILDINGS, findBuildingNameByCategory } from "@repo/shared";
 import { Info } from "../Blocks/InfoComponent";
 import StorageBlock from "../Blocks/StorageBlock";
 import InfoBlock from "../Blocks/InfoBlock";
 import TrainingBlock from "../Blocks/TrainingBlock";
+import { Building, BUILDINGS } from "@repo/shared/data/buildings";
+import { findBuildingNameByCategory } from "@repo/shared/helpers/buildings";
 
 export default function BarrackBlock({ building }: { building: Building }) {
   // name

@@ -1,6 +1,11 @@
+import { Hex } from "@repo/shared/data/hex_map";
 import { serverData } from "../types/game";
-import { Building, Hex, Mail, Nation, Road } from "@repo/shared";
+
 import { create } from "zustand";
+import { Nation } from "@repo/shared/data/nations";
+import { Road } from "@repo/shared/data/roads";
+import { Building } from "@repo/shared/data/buildings";
+import { Mail } from "@repo/shared/data/mail";
 
 export type StoreType = {
   mapHexes: Hex[];

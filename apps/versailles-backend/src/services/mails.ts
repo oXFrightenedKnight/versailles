@@ -1,4 +1,4 @@
-import { Mail, MailTypes, PeaceOfferMail, PeaceSignedMail, WarEventMail } from "@repo/shared";
+import { Mail, PeaceOfferMail, PeaceSignedMail, WarEventMail } from "@repo/shared/data/mail.js";
 import { GameCtx } from "../trpc/index.js";
 
 export function addMail(ctx: GameCtx, mail: Mail) {

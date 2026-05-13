@@ -1,4 +1,6 @@
 
+** REMEMBER FOR PRODUCTION YOU MUST RESOLVE PACKAGE.JSON IN
+   SHARED PACKAGE TO DIST **
 
 list of changes to make next:
 5. Don't let player to declare war twice on same country

@@ -1,19 +1,3 @@
-import {
-  Building,
-  calculateExportAmount,
-  findNeighbors,
-  getBuilding,
-  getHexByAxial,
-  hasSegment,
-  Hex,
-  HEX_DIRECTIONS,
-  Nation,
-  Road,
-  ServerContractUpdate,
-  startDijkstrasAlgo,
-  SupplyContract,
-  topLevelsByCategory,
-} from "@repo/shared";
 import { pixelToHex } from "../render";
 import { Dispatch, RefObject } from "react";
 import { randomNumber } from "@/lib/utils";
@@ -24,6 +8,16 @@ import { getFirstFreeResource, getMergedContracts } from "@/lib/UI/mergeData/uiC
 import { cancelArmyMove } from "@/lib/UI/mergeData/uiArmy";
 import { mergeConstructingBuildings } from "@/lib/UI/mergeData/uiBuildings";
 import { calcAvailableArmy } from "@/lib/UI/optimisticCalc/army";
+import { Hex, HEX_DIRECTIONS } from "@repo/shared/data/hex_map";
+import { Nation } from "@repo/shared/data/nations";
+import { Road } from "@repo/shared/data/roads";
+import { Building, topLevelsByCategory } from "@repo/shared/data/buildings";
+import { ServerContractUpdate, SupplyContract } from "@repo/shared/data/contracts";
+import { getBuilding } from "@repo/shared/helpers/buildings";
+import { startDijkstrasAlgo } from "@repo/shared/helpers/dijkstras";
+import { calculateExportAmount } from "@repo/shared/helpers/contracts";
+import { findNeighbors, getHexByAxial } from "@repo/shared/helpers/hex_map";
+import { hasSegment } from "@repo/shared/helpers/roads";
 
 export type ClickCtx = {
   mouseDownRef: RefObject<boolean>;
@@ -429,6 +423,7 @@ export function handleRoadDrag(event: MouseEvent, ctx: RoadDragCtx) {
 
     // --- CHECKS ---
     if (!hex) return;
+    if (!playerNation) return;
     // return if player doesn't own this hex
     if (hex.owner !== playerNation?.id) return;
 

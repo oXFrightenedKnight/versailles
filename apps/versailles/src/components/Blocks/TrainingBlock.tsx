@@ -1,6 +1,5 @@
 "use client";
 
-import { Building } from "@repo/shared";
 import TrainingComponent from "./TrainingComponent";
 import { CircleMinus, CirclePlus, Cog } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -12,6 +11,7 @@ import {
   mergeTrainingArmyClient,
 } from "@/lib/UI/mergeData/uiTraining";
 import { numberConverter } from "@/lib/utils";
+import { Building } from "@repo/shared/data/buildings";
 
 export default function TrainingBlock({ building }: { building: Building }) {
   const playerNation = useGameStore((s) => s.playerNation);

@@ -1,5 +1,5 @@
 import { ArmyTraining } from "@/lib/types/game";
-import { Nation } from "@repo/shared";
+import { Nation } from "@repo/shared/data/nations";
 
 export function calculateOptimisticManpower(
   armyTraining: ArmyTraining[],

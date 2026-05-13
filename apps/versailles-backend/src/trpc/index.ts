@@ -1,14 +1,19 @@
-import z from "zod";
-import { authedProcedure, router } from "./trpc.js";
-import { generateHexMap } from "../services/map.js";
-import { memoryStore, populateGameCtx } from "../server/memoryStore.js";
-import { generateNations, runIntentForEachNation } from "../services/genNations.js";
+import { Building } from "@repo/shared/data/buildings.js";
+import { Hex } from "@repo/shared/data/hex_map.js";
+import { Mail } from "@repo/shared/data/mail.js";
+import { MODIFIER } from "@repo/shared/data/modifiers.js";
+import { Nation } from "@repo/shared/data/nations.js";
+import { Road } from "@repo/shared/data/roads.js";
+
 import { inferProcedureInput, TRPCError } from "@trpc/server";
-import { Building, Hex, Mail, MAP_RADIUS, MODIFIER, Nation, Road } from "@repo/shared";
-import { executeContracts, recalculateContractsAmounts } from "../services/contracts.js";
+import z from "zod";
+import { memoryStore, populateGameCtx } from "../server/memoryStore.js";
 import { buildingOutput } from "../services/buildings.js";
+import { executeContracts, recalculateContractsAmounts } from "../services/contracts.js";
+import { runIntentForEachNation } from "../services/genNations.js";
 import { nationsUpdateManpower } from "../services/manpower.js";
 import { filterPlayerLogic } from "../services/player.js";
+import { authedProcedure, router } from "./trpc.js";
 
 export type GameCtx = {
   mapHexes: Hex[];

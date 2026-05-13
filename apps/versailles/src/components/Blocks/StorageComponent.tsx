@@ -1,7 +1,9 @@
-import { Building, BUILDINGS, findBuildingNameByCategory, RESOURCES } from "@repo/shared";
 import Image from "next/image";
 import Tooltip from "../GameComponents/tooltip";
 import { numberConverter } from "@/lib/utils";
+import { RESOURCES } from "@repo/shared/data/hex_map";
+import { Building, BUILDINGS } from "@repo/shared/data/buildings";
+import { findBuildingNameByCategory } from "@repo/shared/helpers/buildings";
 
 export default function StorageComponent({
   amount,

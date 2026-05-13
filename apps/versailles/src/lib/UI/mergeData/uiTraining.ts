@@ -1,4 +1,4 @@
-import { Building } from "@repo/shared";
+import { Building } from "@repo/shared/data/buildings";
 import { useIntentStore } from "../../stores/intentStore";
 import { ArmyTraining } from "../../types/game";
 

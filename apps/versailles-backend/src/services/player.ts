@@ -1,4 +1,4 @@
-import { MODIFIER } from "@repo/shared";
+import { MODIFIER } from "@repo/shared/data/modifiers.js";
 import { GameCtx } from "../trpc/index.js";
 import { filterNationMails } from "./mails.js";
 

@@ -1,4 +1,4 @@
-import { Building } from "@repo/shared";
+import { Building } from "@repo/shared/data/buildings";
 import StorageComponent from "./StorageComponent";
 
 export default function StorageBlock({

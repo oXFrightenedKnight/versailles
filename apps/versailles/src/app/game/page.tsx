@@ -1,36 +1,37 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useMemo } from "react";
-import { GameData, trpc } from "../_trpc/client";
-import Image from "next/image";
-import { initBiomePatterns, renderMap, initTextures } from "../../canvas/render";
-import { type Hex, type Nation } from "@repo/shared";
-import { Button } from "@/components/ui/button";
-import { d } from "@/canvas/map_data";
-import ProvinceInfoSidebar from "@/components/SideMenus/ProvinceMenu/ProvinceInfoSidebar";
-import Tooltip from "@/components/GameComponents/tooltip";
-import { Descriptions, OpenMenus } from "@/lib/data";
-import { useGameStore } from "@/lib/stores/gameStore";
-import { useIntentStore } from "@/lib/stores/intentStore";
-import { useCameraController } from "@/hooks/useCameraController";
 import {
   dispatchMapTap,
   handleBarDrag,
   handleRoadDrag,
   stopBarDrag,
 } from "@/canvas/click/handleClick";
-import { BuildModeType, roadObject } from "@/lib/types/game";
-import { getServerContractsFromBuildings } from "@/lib/UI/mergeData/uiContract";
-import { getUIBuildings } from "@/lib/UI/mergeData/uiBuildings";
+import { d } from "@/canvas/map_data";
 import DragBar from "@/components/GameComponents/DragBar";
-import { getRenderRoads, mergeBuildingRoads } from "@/lib/UI/mergeData/uiRoads";
-import DiplomacyMenu from "@/components/SideMenus/DiplomacyMenu/MainMenu";
-import { calculateOptimisticManpower } from "@/lib/UI/optimisticCalc/manpower";
-import { calculateOptimisticGold } from "@/lib/UI/optimisticCalc/gold";
+import Tooltip from "@/components/GameComponents/tooltip";
 import BuildMenu from "@/components/SideMenus/BuildingMenu/buildButton";
-import { getNationName } from "@/lib/helpers/nations";
-import { numberConverter } from "@/lib/utils";
+import DiplomacyMenu from "@/components/SideMenus/DiplomacyMenu/MainMenu";
 import MailMenu from "@/components/SideMenus/Mails/MainMenu";
+import ProvinceInfoSidebar from "@/components/SideMenus/ProvinceMenu/ProvinceInfoSidebar";
+import { Button } from "@/components/ui/button";
+import { useCameraController } from "@/hooks/useCameraController";
+import { Descriptions, OpenMenus } from "@/lib/data";
+import { getNationName } from "@/lib/helpers/nations";
+import { useGameStore } from "@/lib/stores/gameStore";
+import { useIntentStore } from "@/lib/stores/intentStore";
+import { BuildModeType, roadObject } from "@/lib/types/game";
+import { getUIBuildings } from "@/lib/UI/mergeData/uiBuildings";
+import { getServerContractsFromBuildings } from "@/lib/UI/mergeData/uiContract";
+import { getRenderRoads } from "@/lib/UI/mergeData/uiRoads";
+import { calculateOptimisticGold } from "@/lib/UI/optimisticCalc/gold";
+import { calculateOptimisticManpower } from "@/lib/UI/optimisticCalc/manpower";
+import { numberConverter } from "@/lib/utils";
+import { Hex } from "@repo/shared/data/hex_map";
+import { Nation } from "@repo/shared/data/nations";
+import Image from "next/image";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { initBiomePatterns, initTextures, renderMap } from "../../canvas/render";
+import { GameData, trpc } from "../_trpc/client";
 
 export default function Home() {
   const mapHexes = useGameStore((state) => state.mapHexes);

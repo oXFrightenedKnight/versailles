@@ -1,6 +1,10 @@
-import { findNeighbors, hasSegment, Hex, Nation, Road } from "@repo/shared";
+import { Road } from "@repo/shared/data/roads.js";
 import { GameCtx } from "../trpc/index.js";
 import { recalculateContractsPaths } from "./contracts.js";
+import { Hex } from "@repo/shared/data/hex_map.js";
+import { findNeighbors } from "@repo/shared/helpers/hex_map.js";
+import { hasSegment } from "@repo/shared/helpers/roads.js";
+import { Nation } from "@repo/shared/data/nations.js";
 
 export function buildNationRoads({
   gameCtx,

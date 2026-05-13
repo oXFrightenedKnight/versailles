@@ -3,7 +3,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts --trace-uncaught",
-    "build": "tsc",
+    "build": "tsup src/index.ts --format esm --dts",
+    "types": "tsc",
     "start": "node dist/index.js"
   },
   "dependencies": {
@@ -11,6 +12,7 @@
     "@hono/clerk-auth": "^3.0.3",
     "@hono/node-server": "^1.19.9",
     "@neondatabase/serverless": "^1.0.2",
+    "@repo/shared": "*",
     "@trpc/server": "^11.7.2",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
@@ -19,6 +21,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
+    "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "^5.8.3"
   }

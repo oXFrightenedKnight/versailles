@@ -1,7 +1,7 @@
-import { MergedContractChanges, RESOURCES, ServerContractUpdate } from "@repo/shared";
 import { create } from "zustand";
 import { resolveValue } from "../utils";
 import { armyIntent, ArmyTraining, Contract, newBuilding, roadObject } from "../types/game";
+import { MergedContractChanges, ServerContractUpdate } from "@repo/shared/data/contracts";
 
 // custom react-like setState function type for zustland store
 export type SetStateAction<T> = (value: T | ((prev: T) => T)) => void;

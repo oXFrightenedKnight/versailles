@@ -1,6 +1,7 @@
-import { Building, BUILDINGS_CATEGORY, Hex, Road } from "@repo/shared";
 import { newBuilding } from "../../types/game";
 import { useIntentStore } from "../../stores/intentStore";
+import { Hex } from "@repo/shared/data/hex_map";
+import { Building, BUILDINGS_CATEGORY } from "@repo/shared/data/buildings";
 
 export type BuildingConstructionVM = {
   id: string;

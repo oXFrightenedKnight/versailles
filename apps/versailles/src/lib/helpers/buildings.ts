@@ -1,4 +1,5 @@
-import { Building, building_categoires, Hex } from "@repo/shared";
+import { Building, building_categoires } from "@repo/shared/data/buildings";
+import { Hex } from "@repo/shared/data/hex_map";
 
 // allows to additionally filter by nationId if provided with nationId and hexes
 export function allBuildingsPerCategory(

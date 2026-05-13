@@ -1,4 +1,5 @@
-import { CubeCoord, cubeDistance, axialToCube } from "@repo/shared";
+import { CubeCoord } from "@repo/shared/data/hex_map";
+import { axialToCube, cubeDistance } from "@repo/shared/helpers/hex_map";
 
 type AxialCoord = {
   q: number;

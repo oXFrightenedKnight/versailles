@@ -1,7 +1,8 @@
-import { Building, BUILDINGS, findBuildingNameByCategory } from "@repo/shared";
+import { Building, BUILDINGS } from "@repo/shared/data/buildings";
+import InfoBlock from "../Blocks/InfoBlock";
 import { Info } from "../Blocks/InfoComponent";
 import StorageBlock from "../Blocks/StorageBlock";
-import InfoBlock from "../Blocks/InfoBlock";
+import { findBuildingNameByCategory } from "@repo/shared/helpers/buildings";
 
 export default function WatchtowerBlock({ building }: { building: Building }) {
   // name

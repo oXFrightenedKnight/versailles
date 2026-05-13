@@ -1,4 +1,4 @@
-import { Hex } from "@repo/shared";
+import { Hex } from "@repo/shared/data/hex_map";
 
 export function getHexById(id: number, mapHexes: Hex[]) {
   // switch to db request later

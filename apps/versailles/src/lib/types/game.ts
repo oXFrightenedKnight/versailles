@@ -1,13 +1,9 @@
-import {
-  Building,
-  BUILDINGS_CATEGORY,
-  Hex,
-  Mail,
-  Nation,
-  RESOURCES,
-  Road,
-  SupplyContract,
-} from "@repo/shared";
+import { Building, BUILDINGS_CATEGORY } from "@repo/shared/data/buildings";
+import { SupplyContract } from "@repo/shared/data/contracts";
+import { Hex, RESOURCES } from "@repo/shared/data/hex_map";
+import { Mail } from "@repo/shared/data/mail";
+import { Nation } from "@repo/shared/data/nations";
+import { Road } from "@repo/shared/data/roads";
 
 export type armyIntent = {
   hexId: number;

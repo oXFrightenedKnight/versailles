@@ -1,7 +1,6 @@
 "use client";
 
 import { X } from "lucide-react";
-import { ALL_BUILDING_CATEGORIES, BUILDINGS_CATEGORY } from "@repo/shared";
 import ToggleBuilding from "./ToggleBuilding";
 import { BuildingDescriptions, BuildingIcons, OpenMenus } from "@/lib/data";
 import { BuildModeType } from "@/lib/types/game";
@@ -12,6 +11,7 @@ import ConstructingBuilding from "./ConstructingBuilding";
 import { mergeBuildingRoads } from "@/lib/UI/mergeData/uiRoads";
 import ConstructingRoad from "./RoadConstructing";
 import React from "react";
+import { ALL_BUILDING_CATEGORIES, BUILDINGS_CATEGORY } from "@repo/shared/data/buildings";
 
 export default function BuildMenu({
   setOpenMenu,

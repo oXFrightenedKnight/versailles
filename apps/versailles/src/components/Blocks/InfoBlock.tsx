@@ -1,8 +1,8 @@
 import { Trash2 } from "lucide-react";
 import InfoComponent, { Info } from "./InfoComponent";
-import { Building } from "@repo/shared";
 import { deleteBuilding } from "@/lib/UI/mergeData/uiBuildings";
 import { useGameStore } from "@/lib/stores/gameStore";
+import { Building } from "@repo/shared/data/buildings";
 
 export default function InfoBlock({ info, building }: { info: Info; building: Building }) {
   const mapHexes = useGameStore((s) => s.mapHexes);

@@ -1,12 +1,8 @@
 import { newBuilding } from "@/lib/types/game";
-import {
-  Building,
-  BUILDINGS,
-  findBuildingNameByCategory,
-  getBuilding,
-  Hex,
-  Nation,
-} from "@repo/shared";
+import { Building, BUILDINGS } from "@repo/shared/data/buildings";
+import { Hex } from "@repo/shared/data/hex_map";
+import { Nation } from "@repo/shared/data/nations";
+import { findBuildingNameByCategory, getBuilding } from "@repo/shared/helpers/buildings";
 
 export function calculateOptimisticGold(
   mapHexes: Hex[],

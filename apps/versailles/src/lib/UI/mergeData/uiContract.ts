@@ -1,13 +1,9 @@
-import {
-  Building,
-  BUILDINGS,
-  findBuildingNameByCategory,
-  MergedContractChanges,
-  RESOURCES,
-  ServerContractUpdate,
-} from "@repo/shared";
+import { MergedContractChanges, ServerContractUpdate } from "@repo/shared/data/contracts";
 import { useIntentStore } from "../../stores/intentStore";
 import { Contract, MergedContract, ServerContract } from "../../types/game";
+import { Building, BUILDINGS } from "@repo/shared/data/buildings";
+import { findBuildingNameByCategory } from "@repo/shared/helpers/buildings";
+import { RESOURCES } from "@repo/shared/data/hex_map";
 
 // function that automatically updates contractUpdateIntent in intentStore
 export function updateServerContractIntent(contractId: string, newChanges: MergedContractChanges) {

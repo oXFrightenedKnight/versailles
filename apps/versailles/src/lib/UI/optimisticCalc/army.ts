@@ -1,5 +1,6 @@
 import { armyIntent } from "@/lib/types/game";
-import { Hex, Nation } from "@repo/shared";
+import { Hex } from "@repo/shared/data/hex_map";
+import { Nation } from "@repo/shared/data/nations";
 
 export function calcAvailableArmy(hex: Hex, playerNation: Nation | null, armyMove: armyIntent[]) {
   const armyInTile = playerNation

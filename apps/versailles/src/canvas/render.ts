@@ -1,10 +1,12 @@
-import { findNeighbors, Hex, Nation, NATION_NAMES, Road } from "@repo/shared";
 import { Biome, BIOME_COLOR, HEX_SIZE } from "./map_data";
 import { armyIntent, roadObject } from "@/lib/types/game";
 import { drawAllRoads } from "./roads/roads";
 import { RenderRoad, RoadConstructionVM } from "@/lib/UI/mergeData/uiRoads";
 import { getFlagImage } from "@/lib/helpers/flags";
 import { numberConverter } from "@/lib/utils";
+import { Nation } from "@repo/shared/data/nations";
+import { Hex } from "@repo/shared/data/hex_map";
+import { findNeighbors } from "@repo/shared/helpers/hex_map";
 
 const biomePatterns: Partial<Record<Biome, CanvasPattern>> = {};
 const texturePatterns: Partial<Record<string, CanvasPattern>> = {};
@@ -444,7 +446,7 @@ function drawLabel(
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
 
-  ctx.fillText(numberConverter(text), boxX + paddingX + iconSize + gap, centerY);
+  ctx.fillText(numberConverter(Number(text)), boxX + paddingX + iconSize + gap, centerY);
 }
 
 function drawLabelArray(

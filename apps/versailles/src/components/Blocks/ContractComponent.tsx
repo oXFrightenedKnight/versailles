@@ -2,14 +2,6 @@
 
 import { BuildingIcons, getResourceImage } from "@/lib/data";
 import {
-  Building,
-  BUILDINGS,
-  calculateExportAmount,
-  findBuildingNameByCategory,
-  getBuilding,
-  MergedContractChanges,
-} from "@repo/shared";
-import {
   ArrowBigDown,
   Calculator,
   Check,
@@ -34,6 +26,10 @@ import {
   updateServerContractIntent,
 } from "@/lib/UI/mergeData/uiContract";
 import { numberConverter } from "@/lib/utils";
+import { Building, BUILDINGS } from "@repo/shared/data/buildings";
+import { findBuildingNameByCategory, getBuilding } from "@repo/shared/helpers/buildings";
+import { MergedContractChanges } from "@repo/shared/data/contracts";
+import { calculateExportAmount } from "@repo/shared/helpers/contracts";
 
 export default function ContractComponent({
   contract,

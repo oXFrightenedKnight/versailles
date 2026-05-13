@@ -8,6 +8,8 @@ import MailBlock from "./MailBlock";
 export default function MailMenu() {
   const [mailOpen, setMailOpen] = useState<boolean>(false);
   const mails = useGameStore((s) => s.mails);
+  const reversedMails = [...mails].reverse();
+  const firstUnread = mails.find((m) => !m.read);
   const unreadMails = mails.filter((m) => !m.read);
   return (
     <div className="absolute w-full h-[50%] flex flex-col justify-start items-end right-0 p-1 gap-1 top-[10%] text-white border border-red-500">
@@ -30,9 +32,9 @@ export default function MailMenu() {
       {mailOpen && (
         <div className="w-full h-full pointer-events-auto flex justify-center items-center bg-gray-800 p-2 rounded-lg">
           <div className="pointer-events-auto w-full h-full flex justify-center items-center bg-gray-900 shadow-black shadow-md rounded-lg">
-            <div className="flex flex-col justify-center items-start w-full h-full">
-              {mails.length > 0 ? (
-                mails.map((mail) => <MailBlock mail={mail} key={mail.id}></MailBlock>)
+            <div className="flex flex-col justify-start items-center w-full h-full overflow-y-auto no-scrollbar">
+              {reversedMails.length > 0 ? (
+                reversedMails.map((mail) => <MailBlock mail={mail} key={mail.id}></MailBlock>)
               ) : (
                 <div className="w-full h-full flex flex-col justify-center items-center gap-2 text-gray-400">
                   Mailbox is empty

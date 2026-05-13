@@ -1,22 +1,3 @@
-import {
-  AVAILABLE_TILES,
-  Building,
-  building_categoires,
-  BUILDINGS,
-  BUILDINGS_CATEGORY,
-  BuildingType,
-  findBuildingNameByCategory,
-  findNeighbors,
-  getBuilding,
-  hasSegment,
-  Hex,
-  Nation,
-  NATION_NAMES,
-  RESOURCES,
-  Road,
-  ServerContractUpdate,
-  topLevelsByCategory,
-} from "@repo/shared";
 import { memoryStore } from "../server/memoryStore.js";
 import { getHexById, randomNationColor } from "./map.js";
 import { BuildBuilding, cancelBuilding, deleteBuilding, UpgradeBuilding } from "./buildings.js";
@@ -30,6 +11,17 @@ import {
 import { GameCtx, IntentInput } from "../trpc/index.js";
 import { cancelArmyTraining, declareWar, moveArmy, queueArmyTraining } from "./army.js";
 import { buildNationRoads, cancelRoadBuild } from "./road.js";
+import {
+  Building,
+  building_categoires,
+  BUILDINGS,
+  BUILDINGS_CATEGORY,
+  topLevelsByCategory,
+} from "@repo/shared/data/buildings.js";
+import { AVAILABLE_TILES } from "@repo/shared/data/hex_map.js";
+import { Nation, NATION_NAMES } from "@repo/shared/data/nations.js";
+import { findBuildingNameByCategory, getBuilding } from "@repo/shared/helpers/buildings.js";
+import { ServerContractUpdate } from "@repo/shared/data/contracts.js";
 
 export type newBuildings = {
   hexId: number;

@@ -1,21 +1,18 @@
+import { memoryStore } from "../server/memoryStore.js";
+import { BuildBuilding } from "./buildings.js";
+import { GameCtx } from "../trpc/index.js";
 import {
   Biome,
   BIOME_GROWTH,
   BIOME_MOD,
   BIOMES,
-  Building,
-  BUILDINGS,
   CreatedHexes,
-  findBuildingNameByCategory,
-  findNeighbors,
-  getBuilding,
   Hex,
-  HEX_DIRECTIONS,
   WOOD_MOD,
-} from "@repo/shared";
-import { memoryStore } from "../server/memoryStore.js";
-import { BuildBuilding } from "./buildings.js";
-import { GameCtx } from "../trpc/index.js";
+} from "@repo/shared/data/hex_map.js";
+import { Building, BUILDINGS } from "@repo/shared/data/buildings.js";
+import { findNeighbors } from "@repo/shared/helpers/hex_map.js";
+import { findBuildingNameByCategory, getBuilding } from "@repo/shared/helpers/buildings.js";
 
 // DO NOT CHANGE THIS FUNCTION TO ACCEPT GAMECTX
 // generates the mathematical map & coordinates
