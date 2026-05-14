@@ -52,7 +52,7 @@ export default function DiplomacyMenu({
           <div className="w-full h-full max-w-full min-h-0">
             {chosenNation && (
               <div className="flex justify-center items-center h-full w-full ">
-                <NationInfo nationId={chosenNation}></NationInfo>
+                <NationInfo nationId={chosenNation} setChosenNation={setChosenNation}></NationInfo>
               </div>
             )}
           </div>

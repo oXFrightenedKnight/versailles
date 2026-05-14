@@ -1,5 +1,5 @@
-import { inferProcedureInput } from "@trpc/server";
 import { Building, Hex, Mail, MODIFIER, Nation, Road } from "@repo/shared";
+import { inferProcedureInput } from "@trpc/server";
 export type GameCtx = {
   mapHexes: Hex[];
   nations: Nation[];
@@ -82,6 +82,11 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
         }[];
         deleteArmyTrain: string[];
         declareWar: string[];
+        readMails: string[];
+        answeredMails: {
+          id: string;
+          answer: boolean;
+        }[];
       };
       output: {
         mails: Mail[];

@@ -1,6 +1,6 @@
-import { MODIFIER } from "@repo/shared/data/modifiers.js";
-import { GameCtx } from "../trpc/index.js";
-import { filterNationMails } from "./mails.js";
+import { MODIFIER, Nation } from "@repo/shared";
+import { GameCtx, IntentInput } from "../trpc/index.js";
+import { filterNationMails, markReadMails } from "./mails.js";
 
 export function filterPlayerLogic(ctx: GameCtx) {
   const playerNation = ctx.nations.find((n) => n.isPlayer);
@@ -13,4 +13,8 @@ export function filterPlayerLogic(ctx: GameCtx) {
 
     modifiers: [] as MODIFIER[],
   };
+}
+
+export function updatePlayerUI(ctx: GameCtx, intentCtx: IntentInput, playerNation: Nation) {
+  markReadMails(ctx, intentCtx.readMails, playerNation);
 }

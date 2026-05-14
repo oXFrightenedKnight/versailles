@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { resolveValue } from "../utils";
 import { armyIntent, ArmyTraining, Contract, newBuilding, roadObject } from "../types/game";
-import { MergedContractChanges, ServerContractUpdate } from "@repo/shared/data/contracts";
+import { MergedContractChanges, ServerContractUpdate, MailAnswer } from "@repo/shared";
 
 // custom react-like setState function type for zustland store
 export type SetStateAction<T> = (value: T | ((prev: T) => T)) => void;
@@ -45,6 +45,12 @@ export type StoreType = {
   declareWar: nationId[];
   setDeclareWar: SetStateAction<nationId[]>;
 
+  readMails: string[];
+  setReadMails: SetStateAction<string[]>;
+
+  answeredMails: MailAnswer[];
+  setAnsweredMails: SetStateAction<MailAnswer[]>;
+
   reset: () => void;
 };
 
@@ -61,6 +67,8 @@ const initialState = {
   serverCancelRoadBuilding: [],
   armyMove: [],
   declareWar: [],
+  readMails: [],
+  answeredMails: [],
 };
 
 export const useIntentStore = create<StoreType>((set) => ({
@@ -124,6 +132,16 @@ export const useIntentStore = create<StoreType>((set) => ({
   setDeclareWar: (value) =>
     set((state) => ({
       declareWar: resolveValue(value, state.declareWar),
+    })),
+
+  setReadMails: (value) =>
+    set((state) => ({
+      readMails: resolveValue(value, state.readMails),
+    })),
+
+  setAnsweredMails: (value) =>
+    set((state) => ({
+      answeredMails: resolveValue(value, state.answeredMails),
     })),
 
   reset: () => set(initialState),

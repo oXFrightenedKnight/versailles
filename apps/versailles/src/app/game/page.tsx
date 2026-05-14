@@ -71,6 +71,10 @@ export default function Home() {
   // War declaration
   const declareWar = useIntentStore((state) => state.declareWar);
 
+  // Mails
+  const readMails = useIntentStore((state) => state.readMails);
+  const answeredMails = useIntentStore((state) => state.answeredMails);
+
   // MENUS
   const [openMenu, setOpenMenu] = useState<OpenMenus>("none");
 
@@ -560,6 +564,8 @@ export default function Home() {
                   deleteContracts: serverContractDelete,
                   updateContracts: serverContractUpdate,
                   declareWar: declareWar,
+                  answeredMails,
+                  readMails,
                 });
               }}
             >

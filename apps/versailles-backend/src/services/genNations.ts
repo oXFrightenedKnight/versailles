@@ -1,27 +1,24 @@
-import { memoryStore } from "../server/memoryStore.js";
-import { getHexById, randomNationColor } from "./map.js";
-import { BuildBuilding, cancelBuilding, deleteBuilding, UpgradeBuilding } from "./buildings.js";
 import {
-  createContracts,
-  deleteContracts,
-  newContract,
-  recalculateContractsPaths,
-  updateContracts,
-} from "./contracts.js";
-import { GameCtx, IntentInput } from "../trpc/index.js";
-import { cancelArmyTraining, declareWar, moveArmy, queueArmyTraining } from "./army.js";
-import { buildNationRoads, cancelRoadBuild } from "./road.js";
-import {
+  AVAILABLE_TILES,
   Building,
   building_categoires,
   BUILDINGS,
   BUILDINGS_CATEGORY,
+  findBuildingNameByCategory,
+  getBuilding,
+  Nation,
+  NATION_NAMES,
+  ServerContractUpdate,
   topLevelsByCategory,
-} from "@repo/shared/data/buildings.js";
-import { AVAILABLE_TILES } from "@repo/shared/data/hex_map.js";
-import { Nation, NATION_NAMES } from "@repo/shared/data/nations.js";
-import { findBuildingNameByCategory, getBuilding } from "@repo/shared/helpers/buildings.js";
-import { ServerContractUpdate } from "@repo/shared/data/contracts.js";
+} from "@repo/shared";
+import { memoryStore } from "../server/memoryStore.js";
+import { GameCtx, IntentInput } from "../trpc/index.js";
+import { cancelArmyTraining, declareWar, moveArmy, queueArmyTraining } from "./army.js";
+import { BuildBuilding, cancelBuilding, deleteBuilding, UpgradeBuilding } from "./buildings.js";
+import { createContracts, deleteContracts, newContract, updateContracts } from "./contracts.js";
+import { getHexById, randomNationColor } from "./map.js";
+import { buildNationRoads, cancelRoadBuild } from "./road.js";
+import { executeMailsAnswers } from "./mails.js";
 
 export type newBuildings = {
   hexId: number;
@@ -233,19 +230,24 @@ export function executeIntents(ctx: GameCtx, nation: Nation, intentCtx: IntentIn
 
   // 6. update contracts
   updateContracts(ctx, intentCtx.updateContracts as ServerContractUpdate[], nation);
-  // 7. declare wars on others
+
+  // 7. Resolve answered mails
+  executeMailsAnswers(ctx, intentCtx.answeredMails, nation);
+  // 8. declare wars on others
   declareWar(ctx, intentCtx.declareWar, nation);
-  // 8. queue buildings
+
+  // 9. queue buildings
   buildNationBuildings({
     gameCtx: ctx,
     newBuildings: intentCtx.newQueuedBuildings as newBuildings,
     nation,
   });
-  // 9. queue roads
+  // 10. queue roads
   buildNationRoads({ gameCtx: ctx, buildRoads: roadsToBuild, nationId: nation.id });
-  // 10. queue army training
+  // 11. queue army training
   queueArmyTraining({ trainNewArmy: intentCtx.trainNewArmy, nationId: nation.id, gameCtx: ctx });
-  // 11. move nation army
+
+  // 12. move nation army
   for (const hexObj of intentCtx.movePlayerArmy) {
     moveArmy({
       hexId: hexObj.hexId,
@@ -255,7 +257,7 @@ export function executeIntents(ctx: GameCtx, nation: Nation, intentCtx: IntentIn
       gameCtx: ctx,
     });
   }
-  // 12. create new contracts
+  // 13. create new contracts
   createContracts({
     contracts: intentCtx.createNewContracts as newContract[],
     gameCtx: ctx,

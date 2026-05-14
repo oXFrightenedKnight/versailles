@@ -1,12 +1,9 @@
-import { Building } from "@repo/shared/data/buildings";
+import { Building, Hex, Nation } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
 import { getNationById } from "./genNations.js";
 import { addMail, createWarMail } from "./mails.js";
 import { getHexById } from "./map.js";
 import { addModifier } from "./modifiers.js";
-
-import { Hex } from "@repo/shared/data/hex_map.js";
-import { Nation } from "@repo/shared/data/nations.js";
 
 export function moveArmy({
   hexId,
@@ -211,4 +208,18 @@ export function declareWar(ctx: GameCtx, declareWar: string[], nation: Nation) {
 
     addMail(ctx, createWarMail(ctx, nation.id, id));
   }
+}
+
+export function signPeace(ctx: GameCtx, nationId1: string, nationId2: string) {
+  const nation1 = ctx.nations.find((n) => n.id === nationId1);
+  const nation2 = ctx.nations.find((n) => n.id === nationId2);
+
+  if (!nation1 || !nation2) return;
+  if (!nation1.atWar.includes(nationId2) || !nation2.atWar.includes(nationId1)) return;
+
+  const idx1 = nation1.atWar.indexOf(nationId2);
+  const idx2 = nation2.atWar.indexOf(nationId1);
+
+  nation1.atWar.splice(idx1, 1);
+  nation2.atWar.splice(idx2, 1);
 }

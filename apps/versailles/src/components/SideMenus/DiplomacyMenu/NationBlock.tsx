@@ -15,8 +15,15 @@ import NumberOfTiles from "./Info/tiles";
 import TotalArmy from "./Info/army";
 import GoldAmount from "./Info/gold";
 import BuildingCount from "./Info/buildingCount";
+import { ArrowLeft } from "lucide-react";
 
-export default function NationInfo({ nationId }: { nationId: string }) {
+export default function NationInfo({
+  nationId,
+  setChosenNation,
+}: {
+  nationId: string;
+  setChosenNation: React.Dispatch<React.SetStateAction<string | null>>;
+}) {
   const [tab, setTab] = useState<"info" | "action">("info");
 
   const nations = useGameStore((s) => s.nations);
@@ -42,19 +49,29 @@ export default function NationInfo({ nationId }: { nationId: string }) {
   return (
     <div className="w-full h-full yellow-500 flex justify-center items-start rounded-xl">
       <div className="h-full w-full flex flex-col justify-start items-center gap-2">
-        <div className="w-full h-[25%] flex flex-col justify-center p-2 text-white bg-gray-900 shadow-md shadow-black rounded-md">
-          <div className="flex w-full justify-between items-start">
-            <div className="w-[50%] h-auto bg-amber-200 m-2 rounded-[5px]">
-              <Image
-                src={getNationFlagURL(nationId)}
-                alt="nation flag"
-                width={1463}
-                height={962}
-                className="w-full h-full p-px rounded-xl"
-              ></Image>
+        <div className="w-full h-[25%] flex justify-center p-2 text-white bg-gray-900 shadow-md shadow-black rounded-md">
+          <div className="flex-1 h-full flex flex-col justify-center shrink-0">
+            <div className="flex w-full justify-between items-start">
+              <div className="w-[50%] h-auto bg-amber-200 m-2 rounded-[5px] shrink-0">
+                <Image
+                  src={getNationFlagURL(nationId)}
+                  alt="nation flag"
+                  width={1463}
+                  height={962}
+                  className="w-full h-full p-px rounded-xl"
+                ></Image>
+              </div>
+            </div>
+            <span className="text-lg">{name}</span>
+          </div>
+          <div className="h-full">
+            <div
+              className="flex justify-center items-center p-2 rounded-md cursor-pointer hover:bg-gray-800"
+              onClick={() => setChosenNation(null)}
+            >
+              <ArrowLeft className="w-6 h-6"></ArrowLeft>
             </div>
           </div>
-          <span className="text-xl">{name}</span>
         </div>
 
         <div className="w-full flex-1 min-h-0 flex flex-col rounded-md bg-gray-900 shadow-md shadow-black">

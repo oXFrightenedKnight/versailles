@@ -3,7 +3,9 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
-5. Don't let player to declare war twice on same country
+4. fix marking mails as read on server
+5. Don't let player to declare war twice on same country and validate when you
+receive mail answers on server
 6. Add basic diplomacy (at least 1 button - declare war) and don't forget to
 check whether you are at war with the country when moving army
 7. add peace requests and peace time

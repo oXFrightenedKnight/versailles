@@ -1,9 +1,4 @@
-import { Building } from "@repo/shared/data/buildings.js";
-import { Hex } from "@repo/shared/data/hex_map.js";
-import { Mail } from "@repo/shared/data/mail.js";
-import { MODIFIER } from "@repo/shared/data/modifiers.js";
-import { Nation } from "@repo/shared/data/nations.js";
-import { Road } from "@repo/shared/data/roads.js";
+import { Building, Hex, Mail, MODIFIER, Nation, Road } from "@repo/shared";
 
 import { inferProcedureInput, TRPCError } from "@trpc/server";
 import z from "zod";
@@ -12,7 +7,7 @@ import { buildingOutput } from "../services/buildings.js";
 import { executeContracts, recalculateContractsAmounts } from "../services/contracts.js";
 import { runIntentForEachNation } from "../services/genNations.js";
 import { nationsUpdateManpower } from "../services/manpower.js";
-import { filterPlayerLogic } from "../services/player.js";
+import { filterPlayerLogic, updatePlayerUI } from "../services/player.js";
 import { authedProcedure, router } from "./trpc.js";
 
 export type GameCtx = {
@@ -101,6 +96,13 @@ export const appRouter = router({
         ),
         deleteArmyTrain: z.array(z.string()),
         declareWar: z.array(z.string()),
+        readMails: z.array(z.string()),
+        answeredMails: z.array(
+          z.object({
+            id: z.string(),
+            answer: z.boolean(),
+          })
+        ),
       })
     )
     .mutation(async ({ input }) => {
@@ -110,7 +112,7 @@ export const appRouter = router({
         ...input,
       };
 
-      const playerNationId = gameCtx.nations.find((nation) => nation.isPlayer)?.id;
+      const playerNation = gameCtx.nations.find((nation) => nation.isPlayer);
 
       // checks
       if (
@@ -122,13 +124,13 @@ export const appRouter = router({
       ) {
         throw new TRPCError({ code: "NOT_FOUND" });
       }
-      if (!playerNationId) throw new TRPCError({ code: "NOT_FOUND" });
+      if (!playerNation) throw new TRPCError({ code: "NOT_FOUND" });
 
       // step 1: calculate ai decisions (build, attack, move)
 
       // step 2: apply intents
       // merge ai intents in here later
-      const intents = [{ input: playerIntentCtx, nationId: playerNationId }];
+      const intents = [{ input: playerIntentCtx, nationId: playerNation.id }];
       runIntentForEachNation(gameCtx, intents);
 
       // step 3: calculate battle outcomes
@@ -145,13 +147,16 @@ export const appRouter = router({
       // step 7: recalculate manpower
       nationsUpdateManpower(gameCtx);
 
-      // step 8: increase turn
+      // step 8: update player UI states
+      updatePlayerUI(gameCtx, playerIntentCtx, playerNation);
+
+      // step 9: increase turn
       // fine for now, but when adding db/reddis, consider special
       // functions to update state
       gameCtx.turn++;
       memoryStore.maps.set("turn", gameCtx.turn);
 
-      // step 9: update values in memory store
+      // step 10: update values in memory store
       memoryStore.maps.set("mapHexes", gameCtx.mapHexes);
       memoryStore.maps.set("roads", gameCtx.roads);
       memoryStore.maps.set("nations", gameCtx.nations);
@@ -159,7 +164,7 @@ export const appRouter = router({
       memoryStore.maps.set("modifiers", gameCtx.modifiers);
       memoryStore.maps.set("mails", gameCtx.mails);
 
-      // step 10: filter logic for player
+      // step 11: filter logic for player
       const data = filterPlayerLogic(gameCtx);
       return data;
     }),
