@@ -12,7 +12,6 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useState } from "react";
-import Tooltip from "../GameComponents/tooltip";
 import { Progress } from "../ui/progress";
 import { Dropdown, DropdownItem } from "../GameComponents/dropdown";
 import { useGameStore } from "@/lib/stores/gameStore";
@@ -30,6 +29,7 @@ import { Building, BUILDINGS } from "@repo/shared/data/buildings";
 import { findBuildingNameByCategory, getBuilding } from "@repo/shared/helpers/buildings";
 import { MergedContractChanges } from "@repo/shared/data/contracts";
 import { calculateExportAmount } from "@repo/shared/helpers/contracts";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export default function ContractComponent({
   contract,
@@ -159,18 +159,24 @@ export default function ContractComponent({
 
   return (
     <div className="w-full h-[75px] bg-gray-800 rounded-xl flex justify-center items-center gap-1 p-1">
-      <div className="flex flex-col h-full bg-gray-900 items-center justify-between p-2 rounded-md relative group">
-        <div>
-          <StartIcon className="w-4 h-4 text-amber-200"></StartIcon>
-        </div>
-        <div className="flex justify-between items-center gap-1">
-          <ArrowBigDown className="w-4 h-4 text-gray-400"></ArrowBigDown>
-        </div>
-        <div>
-          <EndIcon className="w-4 h-4 text-amber-200 "></EndIcon>
-        </div>
-        <Tooltip text={`Distance: ${dist} tile(s)`} position="top" offset={30}></Tooltip>
-      </div>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex flex-col h-full bg-gray-900 items-center justify-between p-2 rounded-md">
+            <div>
+              <StartIcon className="w-4 h-4 text-amber-200"></StartIcon>
+            </div>
+            <div className="flex justify-between items-center gap-1">
+              <ArrowBigDown className="w-4 h-4 text-gray-400"></ArrowBigDown>
+            </div>
+            <div>
+              <EndIcon className="w-4 h-4 text-amber-200 "></EndIcon>
+            </div>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <span>{`Distance: ${dist} tile(s)`}</span>
+        </TooltipContent>
+      </Tooltip>
 
       <div className="flex flex-col justify-center items-center h-full w-full gap-0.5 max-h-full">
         <div className="flex justify-center items-center bg-gray-900 p-1 rounded-md w-full gap-1 h-[70%]">
@@ -215,23 +221,30 @@ export default function ContractComponent({
             <CirclePlus className="w-4 h-4 text-amber-200 "></CirclePlus>
           </div>
           {/* Auto-adjust */}
-          <div
-            className={`flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black relative group`}
-            onClick={() => {
-              setAutoAdjust(!contract.autoAdjust);
-              recalculateAmount();
-            }}
-          >
-            {contract.autoAdjust ? (
-              <Calculator className="w-4 h-4 text-amber-200"></Calculator>
-            ) : (
-              <X className="w-4 h-4 text-amber-200 "></X>
-            )}
-            <Tooltip
-              text={`Auto-Adjust exported resource. ${contract.autoAdjust ? "ON" : "OFF"}`}
-              position="top"
-            ></Tooltip>
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                className={`flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black`}
+                onClick={() => {
+                  setAutoAdjust(!contract.autoAdjust);
+                  recalculateAmount();
+                }}
+              >
+                {contract.autoAdjust ? (
+                  <Calculator className="w-4 h-4 text-amber-200"></Calculator>
+                ) : (
+                  <X className="w-4 h-4 text-amber-200 "></X>
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <span>{`Auto-Adjust exported resource. `}</span>
+              <span className={`${contract.autoAdjust ? "text-green-400" : "text-red-700"}`}>
+                {contract.autoAdjust ? "ON" : "OFF"}
+              </span>
+            </TooltipContent>
+          </Tooltip>
+
           <div>
             {dropdownItems && (
               <Dropdown

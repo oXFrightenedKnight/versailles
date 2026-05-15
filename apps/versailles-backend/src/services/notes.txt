@@ -3,6 +3,7 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
+check if already at peace before signing peace
 6. add peace timer countdown that would also remove peace between nations.
 7. add peace requests and peace time
 7. Update war mechanics. add surrendering.

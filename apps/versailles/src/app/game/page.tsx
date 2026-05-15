@@ -8,7 +8,6 @@ import {
 } from "@/canvas/click/handleClick";
 import { d } from "@/canvas/map_data";
 import DragBar from "@/components/GameComponents/DragBar";
-import Tooltip from "@/components/GameComponents/tooltip";
 import BuildMenu from "@/components/SideMenus/BuildingMenu/buildButton";
 import DiplomacyMenu from "@/components/SideMenus/DiplomacyMenu/MainMenu";
 import MailMenu from "@/components/SideMenus/Mails/MainMenu";
@@ -32,6 +31,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { initBiomePatterns, initTextures, renderMap } from "../../canvas/render";
 import { GameData, trpc } from "../_trpc/client";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function Home() {
   const mapHexes = useGameStore((state) => state.mapHexes);
@@ -630,28 +630,43 @@ export default function Home() {
                 ></Image>
                 <div className="w-full h-full flex justify-between items-center">
                   <div className="m-2 flex justify-start items-center gap-2 h-full w-auto max-w-[50%] p-1.5 pb-2">
-                    <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1 relative group">
-                      <Image
-                        src="/icons/gold_coin.png"
-                        alt="gold coin icon"
-                        width={408}
-                        height={408}
-                        className="w-[30px] h-[30px] flex items-center justify-center"
-                      ></Image>
-                      <p className="text-white text-2xl">{numberConverter(effectiveGold)}</p>
-                      <Tooltip text={Descriptions["gold"]} position="bottom"></Tooltip>
-                    </div>
-                    <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1 relative group">
-                      <Image
-                        src="/icons/manpower.png"
-                        alt="manpower icon"
-                        width={408}
-                        height={408}
-                        className="w-[30px] h-[30px] flex items-center justify-center"
-                      ></Image>
-                      <p className="text-white text-2xl">{numberConverter(effectiveManpower)}</p>
-                      <Tooltip text={Descriptions["manpower"]} position="bottom"></Tooltip>
-                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1 relative group">
+                          <Image
+                            src="/icons/gold_coin.png"
+                            alt="gold coin icon"
+                            width={408}
+                            height={408}
+                            className="w-[30px] h-[30px] flex items-center justify-center"
+                          ></Image>
+                          <p className="text-white text-2xl">{numberConverter(effectiveGold)}</p>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <span>{Descriptions["gold"]}</span>
+                      </TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex justify-center items-center h-full bg-gray-900 shadow-md shadow-black rounded-lg gap-1 p-1 relative group">
+                          <Image
+                            src="/icons/manpower.png"
+                            alt="manpower icon"
+                            width={408}
+                            height={408}
+                            className="w-[30px] h-[30px] flex items-center justify-center"
+                          ></Image>
+                          <p className="text-white text-2xl">
+                            {numberConverter(effectiveManpower)}
+                          </p>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <span>{Descriptions["manpower"]}</span>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                   <div className="h-full flex items-center justify-center border">
                     <div className="flex items-center justify-center border mr-2 gap-2">

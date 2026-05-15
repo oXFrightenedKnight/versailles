@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 import ClerkClientProvider from "@/components/ClerkClientProvider";
 import localFont from "next/font/local";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,7 +44,9 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} ${trajanPro.variable} font-sans antialiased`}
         >
-          <Providers>{children}</Providers>
+          <Providers>
+            <TooltipProvider>{children}</TooltipProvider>
+          </Providers>
         </body>
       </html>
     </ClerkClientProvider>

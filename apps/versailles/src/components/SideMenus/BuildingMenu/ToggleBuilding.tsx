@@ -1,7 +1,7 @@
 import { LucideIcon } from "lucide-react";
 import { BuildModeType } from "@/lib/types/game";
-import Tooltip from "@/components/GameComponents/tooltip";
 import { BUILDINGS_CATEGORY } from "@repo/shared/data/buildings";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function ToggleBuilding({
   handleModeChange,
@@ -19,13 +19,19 @@ export default function ToggleBuilding({
   const LucideIcon = icon;
   return (
     <>
-      <div
-        className={`flex justify-center items-center p-1 border-gray-700 border rounded-[8px] m-2 ${buildMode === toggleMode ? "bg-gray-600" : "bg-gray-900"} shadow-md shadow-black relative group`}
-        onClick={() => handleModeChange(toggleMode)}
-      >
-        <LucideIcon className="w-8 h-8 text-gold-1"></LucideIcon>
-        <Tooltip text={descText} position="top"></Tooltip>
-      </div>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div
+            className={`flex justify-center items-center p-1 border-gray-700 border rounded-[8px] m-2 ${buildMode === toggleMode ? "bg-gray-600" : "bg-gray-900"} shadow-md shadow-black`}
+            onClick={() => handleModeChange(toggleMode)}
+          >
+            <LucideIcon className="w-8 h-8 text-gold-1"></LucideIcon>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <span>{descText}</span>
+        </TooltipContent>
+      </Tooltip>
     </>
   );
 }

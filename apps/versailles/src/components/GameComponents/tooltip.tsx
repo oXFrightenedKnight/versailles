@@ -1,6 +1,7 @@
 type Position = "top" | "bottom";
 
-export default function Tooltip({
+{
+  /*export default function Tooltip({
   text,
   position,
   offset,
@@ -32,4 +33,5 @@ export default function Tooltip({
       </div>
     </>
   );
+}*/
 }

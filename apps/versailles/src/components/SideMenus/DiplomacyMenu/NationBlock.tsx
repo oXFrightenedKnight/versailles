@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { BuildingIcons } from "@/lib/data";
 import { allBuildingsPerCategory } from "@/lib/helpers/buildings";
 import { getNationFlagURL } from "@/lib/helpers/flags";
-import { getNationName, totalNationArmy } from "@/lib/helpers/nations";
+import { getNationName, isAtWar, totalNationArmy } from "@/lib/helpers/nations";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
 import { getUIBuildings } from "@/lib/UI/mergeData/uiBuildings";
@@ -29,6 +29,7 @@ export default function NationInfo({
   const nations = useGameStore((s) => s.nations);
   const mapHexes = useGameStore((s) => s.mapHexes);
   const serverBuildings = useGameStore((s) => s.buildings);
+  const playerNation = useGameStore((s) => s.playerNation);
 
   const serverBuildingsDelete = useIntentStore((s) => s.serverBuildingsDelete);
   const setDeclareWar = useIntentStore((s) => s.setDeclareWar);
@@ -45,6 +46,8 @@ export default function NationInfo({
   const buildingsInfo = allBuildingsPerCategory(buildingsUI, nationId, mapHexes);
 
   const atWar = nation?.atWar ?? [];
+  const atPeace = nation?.atPeace ?? [];
+  const fakePeace = [{ nationId: "ALD", turnsRemaining: 30 }];
 
   return (
     <div className="w-full h-full yellow-500 flex justify-center items-start rounded-xl">
@@ -103,7 +106,7 @@ export default function NationInfo({
               <div className="w-full h-full flex flex-col gap-2 p-2 overflow-y-auto no-scrollbar">
                 {/* Nations at war */}
                 <NationsAtWar atWar={atWar} nations={nations}></NationsAtWar>
-                <NationsAtPeace atPeace={atWar} nations={nations}></NationsAtPeace>
+                <NationsAtPeace atPeace={fakePeace} nations={nations}></NationsAtPeace>
                 <NumberOfTiles numberOfTiles={nationHexes.length}></NumberOfTiles>
                 <TotalArmy totalArmy={totalArmy}></TotalArmy>
                 <GoldAmount gold={gold}></GoldAmount>
@@ -125,12 +128,21 @@ export default function NationInfo({
           {tab === "action" && (
             <div className="w-full h-full">
               <div className="w-full h-full flex flex-col justify-start items-center p-2 gap-1">
-                <Button
-                  className="w-full bg-gray-800 border border-gray-600 cursor-pointer"
-                  onClick={() => setDeclareWar((prev) => [...prev, nationId])}
-                >
-                  Declare War
-                </Button>
+                {playerNation && nation && isAtWar(playerNation, nation) ? (
+                  <Button
+                    className="w-full bg-gray-800 border border-gray-600 cursor-pointer"
+                    onClick={() => setDeclareWar((prev) => [...prev, nationId])}
+                  >
+                    Send Peace Treaty
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full bg-gray-800 border border-gray-600 cursor-pointer"
+                    onClick={() => setDeclareWar((prev) => [...prev, nationId])}
+                  >
+                    Declare War
+                  </Button>
+                )}
               </div>
             </div>
           )}

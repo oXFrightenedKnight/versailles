@@ -2,7 +2,6 @@
 
 import { X } from "lucide-react";
 import Image from "next/image";
-import Tooltip from "../../GameComponents/tooltip";
 import { buildingComponents } from "@/lib/data";
 import NoBuilding from "../../buildingConfig/noBuilding";
 import { getOptimisticPopulation } from "@/lib/UI/optimisticCalc/population";
@@ -11,6 +10,7 @@ import { getNationName } from "@/lib/helpers/nations";
 import { Hex } from "@repo/shared/data/hex_map";
 import { Building } from "@repo/shared/data/buildings";
 import { findBuildingNameByCategory, getBuilding } from "@repo/shared/helpers/buildings";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function ProvinceInfoSidebar({
   selectedHex,
@@ -95,26 +95,39 @@ export default function ProvinceInfoSidebar({
         <div className="w-full h-[40%]">
           <div className="w-full h-full flex flex-col justify-center gap-2">
             <div className="bg-gray-900 shadow-md shadow-black rounded-lg text-white h-full flex justify-center items-center text-2xl w-full">
-              <div className="w-[50%] h-auto p-2 group relative">
-                <Image
-                  src={`/urban/${buildingName}.png`}
-                  alt="urban type"
-                  width={1482}
-                  height={972}
-                  className="w-full h-full"
-                ></Image>
-                <Tooltip text={`Urban Type: ${buildingName}`} position="top"></Tooltip>
-              </div>
-              <div className="w-[50%] h-auto p-2 group relative">
-                <Image
-                  src={`/biome_type/${selectedHex ? selectedHex.biome : "plains"}.png`}
-                  alt="biome type"
-                  width={1482}
-                  height={972}
-                  className="w-full h-full"
-                ></Image>
-                <Tooltip text={`Biome: ${selectedHex?.biome}`} position="top"></Tooltip>
-              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="w-[50%] h-auto p-2 group relative">
+                    <Image
+                      src={`/urban/${buildingName}.png`}
+                      alt="urban type"
+                      width={1482}
+                      height={972}
+                      className="w-full h-full"
+                    ></Image>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>{`Urban Type: ${buildingName}`} </span>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="w-[50%] h-auto p-2 group relative">
+                    <Image
+                      src={`/biome_type/${selectedHex ? selectedHex.biome : "plains"}.png`}
+                      alt="biome type"
+                      width={1482}
+                      height={972}
+                      className="w-full h-full"
+                    ></Image>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>{`Biome: ${selectedHex?.biome}`}</span>
+                </TooltipContent>
+              </Tooltip>
             </div>
             <div className="bg-gray-900 shadow-md shadow-black rounded-lg text-white h-full flex justify-center items-center text-2xl">
               {population}

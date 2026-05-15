@@ -10,6 +10,7 @@ import { nationsUpdateManpower } from "../services/manpower.js";
 import { filterPlayerLogic, updatePlayerUI } from "../services/player.js";
 import { authedProcedure, router } from "./trpc.js";
 import { runIntentForEachNation } from "../services/intents/executeIntents.js";
+import { peaceCountdown } from "../services/army.js";
 
 export type GameCtx = {
   mapHexes: Hex[];
@@ -148,16 +149,19 @@ export const appRouter = router({
       // step 7: recalculate manpower
       nationsUpdateManpower(gameCtx);
 
-      // step 8: update player UI states
+      // step 8: update peace countdown
+      peaceCountdown(gameCtx);
+
+      // step 9: update player UI states
       updatePlayerUI(gameCtx, playerIntentCtx, playerNation);
 
-      // step 9: increase turn
+      // step 10: increase turn
       // fine for now, but when adding db/reddis, consider special
       // functions to update state
       gameCtx.turn++;
       memoryStore.maps.set("turn", gameCtx.turn);
 
-      // step 10: update values in memory store
+      // step 11: update values in memory store
       memoryStore.maps.set("mapHexes", gameCtx.mapHexes);
       memoryStore.maps.set("roads", gameCtx.roads);
       memoryStore.maps.set("nations", gameCtx.nations);
@@ -165,7 +169,7 @@ export const appRouter = router({
       memoryStore.maps.set("modifiers", gameCtx.modifiers);
       memoryStore.maps.set("mails", gameCtx.mails);
 
-      // step 11: filter logic for player
+      // step 12: filter logic for player
       const data = filterPlayerLogic(gameCtx);
       return data;
     }),

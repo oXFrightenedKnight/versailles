@@ -274,3 +274,37 @@ export function addPeaceTime(ctx: GameCtx, nationId1: string, nationId2: string,
   nation1.atPeace.push({ nationId: nationId2, turnsRemaining: turns ? turns : 30 });
   nation2.atPeace.push({ nationId: nationId1, turnsRemaining: turns ? turns : 30 });
 }
+
+export function removePeace(ctx: GameCtx, nationId1: string, nationId2: string) {
+  const nation1 = ctx.nations.find((n) => n.id === nationId1);
+  const nation2 = ctx.nations.find((n) => n.id === nationId2);
+
+  if (!nation1 || !nation2) return;
+
+  nation1.atPeace = nation1.atPeace.filter((obj) => obj.nationId !== nation2.id);
+  nation2.atPeace = nation2.atPeace.filter((obj) => obj.nationId !== nation1.id);
+}
+
+export function peaceCountdown(ctx: GameCtx) {
+  const nationsAtPeace = ctx.nations.filter((n) => n.atPeace.length > 0);
+
+  for (const nation of nationsAtPeace) {
+    const atWarSet = new Set(nation.atWar.map((id) => id));
+    const peaceToDelete: string[] = [];
+
+    for (const peaceObj of nation.atPeace) {
+      if (atWarSet.has(peaceObj.nationId)) {
+        peaceToDelete.push(peaceObj.nationId);
+        continue;
+      }
+      peaceObj.turnsRemaining -= 1;
+    }
+
+    for (const nationId of peaceToDelete) {
+      removePeace(ctx, nation.id, nationId);
+    }
+
+    // remove all expired peace treaties
+    nation.atPeace = nation.atPeace.filter((obj) => obj.turnsRemaining > 0);
+  }
+}

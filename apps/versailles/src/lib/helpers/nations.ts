@@ -1,5 +1,4 @@
-import { Hex } from "@repo/shared/data/hex_map";
-import { NATION_NAMES } from "@repo/shared/data/nations";
+import { Hex, Nation, NATION_NAMES } from "@repo/shared";
 
 export function getNationName({ id }: { id: string }) {
   const entry = Object.entries(NATION_NAMES).find(([_, value]) => value === id);
@@ -14,4 +13,11 @@ export function totalNationArmy({ mapHexes, nationId }: { mapHexes: Hex[]; natio
     if (army) return acc + army.amount;
     return acc;
   }, 0);
+}
+
+export function isAtWar(playerNation: Nation, nation: Nation) {
+  if (playerNation.atWar.includes(nation.id) || nation.atWar.includes(playerNation.id)) {
+    return true;
+  }
+  return false;
 }
