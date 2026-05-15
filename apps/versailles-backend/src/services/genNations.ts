@@ -1,6 +1,5 @@
 import {
   AVAILABLE_TILES,
-  Building,
   building_categoires,
   BUILDINGS,
   BUILDINGS_CATEGORY,
@@ -8,17 +7,14 @@ import {
   getBuilding,
   Nation,
   NATION_NAMES,
-  ServerContractUpdate,
+  NATION_NUMBER,
   topLevelsByCategory,
 } from "@repo/shared";
 import { memoryStore } from "../server/memoryStore.js";
-import { GameCtx, IntentInput } from "../trpc/index.js";
-import { cancelArmyTraining, declareWar, moveArmy, queueArmyTraining } from "./army.js";
-import { BuildBuilding, cancelBuilding, deleteBuilding, UpgradeBuilding } from "./buildings.js";
-import { createContracts, deleteContracts, newContract, updateContracts } from "./contracts.js";
+import { GameCtx } from "../trpc/index.js";
+import { addArmy } from "./army.js";
+import { BuildBuilding, UpgradeBuilding } from "./buildings.js";
 import { getHexById, randomNationColor } from "./map.js";
-import { buildNationRoads, cancelRoadBuild } from "./road.js";
-import { executeMailsAnswers } from "./mails.js";
 
 export type newBuildings = {
   hexId: number;
@@ -27,13 +23,12 @@ export type newBuildings = {
 }[];
 
 // DO NOT CHANGE THIS FUNCTION TO ACCEPT GAMECTX
-export function generateNations({ buildings }: { buildings: Building[] }) {
+export function generateNations(ctx: GameCtx) {
   // choose nations and assign available spaces
   let availableTiles = [...AVAILABLE_TILES];
   let availableNations = Object.values(NATION_NAMES);
-  const nations: Nation[] = [];
 
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < NATION_NUMBER; i++) {
     const randomIdx = Math.floor(1 + Math.random() * availableNations.length) - 1;
     const randomTileIdx = Math.floor(1 + Math.random() * availableTiles.length) - 1;
     const agression = Math.random();
@@ -43,41 +38,28 @@ export function generateNations({ buildings }: { buildings: Building[] }) {
     availableNations.splice(randomIdx, 1);
     const tileIdx = availableTiles[randomTileIdx];
     availableTiles.splice(randomTileIdx, 1);
-    nations.push({
-      id: nationIdx,
-      capitalTileIdx: tileIdx,
-      color: randomNationColor(),
-      aggression: agression,
-      expansionBias: expansionBias,
-      isPlayer: false,
-      atWar: [],
-      gold: 0,
-      manpower: 0,
-    });
+
+    createNewNation({ ctx, nationId: nationIdx, capitalId: tileIdx, agression, expansionBias });
   }
 
-  // assign player to one of the nations (for now)
-  const randomPlayer = Math.floor(1 + Math.random() * nations.length) - 1;
-  nations[randomPlayer].isPlayer = true;
+  // assign 1 random country to player
+  assignRandomPlayer(ctx);
 
   // every country starts with a village (capital)
-  for (const nation of nations) {
+  for (const nation of ctx.nations) {
     if (AVAILABLE_TILES.includes(nation.capitalTileIdx)) {
-      const tile = getHexById(nation.capitalTileIdx);
+      const tile = getHexById(nation.capitalTileIdx, ctx);
       if (tile) {
-        tile.owner = nation.id;
-
-        BuildBuilding({ category: "CIVILIAN", buildings, hex: tile, level: 2 });
-
         const randomPopulation = 750 + Math.floor(1 + Math.random() * 200);
 
-        tile.population = randomPopulation;
-        tile.army.push({ amount: 100, nationId: nation.id });
+        tile.owner = nation.id;
+
+        BuildBuilding({ category: "CIVILIAN", buildings: ctx.buildings, hex: tile, level: 2 });
+        addPopulation({ ctx, hexId: tile.id, amount: randomPopulation });
+        addArmy({ ctx, nationId: nation.id, hexId: tile.id, amount: 100 });
       } else continue;
     }
   }
-
-  return nations;
 }
 
 // put new buildings in queue and give progress to older ones
@@ -207,74 +189,60 @@ export function getNationById(nationId: string) {
   return null;
 }
 
-export function executeIntents(ctx: GameCtx, nation: Nation, intentCtx: IntentInput) {
-  const roadsToBuild = intentCtx.buildRoads.map((r) => ({
-    ...r,
-    points: r.points.map((p) => ({
-      ...p,
-      isConstructing: true,
-    })),
-    constructing: null,
-  }));
-
-  // 1. Cancel Army Training
-  cancelArmyTraining(ctx, intentCtx.deleteArmyTrain, nation);
-  // 2. delete contracts
-  deleteContracts(ctx, intentCtx.deleteContracts, nation);
-  // 3. cancel building
-  cancelBuilding(ctx, intentCtx.buildingCancel, nation);
-  // 4. cancel road building
-  cancelRoadBuild(ctx, intentCtx.cancelRoadBuild, nation);
-  // 5. delete buildings
-  deleteBuilding(ctx, intentCtx.buildingDelete, nation);
-
-  // 6. update contracts
-  updateContracts(ctx, intentCtx.updateContracts as ServerContractUpdate[], nation);
-
-  // 7. Resolve answered mails
-  executeMailsAnswers(ctx, intentCtx.answeredMails, nation);
-  // 8. declare wars on others
-  declareWar(ctx, intentCtx.declareWar, nation);
-
-  // 9. queue buildings
-  buildNationBuildings({
-    gameCtx: ctx,
-    newBuildings: intentCtx.newQueuedBuildings as newBuildings,
-    nation,
-  });
-  // 10. queue roads
-  buildNationRoads({ gameCtx: ctx, buildRoads: roadsToBuild, nationId: nation.id });
-  // 11. queue army training
-  queueArmyTraining({ trainNewArmy: intentCtx.trainNewArmy, nationId: nation.id, gameCtx: ctx });
-
-  // 12. move nation army
-  for (const hexObj of intentCtx.movePlayerArmy) {
-    moveArmy({
-      hexId: hexObj.hexId,
-      amount: hexObj.amount,
-      direction: hexObj.direction,
-      nationId: nation.id,
-      gameCtx: ctx,
-    });
-  }
-  // 13. create new contracts
-  createContracts({
-    contracts: intentCtx.createNewContracts as newContract[],
-    gameCtx: ctx,
-    nation,
+export function createNewNation({
+  ctx,
+  nationId,
+  capitalId,
+  agression,
+  expansionBias,
+  isPlayer,
+}: {
+  ctx: GameCtx;
+  nationId: string;
+  capitalId: number;
+  agression: number;
+  expansionBias: number;
+  isPlayer?: boolean;
+}) {
+  ctx.nations.push({
+    id: nationId,
+    capitalTileIdx: capitalId,
+    color: randomNationColor(),
+    aggression: agression,
+    expansionBias: expansionBias,
+    isPlayer: isPlayer ? isPlayer : false,
+    atWar: [],
+    atPeace: [],
+    gold: 0,
+    manpower: 0,
   });
 }
 
-export function runIntentForEachNation(
-  ctx: GameCtx,
-  intentCtx: { input: IntentInput; nationId: string }[]
-) {
-  const nationMap = new Map(ctx.nations.map((n) => [n.id, n]));
+export function assignRandomPlayer(ctx: GameCtx) {
+  const availableNations = ctx.nations.filter((n) => !n.isPlayer);
+  if (availableNations.length === 0) return;
 
-  for (const intentObj of intentCtx) {
-    const nation = nationMap.get(intentObj.nationId);
-    if (!nation) continue;
+  const randomIndex = Math.floor(Math.random() * availableNations.length);
 
-    executeIntents(ctx, nation, intentObj.input);
-  }
+  const nation = availableNations[randomIndex];
+
+  nation.isPlayer = true;
+}
+
+export function addPopulation({
+  ctx,
+  hexId,
+  amount,
+}: {
+  ctx: GameCtx;
+  hexId: number;
+  amount: number;
+}) {
+  const hex = getHexById(hexId, ctx);
+
+  if (!hex) return;
+  if (amount <= 0) return;
+  if (hex.population === null) return;
+
+  hex.population += amount;
 }

@@ -162,11 +162,8 @@ export function randomNationColor(): string {
 }
 
 // ONLY WORKS WHEN THE MAP HAS BEEN GENERATED
-export function getHexById(id: number) {
-  // switch to db request later
-  const hexes = memoryStore.maps.get("mapHexes");
-
-  for (const hex of hexes) {
+export function getHexById(id: number, ctx: GameCtx) {
+  for (const hex of ctx.mapHexes) {
     if (hex.id === id) {
       return hex as Hex;
     }

@@ -5,10 +5,11 @@ import z from "zod";
 import { memoryStore, populateGameCtx } from "../server/memoryStore.js";
 import { buildingOutput } from "../services/buildings.js";
 import { executeContracts, recalculateContractsAmounts } from "../services/contracts.js";
-import { runIntentForEachNation } from "../services/genNations.js";
+
 import { nationsUpdateManpower } from "../services/manpower.js";
 import { filterPlayerLogic, updatePlayerUI } from "../services/player.js";
 import { authedProcedure, router } from "./trpc.js";
+import { runIntentForEachNation } from "../services/intents/executeIntents.js";
 
 export type GameCtx = {
   mapHexes: Hex[];

@@ -28,7 +28,7 @@ export function populateGameCtx() {
   if (memoryStore.maps.has("nations")) {
     ctx.nations = memoryStore.maps.get("nations");
   } else {
-    ctx.nations = generateNations({ buildings: ctx.buildings });
+    generateNations(ctx);
     memoryStore.maps.set("nations", ctx.nations);
   }
 

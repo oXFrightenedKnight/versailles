@@ -20,7 +20,7 @@ export function moveArmy({
 }) {
   const { mapHexes } = gameCtx;
 
-  const hex = getHexById(hexId);
+  const hex = getHexById(hexId, gameCtx);
   const nationWarList = new Set(getNationById(nationId)?.atWar);
   const contested = hex?.army.some((obj) => nationWarList.has(obj.nationId)) ?? false;
   if (!hex || contested) return;
@@ -64,8 +64,33 @@ export function moveArmy({
   }
 }
 
-export function calculateWar(hexId: number) {
-  const hex = getHexById(hexId);
+export function addArmy({
+  ctx,
+  nationId,
+  hexId,
+  amount,
+}: {
+  ctx: GameCtx;
+  nationId: string;
+  hexId: number;
+  amount: number;
+}) {
+  const hex = getHexById(hexId, ctx);
+
+  if (!hex) return;
+  if (hex.owner !== nationId) return; // only allow to create army on owner tiles for now
+  if (amount <= 0) return;
+
+  const nationArmyInHex = hex.army.find((a) => a.nationId === nationId);
+  if (nationArmyInHex) {
+    nationArmyInHex.amount += amount;
+  } else {
+    hex.army.push({ nationId, amount });
+  }
+}
+
+export function calculateWar(hexId: number, ctx: GameCtx) {
+  const hex = getHexById(hexId, ctx);
   if (!hex || !hex.owner) return;
 
   const owner = getNationById(hex.owner);
@@ -197,11 +222,23 @@ export function cancelArmyTraining(ctx: GameCtx, cancelIds: string[], nation: Na
 // DON'T FORGET TO CHECK FOR PEACE TIME BEFORE DECLARING WAR
 export function declareWar(ctx: GameCtx, declareWar: string[], nation: Nation) {
   const nationIdMap = new Map(ctx.nations.map((n) => [n.id, n]));
+  function atPeace(nation: Nation, enemy: Nation) {
+    if (nation.atPeace.find((obj) => obj.nationId === enemy.id)) {
+      return true;
+    }
+    return false;
+  }
+
   for (const id of declareWar) {
-    if (nation.id === id) continue;
+    if (nation.id === id) continue; // no declaring war on self
 
     const enemy = nationIdMap.get(id);
     if (!enemy) continue;
+
+    // skip if already at war
+    if (enemy.atWar.includes(nation.id) || nation.atWar.includes(id)) continue;
+    // skip if at peace
+    if (atPeace(nation, enemy) || atPeace(enemy, nation)) continue;
 
     nation.atWar.push(id);
     enemy.atWar.push(nation.id);
@@ -222,4 +259,18 @@ export function signPeace(ctx: GameCtx, nationId1: string, nationId2: string) {
 
   nation1.atWar.splice(idx1, 1);
   nation2.atWar.splice(idx2, 1);
+  addPeaceTime(ctx, nationId1, nationId2, 30);
+}
+
+export function addPeaceTime(ctx: GameCtx, nationId1: string, nationId2: string, turns?: number) {
+  const nation1 = ctx.nations.find((n) => n.id === nationId1);
+  const nation2 = ctx.nations.find((n) => n.id === nationId2);
+
+  if (!nation1 || !nation2) return;
+  if (nation1.atWar.includes(nationId2) || nation2.atWar.includes(nationId1)) return;
+
+  if (turns && turns <= 0) return;
+
+  nation1.atPeace.push({ nationId: nationId2, turnsRemaining: turns ? turns : 30 });
+  nation2.atPeace.push({ nationId: nationId1, turnsRemaining: turns ? turns : 30 });
 }

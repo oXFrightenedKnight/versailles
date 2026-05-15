@@ -1,3 +1,7 @@
+export type PeaceObj = {
+  nationId: string;
+  turnsRemaining: number;
+};
 export const NATION_NAMES = {
   Dornguard: "DOR",
   Aldmark: "ALD",
@@ -14,6 +18,9 @@ export type Nation = {
   expansionBias: number;
   isPlayer: boolean;
   atWar: string[];
+  atPeace: PeaceObj[];
   gold: number;
   manpower: number;
 };
+
+export const NATION_NUMBER = 6;

@@ -14,6 +14,10 @@ export function addMail(ctx: GameCtx, mail: Mail) {
   ctx.mails.push(mail);
 }
 
+export function deleteMail(ctx: GameCtx, mailId: string) {
+  ctx.mails = ctx.mails.filter((m) => m.id !== mailId);
+}
+
 export function createWarMail(ctx: GameCtx, attacker: string, defender: string) {
   return {
     id: crypto.randomUUID(),
@@ -69,18 +73,20 @@ export function markReadMails(ctx: GameCtx, readMails: string[], nation: Nation)
 
     const mail = mailIdMap.get(mailId);
     if (!mail) continue;
-    if (!mail.visibleTo.includes(nation.id)) continue;
+    if (!mail.visibleTo.includes(nation.id) && mail.visibleTo !== "ALL") continue;
 
     mail.read = true;
   }
 }
 
+// Remember that for now this only supports one nation to answer one mail
 export function executeMailsAnswers(ctx: GameCtx, answeredMails: MailAnswer[], nation: Nation) {
   const answerMails = ctx.mails.filter((m) => m.requireAnswer);
   const answeredMap = new Map(answeredMails.map((obj) => [obj.id, obj.answer]));
 
   for (const mail of answerMails) {
-    if (!mail.visibleTo.includes(nation.id)) continue;
+    if (mail.expire !== undefined && mail.expire <= 0) continue;
+    if (!mail.visibleTo.includes(nation.id) && mail.visibleTo !== "ALL") continue;
     if (!answeredMap.has(mail.id)) continue;
 
     const answerYes = answeredMap.get(mail.id)!;
@@ -90,6 +96,21 @@ export function executeMailsAnswers(ctx: GameCtx, answeredMails: MailAnswer[], n
           signPeace(ctx, mail.metadata.fromNation, mail.metadata.toNation);
         }
         break;
+    }
+
+    deleteMail(ctx, mail.id);
+  }
+}
+
+// calculate mail expiration and remove expired
+export function mailsExpire(ctx: GameCtx) {
+  const expiringMails = ctx.mails.filter((m) => m.expire);
+
+  for (const mail of expiringMails) {
+    mail.expire! -= 1;
+
+    if (mail.expire === 0) {
+      deleteMail(ctx, mail.id);
     }
   }
 }

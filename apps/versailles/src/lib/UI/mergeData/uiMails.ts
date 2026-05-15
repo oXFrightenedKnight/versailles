@@ -8,7 +8,7 @@ export function getUIMails(mails: Mail[], readMails: string[], answeredMails: Ma
 
 function markReadMails(mails: Mail[], readMails: string[]) {
   return mails.map((m) => {
-    const isRead = readMails.includes(m.id);
+    const isRead = readMails.includes(m.id) || m.read;
     return {
       ...m,
       read: isRead ? true : false,
