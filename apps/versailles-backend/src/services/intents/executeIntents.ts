@@ -31,25 +31,18 @@ export function executeIntents(ctx: GameCtx, nation: Nation, intentCtx: IntentIn
   // 6. update contracts
   updateContracts(ctx, intentCtx.updateContracts as ServerContractUpdate[], nation);
 
-  // 7. Resolve answered mails
-  executeMailsAnswers(ctx, intentCtx.answeredMails, nation);
-  // 8. Expire mails
-  mailsExpire(ctx);
-  // 9. declare wars on others
-  declareWar(ctx, intentCtx.declareWar, nation);
-
-  // 10. queue buildings
+  // 9. queue buildings
   buildNationBuildings({
     gameCtx: ctx,
     newBuildings: intentCtx.newQueuedBuildings as newBuildings,
     nation,
   });
-  // 11. queue roads
+  // 10. queue roads
   buildNationRoads({ gameCtx: ctx, buildRoads: roadsToBuild, nationId: nation.id });
-  // 12. queue army training
+  // 11. queue army training
   queueArmyTraining({ trainNewArmy: intentCtx.trainNewArmy, nationId: nation.id, gameCtx: ctx });
 
-  // 13. move nation army
+  // 12. move nation army
   for (const hexObj of intentCtx.movePlayerArmy) {
     moveArmy({
       hexId: hexObj.hexId,
@@ -59,7 +52,7 @@ export function executeIntents(ctx: GameCtx, nation: Nation, intentCtx: IntentIn
       gameCtx: ctx,
     });
   }
-  // 14. create new contracts
+  // 13. create new contracts
   createContracts({
     contracts: intentCtx.createNewContracts as newContract[],
     gameCtx: ctx,

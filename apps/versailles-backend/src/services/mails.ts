@@ -11,7 +11,25 @@ import { signPeace } from "./army.js";
 
 export function addMail(ctx: GameCtx, mail: Mail) {
   // add any additional mailbox logic here to check before adding mail
+  if (!canInsertMail(ctx, mail)) return;
   ctx.mails.push(mail);
+}
+
+function canInsertMail(ctx: GameCtx, mail: Mail): boolean {
+  switch (mail.type) {
+    case "PEACE_OFFER": {
+      // only one pending offer from A -> B at a time
+      return !ctx.mails.some(
+        (m) =>
+          m.type === "PEACE_OFFER" &&
+          m.metadata.fromNation === mail.metadata.fromNation &&
+          m.metadata.toNation === mail.metadata.toNation &&
+          (m.expire === undefined || m.expire > 0)
+      );
+    }
+    default:
+      return true;
+  }
 }
 
 export function deleteMail(ctx: GameCtx, mailId: string) {

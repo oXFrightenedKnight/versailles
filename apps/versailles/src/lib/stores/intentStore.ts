@@ -45,6 +45,9 @@ export type StoreType = {
   declareWar: nationId[];
   setDeclareWar: SetStateAction<nationId[]>;
 
+  signPeace: nationId[];
+  setSignPeace: SetStateAction<nationId[]>;
+
   readMails: string[];
   setReadMails: SetStateAction<string[]>;
 
@@ -67,6 +70,7 @@ const initialState = {
   serverCancelRoadBuilding: [],
   armyMove: [],
   declareWar: [],
+  signPeace: [],
   readMails: [],
   answeredMails: [],
 };
@@ -132,6 +136,11 @@ export const useIntentStore = create<StoreType>((set) => ({
   setDeclareWar: (value) =>
     set((state) => ({
       declareWar: resolveValue(value, state.declareWar),
+    })),
+
+  setSignPeace: (value) =>
+    set((state) => ({
+      signPeace: resolveValue(value, state.declareWar),
     })),
 
   setReadMails: (value) =>

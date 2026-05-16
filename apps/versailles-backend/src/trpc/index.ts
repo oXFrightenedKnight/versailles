@@ -11,6 +11,8 @@ import { filterPlayerLogic, updatePlayerUI } from "../services/player.js";
 import { authedProcedure, router } from "./trpc.js";
 import { runIntentForEachNation } from "../services/intents/executeIntents.js";
 import { peaceCountdown } from "../services/army.js";
+import { mailsExpire } from "../services/mails.js";
+import { runAIDiplomacy, runNationDiplomacy } from "../services/intents/diplomacyIntents.js";
 
 export type GameCtx = {
   mapHexes: Hex[];
@@ -105,6 +107,7 @@ export const appRouter = router({
             answer: z.boolean(),
           })
         ),
+        signPeaceReq: z.array(z.string()),
       })
     )
     .mutation(async ({ input }) => {
@@ -128,11 +131,17 @@ export const appRouter = router({
       }
       if (!playerNation) throw new TRPCError({ code: "NOT_FOUND" });
 
+      // step 0.5: run player diplomacy first
+      runNationDiplomacy(gameCtx, playerNation, playerIntentCtx);
+
       // step 1: calculate ai decisions (build, attack, move)
 
-      // step 2: apply intents
       // merge ai intents in here later
       const intents = [{ input: playerIntentCtx, nationId: playerNation.id }];
+      // step 1.5: run ai diplomacy
+      runAIDiplomacy(gameCtx, intents);
+
+      // step 2: apply intents
       runIntentForEachNation(gameCtx, intents);
 
       // step 3: calculate battle outcomes
@@ -151,6 +160,9 @@ export const appRouter = router({
 
       // step 8: update peace countdown
       peaceCountdown(gameCtx);
+
+      // step 9: expire mails
+      mailsExpire(gameCtx);
 
       // step 9: update player UI states
       updatePlayerUI(gameCtx, playerIntentCtx, playerNation);
