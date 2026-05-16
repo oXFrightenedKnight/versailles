@@ -246,3 +246,20 @@ export function addPopulation({
 
   hex.population += amount;
 }
+
+export function setDefeated(nation: Nation) {
+  // place player logic here later (eg. set playerMode)
+  nation.isDefeated = true;
+}
+
+export function subtractGold(ctx: GameCtx, nationId: string, amount: number) {
+  const nation = ctx.nations.find((n) => n.id === nationId);
+  if (!nation) return false;
+
+  if (nation.gold >= amount && !(nation.gold < 0)) {
+    nation.gold -= amount;
+    return true;
+  } else {
+    return false;
+  }
+}

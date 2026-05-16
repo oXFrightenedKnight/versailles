@@ -8,6 +8,7 @@ import { executeMailsAnswers, mailsExpire } from "../mails";
 import { buildNationBuildings, newBuildings } from "../genNations";
 
 export function executeIntents(ctx: GameCtx, nation: Nation, intentCtx: IntentInput) {
+  if (nation.isDefeated) return;
   const roadsToBuild = intentCtx.buildRoads.map((r) => ({
     ...r,
     points: r.points.map((p) => ({

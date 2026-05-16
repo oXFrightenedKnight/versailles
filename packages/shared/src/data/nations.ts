@@ -21,6 +21,8 @@ export type Nation = {
   atPeace: PeaceObj[];
   gold: number;
   manpower: number;
+  isDefeated?: boolean;
+  defeatedAtTurn?: number;
 };
 
 export const NATION_NUMBER = 6;

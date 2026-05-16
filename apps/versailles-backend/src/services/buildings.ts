@@ -71,7 +71,7 @@ function calculateFarm(building: Building, gameCtx: GameCtx) {
 }
 
 function calculateCivilian(building: Building, gameCtx: GameCtx) {
-  const { mapHexes, buildings, nations } = gameCtx;
+  const { mapHexes, nations } = gameCtx;
 
   // apply resource consumption
   const consumptionMod = calculateConsumption({ building, gameCtx });
@@ -94,7 +94,7 @@ function calculateCivilian(building: Building, gameCtx: GameCtx) {
 }
 
 function calculateBarracks(building: Building, gameCtx: GameCtx) {
-  const { mapHexes, buildings, nations } = gameCtx;
+  const { mapHexes, nations } = gameCtx;
 
   // apply resource consumption
   const name = findBuildingNameByCategory({

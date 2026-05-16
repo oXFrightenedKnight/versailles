@@ -4,6 +4,7 @@ import { addMail, createPeaceOfferMail, executeMailsAnswers } from "../mails";
 import { declareWar } from "../army";
 
 export function runNationDiplomacy(ctx: GameCtx, nation: Nation, intent: IntentInput) {
+  if (nation.isDefeated) return;
   // 1. Resolve answered mails
   executeMailsAnswers(ctx, intent.answeredMails, nation);
 

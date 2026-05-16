@@ -1,6 +1,6 @@
 import { Building, Hex, Nation } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
-import { getNationById } from "./genNations.js";
+import { getNationById, setDefeated } from "./genNations.js";
 import { addMail, createWarMail } from "./mails.js";
 import { getHexById } from "./map.js";
 import { addModifier } from "./modifiers.js";
@@ -141,6 +141,12 @@ export function calculateWar(hexId: number, ctx: GameCtx) {
     if (hex.build_queue?.owner !== hex.owner) {
       hex.build_queue = null;
     }
+  }
+
+  // set nation to "defeated" if no tiles left
+  const leftHexes = ctx.mapHexes.filter((h) => h.owner === owner.id);
+  if (leftHexes.length <= 0) {
+    setDefeated(owner);
   }
 }
 // create army training object in a barrack
