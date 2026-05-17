@@ -1,11 +1,10 @@
 import { Nation, ServerContractUpdate } from "@repo/shared";
 import { GameCtx, IntentInput } from "../../trpc";
-import { cancelArmyTraining, declareWar, moveArmy, queueArmyTraining } from "../army";
+import { cancelArmyTraining, moveArmy, queueArmyTraining } from "../army";
+import { buildNewIntentBuildings, cancelBuilding, deleteBuilding } from "../buildings";
 import { createContracts, deleteContracts, newContract, updateContracts } from "../contracts";
-import { cancelBuilding, deleteBuilding } from "../buildings";
+import { newBuildings } from "../genNations";
 import { buildNationRoads, cancelRoadBuild } from "../road";
-import { executeMailsAnswers, mailsExpire } from "../mails";
-import { buildNationBuildings, newBuildings } from "../genNations";
 
 export function executeIntents(ctx: GameCtx, nation: Nation, intentCtx: IntentInput) {
   if (nation.isDefeated) return;
@@ -33,10 +32,10 @@ export function executeIntents(ctx: GameCtx, nation: Nation, intentCtx: IntentIn
   updateContracts(ctx, intentCtx.updateContracts as ServerContractUpdate[], nation);
 
   // 9. queue buildings
-  buildNationBuildings({
+  buildNewIntentBuildings({
     gameCtx: ctx,
     newBuildings: intentCtx.newQueuedBuildings as newBuildings,
-    nation,
+    nation: nation,
   });
   // 10. queue roads
   buildNationRoads({ gameCtx: ctx, buildRoads: roadsToBuild, nationId: nation.id });

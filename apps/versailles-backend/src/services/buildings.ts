@@ -5,17 +5,21 @@ import {
   baseWheatRate,
   baseWoodRate,
   Building,
+  building_categoires,
   BUILDINGS,
   BUILDINGS_CATEGORY,
   estimateConsumption,
   findBuildingNameByCategory,
+  getBuilding,
   Hex,
   Nation,
   RESOURCES,
+  topLevelsByCategory,
 } from "@repo/shared";
 import { roundToNearestDecimal } from "../lib/helpers.js";
 import { GameCtx } from "../trpc/index.js";
-import { calculatePopulationChange } from "./map.js";
+import { calculatePopulationChange, getHexById } from "./map.js";
+import { newBuildings, subtractGold } from "./genNations.js";
 
 export function buildingOutput(gameCtx: GameCtx) {
   const { buildings } = gameCtx;
@@ -203,54 +207,164 @@ function calculateWatchtower(building: Building, gameCtx: GameCtx) {
   calculatePopulationChange(hex, gameCtx, avgConsumption);
 }
 
+// Function is used to execute player intent to build new building (subtracts gold)
 // DO NOT CHANGE THIS FUNCTION TO ACCEPT GAMECTX
 export function BuildBuilding({
-  buildings,
-  hex,
+  ctx,
+  hexId,
   category,
-  level,
+  levels,
 }: {
-  buildings: Building[];
-  hex: Hex;
+  ctx: GameCtx;
+  hexId: number;
   category: BUILDINGS_CATEGORY;
-  level?: number;
+  levels?: number;
 }) {
-  const storage = [];
-  const building = findBuildingNameByCategory({
+  const hex = getHexById(hexId, ctx);
+  if (!hex) return;
+
+  const existing = hex.buildingId
+    ? getBuilding({ buildings: ctx.buildings, id: hex.buildingId })
+    : null;
+  const levelsToUpgrade = levels ?? 1;
+  const currentLevel = existing?.level ?? 0;
+  const nextBuilding = findBuildingNameByCategory({
     buildingCategory: category, // hex.build_queue.category
-    level: level ?? 1,
+    level: currentLevel + levelsToUpgrade,
   });
+
+  const buildingStorage = [];
 
   // add dynamic storage
-  for (const type of Object.keys(BUILDINGS[building].storageCap)) {
-    storage.push({ type: type as RESOURCES, amount: 0 });
+  for (const type of Object.keys(BUILDINGS[nextBuilding].storageCap)) {
+    buildingStorage.push({ type: type as RESOURCES, amount: 0 });
   }
 
-  const id = crypto.randomUUID();
-  hex.buildingId = id;
-
-  buildings.push({
-    id,
-    category: category,
-    level: level ?? 1,
-    storage: storage,
-  });
+  if (existing) {
+    existing.level += levelsToUpgrade;
+    existing.storage = buildingStorage;
+  } else {
+    ctx.buildings.push({
+      id: crypto.randomUUID(),
+      category,
+      level: levelsToUpgrade,
+      storage: buildingStorage,
+    });
+  }
 }
 
-export function UpgradeBuilding({ building, byLevels }: { building: Building; byLevels?: number }) {
-  // add storage if new resources have been added
-  const storage = [];
+export function giveProgressBuilding(ctx: GameCtx) {
+  const buildingHexes = ctx.mapHexes.filter((h) => h.build_queue);
+  const buildingIdMap = new Map(ctx.buildings.map((b) => [b.id, b]));
 
-  const name = findBuildingNameByCategory({
-    buildingCategory: building.category,
-    level: building.level + 1,
-  });
-  for (const type of Object.keys(BUILDINGS[name].storageCap)) {
-    storage.push({ type: type as RESOURCES, amount: 0 });
+  // add progress
+  for (const hex of buildingHexes) {
+    if (!hex.build_queue) continue;
+
+    hex.build_queue.progress += 1;
+
+    // IF ENOUGH PROGRESS - BUILD/UPGRADE
+    const prevLevel = hex.buildingId ? (buildingIdMap.get(hex.buildingId)?.level ?? 0) : 0;
+    const nextBuilding = findBuildingNameByCategory({
+      buildingCategory: hex.build_queue.building,
+      level: prevLevel + 1,
+    });
+
+    // Check if progress equals to build time
+    if (hex.build_queue.progress >= BUILDINGS[nextBuilding].buildTime) {
+      BuildBuilding({
+        ctx,
+        hexId: hex.id,
+        category: hex.build_queue.building,
+      });
+
+      hex.build_queue.progress = 0;
+      hex.build_queue.levels -= 1;
+      if (hex.build_queue.levels <= 0) {
+        hex.build_queue = null;
+      }
+    }
   }
+}
 
-  building.storage = storage;
-  building.level += byLevels ?? 1;
+export function buildNewIntentBuildings({
+  gameCtx,
+  newBuildings,
+  nation,
+}: {
+  gameCtx: GameCtx;
+  newBuildings: newBuildings;
+  nation: Nation;
+}) {
+  const { mapHexes } = gameCtx;
+
+  // check if building types are valid
+  if (newBuildings.some((b) => !building_categoires.includes(b.buildingType)))
+    throw new Error("Invalid Building Type!");
+
+  // check if hex ids' exist
+  const hexIdSet = new Set<number>(mapHexes.map((hex) => hex.id));
+  if (!newBuildings.every((obj) => hexIdSet.has(obj.hexId)))
+    throw new Error("Hex id doesn't exist!");
+
+  const hexIdsToBuild = newBuildings.map((obj) => obj.hexId);
+  if (hexIdsToBuild.length !== new Set(hexIdsToBuild).size)
+    throw new Error("Duplicate hex ids in buildings are not allowed!");
+
+  const hexIdMap = new Map<number, Hex>(mapHexes.map((h) => [h.id, h]));
+  const buildingIdMap = new Map(gameCtx.buildings.map((b) => [b.id, b]));
+  const buildingMap = new Map(
+    newBuildings.map((obj) => [
+      obj.hexId,
+      { buildingType: obj.buildingType, levelsToUpgrade: obj.levelsToUpgrade },
+    ])
+  );
+
+  for (const hexId of hexIdsToBuild) {
+    const hex = hexIdMap.get(hexId);
+
+    if (!hex) continue;
+    if (hex.owner !== nation.id || !hex.owner) continue;
+
+    const buildingObj = buildingMap.get(hex.id);
+    if (!buildingObj) continue;
+
+    const buildingType = buildingObj?.buildingType;
+    const levelsToUpgrade = buildingObj.levelsToUpgrade;
+
+    // skip if new building doesn't match already existing building category
+    const building = hex.buildingId ? buildingIdMap.get(hex.buildingId) : null;
+    if (building && buildingType !== building.category) continue;
+
+    // skip if new building doesn't match already queued building
+    if (hex.build_queue && buildingType !== hex.build_queue.building) continue;
+
+    // max possible level
+    const maxLevel = topLevelsByCategory.find((obj) => obj.category === buildingType)?.level ?? 0;
+    // current already built level
+    const currentLevel = building ? building.level : 0;
+    // current level in queued object
+    const currentQueuedLevels = hex.build_queue ? hex.build_queue.levels : 0;
+
+    const newTotalLevel = currentLevel + currentQueuedLevels + levelsToUpgrade;
+    if (newTotalLevel > maxLevel) continue;
+
+    // --- SUBTRACT GOLD AND BUILD
+    const nextBuilding = findBuildingNameByCategory({
+      buildingCategory: buildingType,
+      level: newTotalLevel,
+    });
+    const cost = BUILDINGS[nextBuilding].buildCost;
+    if (subtractGold(gameCtx, hex.owner, cost)) {
+      const currentProgress = hex.build_queue ? hex.build_queue.progress : 0;
+      hex.build_queue = {
+        building: buildingType,
+        progress: currentProgress,
+        owner: hex.owner,
+        levels: currentQueuedLevels + levelsToUpgrade,
+      };
+    }
+  }
 }
 
 export function calculateConsumption({
@@ -347,5 +461,17 @@ export function deleteBuilding(ctx: GameCtx, deleteIds: string[], nation: Nation
       hex.buildingId = null;
       hex.population = BASE_HEX_POPULATION;
     }
+  }
+}
+
+export function getBuildingInHex(ctx: GameCtx, hexId: number) {
+  const hex = ctx.mapHexes.find((h) => h.id === hexId);
+
+  if (hex?.buildingId) {
+    const building = getBuilding({ buildings: ctx.buildings, id: hex.buildingId });
+    if (building) return building;
+    return null;
+  } else {
+    return null;
   }
 }

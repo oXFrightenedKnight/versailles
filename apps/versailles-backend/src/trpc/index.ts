@@ -3,7 +3,7 @@ import { Building, Hex, Mail, MODIFIER, Nation, Road } from "@repo/shared";
 import { inferProcedureInput, TRPCError } from "@trpc/server";
 import z from "zod";
 import { memoryStore, populateGameCtx } from "../server/memoryStore.js";
-import { buildingOutput } from "../services/buildings.js";
+import { buildingOutput, giveProgressBuilding } from "../services/buildings.js";
 import { executeContracts, recalculateContractsAmounts } from "../services/contracts.js";
 
 import { nationsUpdateManpower } from "../services/manpower.js";
@@ -145,6 +145,9 @@ export const appRouter = router({
       runIntentForEachNation(gameCtx, intents);
 
       // step 3: calculate battle outcomes
+
+      // step 3.5: give progress to buildings in queue
+      giveProgressBuilding(gameCtx);
 
       // step 4: calculate contracts
       executeContracts(gameCtx);
