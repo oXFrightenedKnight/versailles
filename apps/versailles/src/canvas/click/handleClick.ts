@@ -18,6 +18,8 @@ import { startDijkstrasAlgo } from "@repo/shared/helpers/dijkstras";
 import { calculateExportAmount } from "@repo/shared/helpers/contracts";
 import { findNeighbors, getHexByAxial } from "@repo/shared/helpers/hex_map";
 import { hasSegment } from "@repo/shared/helpers/roads";
+import { Popup } from "@/lib/stores/uiStore";
+import { PopupText } from "@/lib/data";
 
 export type ClickCtx = {
   mouseDownRef: RefObject<boolean>;
@@ -56,6 +58,7 @@ export type ClickCtx = {
   barValue: number;
   setBarValue: React.Dispatch<React.SetStateAction<number>>;
   serverBuildingsCancel: number[];
+  setPopup: SetStateAction<Popup | null>;
 };
 
 export type RoadDragCtx = {
@@ -276,6 +279,7 @@ function handleBuildingPlacement(hex: Hex, ctx: ClickCtx) {
     playerNation,
     serverBuildingsCancel,
     mapHexes,
+    setPopup,
   } = ctx;
 
   // return if hex doesn't belong to player
@@ -304,7 +308,9 @@ function handleBuildingPlacement(hex: Hex, ctx: ClickCtx) {
   // if no max level was found, default to infinity
 
   // if the total level of built + in progress + new one is above max - skip
-  if (total + 1 > max) return;
+  if (total + 1 > max) {
+    setPopup(PopupText["max_level_reached"]);
+  }
 
   // update if exists, create if doesn't
   setBuildBuildings((prev) => {

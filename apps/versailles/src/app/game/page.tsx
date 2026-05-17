@@ -32,6 +32,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { initBiomePatterns, initTextures, renderMap } from "../../canvas/render";
 import { GameData, trpc } from "../_trpc/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import PopupContainer from "@/components/SideMenus/Popups/PopupContainer";
+import { useUIStore } from "@/lib/stores/uiStore";
 
 export default function Home() {
   const mapHexes = useGameStore((state) => state.mapHexes);
@@ -79,6 +81,8 @@ export default function Home() {
   const [openMenu, setOpenMenu] = useState<OpenMenus>("none");
 
   // ui states
+  const setPopup = useUIStore((s) => s.setPopup);
+
   const [buildMode, setBuildMode] = useState<BuildModeType>("none");
   const [isContractSelected, setIsContractSelected] = useState<boolean>(false);
   const [selectedHex, setSelectedHex] = useState<Hex | null>(null);
@@ -295,6 +299,7 @@ export default function Home() {
         barValue,
         setBarValue,
         serverBuildingsCancel,
+        setPopup,
       };
 
       dispatchMapTap(worldX, worldY, event.button, ctx);
@@ -331,6 +336,8 @@ export default function Home() {
 
       barValue,
       setBarValue,
+
+      setPopup,
     ]
   );
 
@@ -536,7 +543,6 @@ export default function Home() {
     startAnimation();
     return () => stopAnimation();
   }, [startAnimation, stopAnimation]);
-
   return (
     <>
       <div className="relative w-screen h-screen select-none">
@@ -615,6 +621,13 @@ export default function Home() {
                   barRef={barRef}
                 ></DragBar>
               )}
+            </div>
+          </div>
+
+          {/* Popups */}
+          <div className="w-full h-[20%] absolute top-20 flex justify-center items-center">
+            <div className="w-[450px] max-w-[450px] h-full">
+              <PopupContainer></PopupContainer>
             </div>
           </div>
 

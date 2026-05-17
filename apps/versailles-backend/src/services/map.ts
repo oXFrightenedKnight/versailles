@@ -18,7 +18,7 @@ import { BuildBuilding } from "./buildings.js";
 
 // DO NOT CHANGE THIS FUNCTION TO ACCEPT GAMECTX
 // generates the mathematical map & coordinates
-export function generateHexMap(radius: number, buildings: Building[]) {
+export function generateHexMap(radius: number, ctx: GameCtx) {
   const hexes: Hex[] = [];
   let id = 0;
 
@@ -122,7 +122,7 @@ export function generateHexMap(radius: number, buildings: Building[]) {
   ); // get from 10 to 25 random hexes
 
   for (const hex of randomHexes) {
-    BuildBuilding({ category: "CIVILIAN", buildings, hex });
+    BuildBuilding({ category: "CIVILIAN", ctx, hexId: hex.id });
   }
 
   // assign starting population & urban

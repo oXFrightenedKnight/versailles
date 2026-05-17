@@ -21,7 +21,7 @@ export function populateGameCtx() {
   if (memoryStore.maps.has("mapHexes")) {
     ctx.mapHexes = memoryStore.maps.get("mapHexes");
   } else {
-    ctx.mapHexes = generateHexMap(MAP_RADIUS, ctx.buildings);
+    ctx.mapHexes = generateHexMap(MAP_RADIUS, ctx);
     memoryStore.maps.set("mapHexes", ctx.mapHexes);
   }
 

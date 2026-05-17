@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Dispatch } from "react";
 import { nationText } from "./helpers/mails";
+import { Popup } from "./stores/uiStore";
 export type BuildingNames = keyof typeof BUILDINGS;
 
 export const BuildingIcons: Record<"road" | BUILDINGS_CATEGORY, LucideIcon> = {
@@ -141,5 +142,14 @@ export const MailTexts = {
       header: "Peace Signed",
       body: `${from.subject} accepted ${to.possesive} peace treaty.`,
     };
+  },
+};
+
+export const PopupText: Record<string, Popup> = {
+  max_level_reached: {
+    body: "This building is already at max level.",
+  },
+  missing_gold: {
+    body: "Not enough gold to build.",
   },
 };
