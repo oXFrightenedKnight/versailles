@@ -145,9 +145,12 @@ export const MailTexts = {
   },
 };
 
-export const PopupText: Record<string, Popup> = {
+export const PopupText = {
   max_level_reached: {
     body: "This building is already at max level.",
+  },
+  building_type_mismatch: {
+    body: "Building type doesn't match.",
   },
   missing_gold: {
     body: "Not enough gold to build.",

@@ -17,7 +17,10 @@ export default function PopupContainer() {
 
   if (!popup) return null;
   return (
-    <div className={`w-full h-full flex justify-center items-start max-h-full animate-popup p-2`}>
+    <div
+      key={popup.id}
+      className={`w-full h-full flex justify-center items-start max-h-full animate-popup p-2`}
+    >
       <div className="w-full h-auto flex justify-center items-center bg-gray-900 rounded-md text-white p-2">
         <div className="flex flex-col gap-1 w-full h-full bg-gray-800 rounded-md p-2">
           {popup?.header && <span className="text-md">{popup.header}</span>}

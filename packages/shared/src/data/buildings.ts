@@ -168,3 +168,9 @@ export const topLevelsByCategory = Object.values(
 export const ALL_BUILDING_CATEGORIES = topLevelsByCategory.map((obj) => obj.category);
 
 export type BuildingType = keyof typeof BUILDINGS;
+
+// Base wheat that capitals get per turn to allow early self-sustainment
+export const BASE_CAPITAL_WHEAT = 20;
+
+// starting gold
+export const BASE_NATION_GOLD = 100;

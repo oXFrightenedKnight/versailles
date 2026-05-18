@@ -1,5 +1,12 @@
-import { Building, building_categoires } from "@repo/shared/data/buildings";
+import {
+  Building,
+  building_categoires,
+  BUILDINGS,
+  BUILDINGS_CATEGORY,
+} from "@repo/shared/data/buildings";
 import { Hex } from "@repo/shared/data/hex_map";
+import { BuildModeType } from "../types/game";
+import { findBuildingNameByCategory } from "@repo/shared";
 
 // allows to additionally filter by nationId if provided with nationId and hexes
 export function allBuildingsPerCategory(
@@ -26,4 +33,14 @@ export function allBuildingsPerCategory(
 
     return { category: c, count: category_buildings.length };
   });
+}
+
+export function isBuildingCategory(value: BuildModeType): value is BUILDINGS_CATEGORY {
+  return building_categoires.includes(value as BUILDINGS_CATEGORY);
+}
+
+export function getBuildingCost(type: BUILDINGS_CATEGORY, level: number) {
+  const name = findBuildingNameByCategory({ buildingCategory: type, level });
+
+  return BUILDINGS[name] ? BUILDINGS[name].buildCost : 0;
 }

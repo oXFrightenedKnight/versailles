@@ -1,5 +1,6 @@
 import {
   AVAILABLE_TILES,
+  BASE_NATION_GOLD,
   BUILDINGS_CATEGORY,
   Nation,
   NATION_NAMES,
@@ -33,7 +34,14 @@ export function generateNations(ctx: GameCtx) {
     const tileIdx = availableTiles[randomTileIdx];
     availableTiles.splice(randomTileIdx, 1);
 
-    createNewNation({ ctx, nationId: nationIdx, capitalId: tileIdx, agression, expansionBias });
+    createNewNation({
+      ctx,
+      nationId: nationIdx,
+      capitalId: tileIdx,
+      agression,
+      expansionBias,
+      baseGold: BASE_NATION_GOLD,
+    });
   }
 
   // assign 1 random country to player
@@ -72,6 +80,7 @@ export function createNewNation({
   agression,
   expansionBias,
   isPlayer,
+  baseGold,
 }: {
   ctx: GameCtx;
   nationId: string;
@@ -79,6 +88,7 @@ export function createNewNation({
   agression: number;
   expansionBias: number;
   isPlayer?: boolean;
+  baseGold?: number;
 }) {
   ctx.nations.push({
     id: nationId,
@@ -89,7 +99,7 @@ export function createNewNation({
     isPlayer: isPlayer ? isPlayer : false,
     atWar: [],
     atPeace: [],
-    gold: 0,
+    gold: baseGold ? baseGold : 0,
     manpower: 0,
   });
 }

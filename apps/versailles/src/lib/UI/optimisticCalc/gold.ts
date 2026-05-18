@@ -14,16 +14,28 @@ export function calculateOptimisticGold(
   for (const building of buildBuildings) {
     const hex = mapHexes?.find((h) => h.id === building.hexId);
     if (!hex) continue;
+
     const existingLevel = hex.buildingId
       ? (getBuilding({ buildings, id: hex.buildingId })?.level ?? 0)
       : 0;
-    const totalLevel = existingLevel + building.levelsToUpgrade;
-    const name = findBuildingNameByCategory({
-      buildingCategory: building.buildingType,
-      level: totalLevel,
-    });
-    const cost = BUILDINGS[name].buildCost;
-    totalCost += cost;
+
+    for (let level = 1; level < building.levelsToUpgrade + 1; level++) {
+      const totalLevel = existingLevel + level;
+
+      const name = findBuildingNameByCategory({
+        buildingCategory: building.buildingType,
+        level: totalLevel,
+      });
+
+      const cost = BUILDINGS[name] ? BUILDINGS[name].buildCost : 0;
+      if (cost) {
+        totalCost += cost;
+      }
+    }
   }
-  return playerNation?.gold ? playerNation.gold - totalCost : 0;
+  return playerNation?.gold !== undefined ? playerNation.gold - totalCost : 0;
+}
+
+export function hasEnoughGold(effectiveGold: number, cost: number) {
+  return effectiveGold >= cost;
 }

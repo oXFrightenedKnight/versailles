@@ -11,15 +11,23 @@ import { calcAvailableArmy } from "@/lib/UI/optimisticCalc/army";
 import { Hex, HEX_DIRECTIONS } from "@repo/shared/data/hex_map";
 import { Nation } from "@repo/shared/data/nations";
 import { Road } from "@repo/shared/data/roads";
-import { Building, topLevelsByCategory } from "@repo/shared/data/buildings";
+import {
+  Building,
+  building_categoires,
+  BUILDINGS,
+  topLevelsByCategory,
+} from "@repo/shared/data/buildings";
 import { ServerContractUpdate, SupplyContract } from "@repo/shared/data/contracts";
-import { getBuilding } from "@repo/shared/helpers/buildings";
+import { findBuildingNameByCategory, getBuilding } from "@repo/shared/helpers/buildings";
 import { startDijkstrasAlgo } from "@repo/shared/helpers/dijkstras";
 import { calculateExportAmount } from "@repo/shared/helpers/contracts";
 import { findNeighbors, getHexByAxial } from "@repo/shared/helpers/hex_map";
 import { hasSegment } from "@repo/shared/helpers/roads";
 import { Popup } from "@/lib/stores/uiStore";
 import { PopupText } from "@/lib/data";
+import { createNewPopup } from "@/lib/helpers/popups";
+import { hasEnoughGold } from "@/lib/UI/optimisticCalc/gold";
+import { getBuildingCost, isBuildingCategory } from "@/lib/helpers/buildings";
 
 export type ClickCtx = {
   mouseDownRef: RefObject<boolean>;
@@ -59,6 +67,7 @@ export type ClickCtx = {
   setBarValue: React.Dispatch<React.SetStateAction<number>>;
   serverBuildingsCancel: number[];
   setPopup: SetStateAction<Popup | null>;
+  effectiveGold: number;
 };
 
 export type RoadDragCtx = {
@@ -280,10 +289,13 @@ function handleBuildingPlacement(hex: Hex, ctx: ClickCtx) {
     serverBuildingsCancel,
     mapHexes,
     setPopup,
+    effectiveGold,
   } = ctx;
 
-  // return if hex doesn't belong to player
+  // return if hex doesn't belong to player or build mode doesn't match
   if (hex.owner !== playerNation?.id) return;
+  // check if buildMode is one of the building categories
+  if (!isBuildingCategory(buildMode)) return;
 
   // These are current queued building objects on client and server in that hex
   const buildingOfHex = hex.buildingId
@@ -300,8 +312,14 @@ function handleBuildingPlacement(hex: Hex, ctx: ClickCtx) {
   const currentLevel = buildingOfHex?.level ? buildingOfHex.level : 0;
 
   // if there is a building queued or built already and its type doesn't match - skip
-  if (constructingBuilding && constructingBuilding.buildingType !== buildMode) return;
-  if (buildingOfHex && buildingOfHex.category !== buildMode) return;
+  if (constructingBuilding && constructingBuilding.buildingType !== buildMode) {
+    createNewPopup(setPopup, "building_type_mismatch");
+    return;
+  }
+  if (buildingOfHex && buildingOfHex.category !== buildMode) {
+    createNewPopup(setPopup, "building_type_mismatch");
+    return;
+  }
 
   const total = queuedLevels + currentLevel;
   const max = topLevelsByCategory.find((l) => l.category === buildMode)?.level ?? Infinity;
@@ -309,13 +327,20 @@ function handleBuildingPlacement(hex: Hex, ctx: ClickCtx) {
 
   // if the total level of built + in progress + new one is above max - skip
   if (total + 1 > max) {
-    setPopup(PopupText["max_level_reached"]);
+    createNewPopup(setPopup, "max_level_reached");
+    return;
+  }
+
+  // check cost
+  const cost = getBuildingCost(buildMode, total + 1);
+
+  if (!hasEnoughGold(effectiveGold, cost)) {
+    createNewPopup(setPopup, "missing_gold");
+    return;
   }
 
   // update if exists, create if doesn't
   setBuildBuildings((prev) => {
-    if (buildMode === "road" || buildMode === "none") return prev;
-
     const exists = prev.some((obj) => obj.hexId === hex.id);
 
     if (exists) {

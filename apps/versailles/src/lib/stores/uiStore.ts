@@ -5,6 +5,7 @@ import { resolveValue } from "../utils";
 export type SetStateAction<T> = (value: T | ((prev: T) => T)) => void;
 
 export type Popup = {
+  id: string;
   header?: string;
   body: string;
 };

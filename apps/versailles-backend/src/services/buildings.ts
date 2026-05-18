@@ -1,4 +1,5 @@
 import {
+  BASE_CAPITAL_WHEAT,
   BASE_HEX_POPULATION,
   baseGoldRate,
   baseTrainingProgress,
@@ -76,6 +77,9 @@ function calculateFarm(building: Building, gameCtx: GameCtx) {
 
 function calculateCivilian(building: Building, gameCtx: GameCtx) {
   const { mapHexes, nations } = gameCtx;
+
+  // give base 10 wheat to capitals to allow self sustain
+  calculateCapitalWheat(gameCtx, building);
 
   // apply resource consumption
   const consumptionMod = calculateConsumption({ building, gameCtx });
@@ -244,12 +248,14 @@ export function BuildBuilding({
     existing.level += levelsToUpgrade;
     existing.storage = buildingStorage;
   } else {
+    const id = crypto.randomUUID();
     ctx.buildings.push({
-      id: crypto.randomUUID(),
+      id,
       category,
       level: levelsToUpgrade,
       storage: buildingStorage,
     });
+    hex.buildingId = id;
   }
 }
 
@@ -453,6 +459,7 @@ export function deleteBuilding(ctx: GameCtx, deleteIds: string[], nation: Nation
     const hex = buildingHexMap.get(id);
     if (!building || !hex) continue;
     if (hex.owner !== nation.id) continue;
+    if (nation.capitalTileIdx === hex.id) continue;
 
     // delete building
     const idx = ctx.buildings.indexOf(building);
@@ -474,4 +481,19 @@ export function getBuildingInHex(ctx: GameCtx, hexId: number) {
   } else {
     return null;
   }
+}
+
+// This function is used to allow starting capitals to self sustain themselves
+// at the start of the game
+function calculateCapitalWheat(ctx: GameCtx, building: Building) {
+  const capitalHexIds = new Set(ctx.nations.map((n) => n.capitalTileIdx));
+  const capitalHexes = ctx.mapHexes.filter((h) => capitalHexIds.has(h.id));
+
+  const isCapitalBuilding = capitalHexes.some((h) => h.buildingId === building.id);
+  if (!isCapitalBuilding) return;
+
+  const storage = building.storage?.find((s) => s.type === "wheat");
+  if (!storage) return;
+
+  storage.amount += BASE_CAPITAL_WHEAT;
 }

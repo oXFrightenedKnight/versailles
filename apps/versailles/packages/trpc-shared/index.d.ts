@@ -87,6 +87,7 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
           id: string;
           answer: boolean;
         }[];
+        signPeaceReq: string[];
       };
       output: {
         mails: Mail[];

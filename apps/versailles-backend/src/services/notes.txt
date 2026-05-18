@@ -3,12 +3,9 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
-5. fix bug where you get buildCost error when trying build above max on client
-6. fix bug where you get no villages on start
-7. You forgot to regen store types and send peace reqs
-8. don't allow player to build anything unless they have enough gold
-(client) and figure out what to do to make sure player has enough
-gold to start and not waste it (maybe start with pre-built)
+6. fix capital tile idx when nation defeated.
+7. display total consumed resources of all time, and total resource produced for building
+8. remove delete button on client if building is standing on capital hex
 8. Add small popup that will be shown when player loses (or wins) on client and allow
 to either start new game (gameId reset) or continue spectating
 9. start working on ai

@@ -11,13 +11,16 @@ import DragBar from "@/components/GameComponents/DragBar";
 import BuildMenu from "@/components/SideMenus/BuildingMenu/buildButton";
 import DiplomacyMenu from "@/components/SideMenus/DiplomacyMenu/MainMenu";
 import MailMenu from "@/components/SideMenus/Mails/MainMenu";
+import PopupContainer from "@/components/SideMenus/Popups/PopupContainer";
 import ProvinceInfoSidebar from "@/components/SideMenus/ProvinceMenu/ProvinceInfoSidebar";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCameraController } from "@/hooks/useCameraController";
 import { Descriptions, OpenMenus } from "@/lib/data";
 import { getNationName } from "@/lib/helpers/nations";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
+import { useUIStore } from "@/lib/stores/uiStore";
 import { BuildModeType, roadObject } from "@/lib/types/game";
 import { getUIBuildings } from "@/lib/UI/mergeData/uiBuildings";
 import { getServerContractsFromBuildings } from "@/lib/UI/mergeData/uiContract";
@@ -31,9 +34,6 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { initBiomePatterns, initTextures, renderMap } from "../../canvas/render";
 import { GameData, trpc } from "../_trpc/client";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import PopupContainer from "@/components/SideMenus/Popups/PopupContainer";
-import { useUIStore } from "@/lib/stores/uiStore";
 
 export default function Home() {
   const mapHexes = useGameStore((state) => state.mapHexes);
@@ -76,6 +76,8 @@ export default function Home() {
   // Mails
   const readMails = useIntentStore((state) => state.readMails);
   const answeredMails = useIntentStore((state) => state.answeredMails);
+
+  const signPeaceReq = useIntentStore((state) => state.signPeace);
 
   // MENUS
   const [openMenu, setOpenMenu] = useState<OpenMenus>("none");
@@ -300,6 +302,7 @@ export default function Home() {
         setBarValue,
         serverBuildingsCancel,
         setPopup,
+        effectiveGold,
       };
 
       dispatchMapTap(worldX, worldY, event.button, ctx);
@@ -338,6 +341,8 @@ export default function Home() {
       setBarValue,
 
       setPopup,
+
+      effectiveGold,
     ]
   );
 
@@ -572,6 +577,7 @@ export default function Home() {
                   declareWar: declareWar,
                   answeredMails,
                   readMails,
+                  signPeaceReq,
                 });
               }}
             >
