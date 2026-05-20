@@ -3,11 +3,10 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
-6. fix capital tile idx when nation defeated.
-7. display total consumed resources of all time, and total resource produced for building
-8. remove delete button on client if building is standing on capital hex
 8. Add small popup that will be shown when player loses (or wins) on client and allow
 to either start new game (gameId reset) or continue spectating
+9. Fix weird contract calculations (also no purpose allowing custom numbers to send if you
+only send as much as the game thinks it needs to, so fix that as well)
 9. start working on ai
 9,5. remember that when ai attacks, it first declares war, and next turn it checks
 if its at war and moves its troops.
@@ -28,7 +27,10 @@ for them to load (which can take up to a second)
 sources where its required to validate every time.
 6. Reduce amount of building levels on building if right click has happened on hex
 7. Instead of transferring hexes directly during war, mark them as occupied (de facto/de jure owner)
-and calculate surrender percentage based off that.
+and calculate surrender percentage based off of that.
+8. Figure out what to do with roads and that +1 gold refund if you only got one
+point when cancelling building. Think about refactoring how roads work. maybe make 
+them a union of buildings. BuildNationRoads as well
 
 --- RULES ---
 1. Delete/Update first, Build/Add second.

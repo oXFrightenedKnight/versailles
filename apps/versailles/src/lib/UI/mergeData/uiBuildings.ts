@@ -12,7 +12,7 @@ export type BuildingConstructionVM = {
   fromServer: boolean;
 };
 
-function getConstructingBuildingsServer(mapHexes: Hex[], serverCancelBuilding: number[]) {
+export function getConstructingBuildingsServer(mapHexes: Hex[], serverCancelBuilding: number[]) {
   return (
     mapHexes
       // leave only hexes with build queue, and are not included in cancel intent

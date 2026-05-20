@@ -12,7 +12,7 @@ export const NATION_NAMES = {
 };
 export type Nation = {
   id: string;
-  capitalTileIdx: number;
+  capitalTileIdx: number | null;
   color: string;
   aggression: number;
   expansionBias: number;

@@ -9,7 +9,8 @@ export type GameCtx = {
   modifiers: MODIFIER[];
   mails: Mail[];
 };
-export type IntentInput = inferProcedureInput<AppRouter["nextTurn"]>;
+export type NextTurnType = inferProcedureInput<AppRouter["nextTurn"]>;
+export type IntentInput = NextTurnType["playerIntents"];
 export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
   {
     ctx: {
@@ -20,8 +21,10 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
     transformer: false;
   },
   import("@trpc/server").TRPCDecorateCreateRouterOptions<{
-    initialLoad: import("@trpc/server").TRPCMutationProcedure<{
-      input: void;
+    initialLoad: import("@trpc/server").TRPCQueryProcedure<{
+      input: {
+        gameId: string;
+      };
       output: {
         mails: Mail[];
         modifiers: MODIFIER[];
@@ -35,59 +38,62 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
     }>;
     nextTurn: import("@trpc/server").TRPCMutationProcedure<{
       input: {
-        newQueuedBuildings: {
-          hexId: number;
-          buildingType: string;
-          levelsToUpgrade: number;
-        }[];
-        buildingCancel: number[];
-        buildingDelete: string[];
-        movePlayerArmy: {
-          hexId: number;
-          amount: number;
-          direction: {
-            dq: number;
-            dr: number;
-          };
-        }[];
-        buildRoads: {
-          id: string;
-          points: {
-            q: number;
-            r: number;
-            d1: number;
-            d2: number;
+        gameId: string;
+        playerIntents: {
+          newQueuedBuildings: {
+            hexId: number;
+            buildingType: string;
+            levelsToUpgrade: number;
           }[];
-        }[];
-        cancelRoadBuild: string[];
-        createNewContracts: {
-          startBuildingId: string;
-          endBuildingId: string;
-          amount: number;
-          resource: string;
-          autoAdjust: boolean;
-        }[];
-        deleteContracts: string[];
-        updateContracts: {
-          contractId: string;
-          changes: {
-            amount?: number | undefined;
-            resource?: string | undefined;
-            autoAdjust?: boolean | undefined;
-          };
-        }[];
-        trainNewArmy: {
-          amount: number;
-          barrackId: string;
-        }[];
-        deleteArmyTrain: string[];
-        declareWar: string[];
-        readMails: string[];
-        answeredMails: {
-          id: string;
-          answer: boolean;
-        }[];
-        signPeaceReq: string[];
+          buildingCancel: number[];
+          buildingDelete: string[];
+          movePlayerArmy: {
+            hexId: number;
+            amount: number;
+            direction: {
+              dq: number;
+              dr: number;
+            };
+          }[];
+          buildRoads: {
+            id: string;
+            points: {
+              q: number;
+              r: number;
+              d1: number;
+              d2: number;
+            }[];
+          }[];
+          cancelRoadBuild: string[];
+          createNewContracts: {
+            startBuildingId: string;
+            endBuildingId: string;
+            amount: number;
+            resource: string;
+            autoAdjust: boolean;
+          }[];
+          deleteContracts: string[];
+          updateContracts: {
+            contractId: string;
+            changes: {
+              amount?: number | undefined;
+              resource?: string | undefined;
+              autoAdjust?: boolean | undefined;
+            };
+          }[];
+          trainNewArmy: {
+            amount: number;
+            barrackId: string;
+          }[];
+          deleteArmyTrain: string[];
+          declareWar: string[];
+          readMails: string[];
+          answeredMails: {
+            id: string;
+            answer: boolean;
+          }[];
+          signPeaceReq: string[];
+        };
       };
       output: {
         mails: Mail[];
@@ -98,6 +104,34 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
         roads: Road[];
         buildings: Building[];
       } | null;
+      meta: object;
+    }>;
+    createNewGame: import("@trpc/server").TRPCMutationProcedure<{
+      input: void;
+      output: {
+        id: `${string}-${string}-${string}-${string}-${string}`;
+        metadata: {
+          createdAt: string;
+          updatedAt: string;
+          turn: number;
+          playerNationId: string | undefined;
+        };
+      };
+      meta: object;
+    }>;
+    loadPlayerGames: import("@trpc/server").TRPCQueryProcedure<{
+      input: void;
+      output: {
+        id: string;
+        userId: string;
+        metadata: {
+          createdAt: string;
+          updatedAt: string;
+          turn: number;
+          playerNationId: string | undefined;
+        };
+        data: GameCtx;
+      }[];
       meta: object;
     }>;
   }>

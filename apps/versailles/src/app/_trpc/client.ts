@@ -6,3 +6,4 @@ type RouterOutputs = inferRouterOutputs<AppRouter>;
 
 export const trpc = createTRPCReact<AppRouter>({});
 export type GameData = RouterOutputs["initialLoad"];
+export type GameSave = RouterOutputs["loadPlayerGames"][number];

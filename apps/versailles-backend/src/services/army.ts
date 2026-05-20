@@ -1,6 +1,6 @@
 import { Building, Hex, Nation } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
-import { getNationById, setDefeated } from "./genNations.js";
+import { assignNewCapital, getNationById, setDefeated } from "./genNations.js";
 import { addMail, createWarMail } from "./mails.js";
 import { getHexById } from "./map.js";
 import { addModifier } from "./modifiers.js";
@@ -21,7 +21,7 @@ export function moveArmy({
   const { mapHexes } = gameCtx;
 
   const hex = getHexById(hexId, gameCtx);
-  const nationWarList = new Set(getNationById(nationId)?.atWar);
+  const nationWarList = new Set(getNationById(gameCtx, nationId)?.atWar);
   const contested = hex?.army.some((obj) => nationWarList.has(obj.nationId)) ?? false;
   if (!hex || contested) return;
 
@@ -47,7 +47,8 @@ export function moveArmy({
   // check if the hex that army is moving to either belongs to country at war or
   // already belongs to army's country
   const isAtWarWithOwner =
-    getNationById(hexToMove.owner)?.atWar.includes(nationId) && hexToMove.owner !== nationId;
+    getNationById(gameCtx, hexToMove.owner)?.atWar.includes(nationId) &&
+    hexToMove.owner !== nationId;
 
   // move army (only to your own tiles or nations at war)
   if (isAtWarWithOwner || hexToMove.owner === nationId) {
@@ -93,7 +94,7 @@ export function calculateWar(hexId: number, ctx: GameCtx) {
   const hex = getHexById(hexId, ctx);
   if (!hex || !hex.owner) return;
 
-  const owner = getNationById(hex.owner);
+  const owner = getNationById(ctx, hex.owner);
   if (!owner) return;
 
   const lossMap = new Map();
@@ -101,7 +102,7 @@ export function calculateWar(hexId: number, ctx: GameCtx) {
   const DEFENSE_COEFFICIENT = 0.8;
 
   for (const army of hex.army) {
-    const nation = getNationById(army.nationId);
+    const nation = getNationById(ctx, army.nationId);
     if (!nation) continue;
 
     let enemyTotal = 0;
@@ -140,6 +141,11 @@ export function calculateWar(hexId: number, ctx: GameCtx) {
     hex.owner = strongest.nationId;
     if (hex.build_queue?.owner !== hex.owner) {
       hex.build_queue = null;
+    }
+
+    // if captured hex was owner's capital, choose another one or set null
+    if (hex.id === owner?.capitalTileIdx) {
+      assignNewCapital(ctx, owner.id);
     }
   }
 

@@ -11,12 +11,15 @@ export default function InfoBlock({ info, building }: { info: Info; building: Bu
 
   const hex = mapHexes.find((h) => h.buildingId === building.id);
 
+  const isCapital = hex ? hex.id === playerNation?.capitalTileIdx : false;
+  const isOwnerOfHex = hex ? hex.owner === playerNation?.id : false;
+
   return (
     <div className="w-full bg-gray-800 rounded-xl">
       <div className="flex w-full justify-between items-center bg-gray-700 p-2 rounded-t-xl">
         <p>{type} Info</p>
 
-        {hex?.owner === playerNation?.id && (
+        {!isCapital && isOwnerOfHex && (
           <div
             className="flex bg-gray-900 border border-gray-600 p-1 gap-1 rounded-md text-red-400 h-full justify-center items-center"
             onClick={() => {

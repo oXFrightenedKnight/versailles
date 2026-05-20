@@ -10,6 +10,7 @@ import {
   findNeighbors,
   getBuilding,
   Hex,
+  MAP_RADIUS,
   WOOD_MOD,
 } from "@repo/shared";
 import { memoryStore } from "../server/memoryStore.js";
@@ -18,7 +19,8 @@ import { BuildBuilding } from "./buildings.js";
 
 // DO NOT CHANGE THIS FUNCTION TO ACCEPT GAMECTX
 // generates the mathematical map & coordinates
-export function generateHexMap(radius: number, ctx: GameCtx) {
+export function generateHexMap(ctx: GameCtx) {
+  const radius = MAP_RADIUS;
   const hexes: Hex[] = [];
   let id = 0;
 
@@ -150,7 +152,7 @@ export function generateHexMap(radius: number, ctx: GameCtx) {
     let randomWood = Math.floor(Math.random() * 50 * WOOD_MOD[hex.biome ?? "plains"]);
     hex.wood = randomWood;
   }
-  return hexes;
+  ctx.mapHexes = hexes;
 }
 
 export function randomNationColor(): string {

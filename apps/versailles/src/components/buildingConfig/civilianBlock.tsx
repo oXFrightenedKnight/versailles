@@ -3,6 +3,7 @@ import StorageBlock from "../Blocks/StorageBlock";
 import InfoBlock from "../Blocks/InfoBlock";
 import { findBuildingNameByCategory } from "@repo/shared/helpers/buildings";
 import { Building, BUILDINGS } from "@repo/shared/data/buildings";
+import { numberConverter } from "@/lib/utils";
 
 export default function CivilianBlock({ building }: { building: Building }) {
   // name
@@ -23,6 +24,15 @@ export default function CivilianBlock({ building }: { building: Building }) {
   const nextUpgradeTime = nextName ? BUILDINGS[nextName].buildTime : "max";
   const nextUpgradeCost = nextName ? BUILDINGS[nextName].buildCost : "max";
 
+  const consumed = building.statistics.consumed.map((c) => ({
+    key: `${c.resource} consumed`,
+    value: numberConverter(c.amount),
+  }));
+  const produced = building.statistics.produced.map((c) => ({
+    key: `${c.resource} produced`,
+    value: numberConverter(c.amount),
+  }));
+
   const info: Info = [
     { key: "Type", value: name },
     { key: "Category", value: building.category },
@@ -30,6 +40,8 @@ export default function CivilianBlock({ building }: { building: Building }) {
     { key: "Pop. Barrier", value: populationCap.toString() },
     { key: "Upgrade Time", value: nextUpgradeTime.toString() },
     { key: "Upgrade Cost", value: nextUpgradeCost.toString() },
+    ...consumed,
+    ...produced,
   ];
 
   return (

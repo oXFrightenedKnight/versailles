@@ -52,27 +52,13 @@ export function buildingOutput(gameCtx: GameCtx) {
 function calculateFarm(building: Building, gameCtx: GameCtx) {
   const { mapHexes } = gameCtx;
 
-  // apply resource consumption
-  const name = findBuildingNameByCategory({
-    buildingCategory: building.category,
-    level: building.level,
-  });
-  if (!name) return;
-  // find hex of this building and calculate population change
   const hex = mapHexes.find((h) => h.buildingId === building.id);
   if (!hex || !hex.population) return;
 
   calculatePopulationChange(hex, gameCtx, 1); // 1 means 100% consumption (since farm does not consume anything)
 
   // now calculate wheat output
-  const max = BUILDINGS[name].storageCap["wheat"] ?? 0;
-  const wheatOutput = Math.round(hex.population * baseWheatRate);
-  if (building.storage) {
-    const wheatStorage = building.storage.find((s) => s.type === "wheat");
-    if (!wheatStorage) return;
-    const newAmount = Math.min(wheatStorage.amount + wheatOutput, max);
-    wheatStorage.amount = newAmount;
-  }
+  calculateResourceOutput(building, "wheat", hex, baseWheatRate);
 }
 
 function calculateCivilian(building: Building, gameCtx: GameCtx) {
@@ -165,7 +151,7 @@ function calculateBarracks(building: Building, gameCtx: GameCtx) {
 }
 
 function calculateWoodcamp(building: Building, gameCtx: GameCtx) {
-  const { mapHexes, buildings } = gameCtx;
+  const { mapHexes } = gameCtx;
 
   // apply resource consumption
   const name = findBuildingNameByCategory({
@@ -173,6 +159,7 @@ function calculateWoodcamp(building: Building, gameCtx: GameCtx) {
     level: building.level,
   });
   if (!name) return;
+
   const consumptionMod = calculateConsumption({ building, gameCtx });
 
   // ex: wheatRatio: 0.5, woodRatio: 1 -> avgConsumption = 0.75
@@ -184,15 +171,7 @@ function calculateWoodcamp(building: Building, gameCtx: GameCtx) {
 
   calculatePopulationChange(hex, gameCtx, avgConsumption);
 
-  // now calculate wood output
-  const max = BUILDINGS[name].storageCap["wood"] ?? 0;
-  const woodOutput = Math.round(hex.population * baseWoodRate * avgConsumption);
-  if (building.storage) {
-    const woodStorage = building.storage.find((s) => s.type === "wood");
-    if (!woodStorage) return;
-    const newAmount = Math.min(woodStorage.amount + woodOutput, max);
-    woodStorage.amount = newAmount;
-  }
+  calculateResourceOutput(building, "wood", hex, baseWoodRate, avgConsumption);
 }
 
 function calculateWatchtower(building: Building, gameCtx: GameCtx) {
@@ -254,6 +233,10 @@ export function BuildBuilding({
       category,
       level: levelsToUpgrade,
       storage: buildingStorage,
+      statistics: {
+        consumed: [],
+        produced: [],
+      },
     });
     hex.buildingId = id;
   }
@@ -392,7 +375,7 @@ export function calculateConsumption({
     level: building.level,
   });
 
-  const consuming = Object.keys(BUILDINGS[name].consumptionMod);
+  const consuming = Object.keys(BUILDINGS[name].consumptionMod) as RESOURCES[];
   const estConsumption = estimateConsumption({ building, mapHexes });
   if (!estConsumption || !name || !storage) {
     return {};
@@ -403,18 +386,20 @@ export function calculateConsumption({
     const currStoredResource = storage.find((s) => s.type === resource);
     if (!currStoredResource) continue;
     // don't add a resource if it can't be stored and doesn't have a maximum cap
-    const storageCap = BUILDINGS[name].storageCap[resource as RESOURCES];
+    const storageCap = BUILDINGS[name].storageCap[resource];
     if (!storageCap || storageCap === 0) continue;
 
     // consume resource
     const left = Math.round(Math.max(currStoredResource.amount - estConsumption[resource], 0));
     const consumed = Math.max(currStoredResource.amount - left, 0); // just in case
-    console.log(`consumed this turn by ${building.category}`, consumed);
+
+    addConsumptionStat(building, resource, consumed);
+
     currStoredResource.amount = left;
 
     const need = estConsumption[resource] ?? 0;
 
-    const ratio = need > 0 ? consumed / need : 1; // если не нужно — считаем, что всё ок
+    const ratio = need > 0 ? consumed / need : 1;
     estConsumptionRatio.set(
       resource,
       roundToNearestDecimal(ratio, 100) // to hundredth
@@ -436,11 +421,25 @@ function calculateAverageConsumption(consumptionMod: Record<string, number>) {
 
 export function cancelBuilding(ctx: GameCtx, hexIds: number[], nation: Nation) {
   const hexIdMap = new Map(ctx.mapHexes.filter((h) => h.build_queue).map((h) => [h.id, h]));
+  const buildingIdMap = new Map(ctx.buildings.map((b) => [b.id, b]));
 
   for (const id of hexIds) {
     const hex = hexIdMap.get(id);
     if (!hex || !hex.build_queue) continue;
     if (hex.owner !== nation.id) continue;
+
+    // return cost
+    const existing = hex.buildingId ? buildingIdMap.get(hex.buildingId) : null;
+    for (let level = 1; level < hex.build_queue.levels + 1; level++) {
+      const totalLevel = existing ? level + existing.level : level;
+
+      const name = findBuildingNameByCategory({
+        buildingCategory: hex.build_queue.building,
+        level: totalLevel,
+      });
+      const cost = BUILDINGS[name].buildCost;
+      nation.gold += cost;
+    }
 
     // cancel building
     hex.build_queue = null;
@@ -496,4 +495,54 @@ function calculateCapitalWheat(ctx: GameCtx, building: Building) {
   if (!storage) return;
 
   storage.amount += BASE_CAPITAL_WHEAT;
+}
+
+function addConsumptionStat(building: Building, resource: RESOURCES, amount: number) {
+  const consumedMap = new Map(building.statistics.consumed.map((c) => [c.resource, c]));
+
+  const objRef = consumedMap.get(resource);
+  if (!objRef) {
+    building.statistics.consumed.push({ amount, resource });
+  } else {
+    objRef.amount += amount;
+  }
+}
+
+function addProductionStat(building: Building, resource: RESOURCES, amount: number) {
+  const producedMap = new Map(building.statistics.produced.map((p) => [p.resource, p]));
+
+  const objRef = producedMap.get(resource);
+  if (!objRef) {
+    building.statistics.produced.push({ amount, resource });
+  } else {
+    objRef.amount += amount;
+  }
+}
+
+function calculateResourceOutput(
+  building: Building,
+  resource: RESOURCES,
+  hex: Hex,
+  baseResourceRate: number,
+  averageConsumption?: number
+) {
+  if (hex.population === null) return;
+  const name = findBuildingNameByCategory({
+    buildingCategory: building.category,
+    level: building.level,
+  });
+  if (!name) return;
+
+  const max = BUILDINGS[name].storageCap[resource] ?? 0;
+  const resourceOutput = Math.round(hex.population * baseResourceRate * (averageConsumption ?? 1));
+  if (building.storage) {
+    const storage = building.storage.find((s) => s.type === resource);
+    if (!storage) return;
+
+    const newAmount = Math.min(storage.amount + resourceOutput, max);
+    const added = newAmount - storage.amount;
+    storage.amount = newAmount;
+
+    addProductionStat(building, resource, added);
+  }
 }

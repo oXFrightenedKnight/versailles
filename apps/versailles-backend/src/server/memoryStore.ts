@@ -1,13 +1,44 @@
-import { MAP_RADIUS } from "@repo/shared";
-import { generateNations } from "../services/genNations.js";
+import { generateNations, getPlayerNation } from "../services/genNations.js";
 import { generateHexMap } from "../services/map.js";
 import { GameCtx } from "../trpc/index.js";
 
-export const memoryStore = {
-  maps: new Map<string, any>(),
+type GameSave = {
+  id: string;
+  userId: string;
+
+  metadata: GameMetadata;
+
+  data: GameCtx;
 };
 
-export function populateGameCtx() {
+type GameMetadata = {
+  createdAt: string;
+  updatedAt: string;
+  turn: number;
+  playerNationId: string | undefined;
+};
+
+export const memoryStore = {
+  maps: new Map<string, GameSave>(), // key has to be gameId
+};
+
+export function populateGameCtx({ userId, gameId }: { userId: string; gameId?: string }) {
+  let playerMap = getGame({ userId, gameId });
+  if (!playerMap) return null;
+
+  return playerMap.data;
+}
+
+function getGame({ userId, gameId }: { userId: string; gameId?: string }) {
+  const game = gameId ? memoryStore.maps.get(gameId) : null;
+  if (!game) return null;
+  if (game.userId !== userId) return null;
+
+  return game;
+}
+
+export function createNewGame(userId: string) {
+  const id = crypto.randomUUID();
   const ctx: GameCtx = {
     mapHexes: [],
     nations: [],
@@ -17,50 +48,66 @@ export function populateGameCtx() {
     modifiers: [],
     mails: [],
   };
+  populateWorld(ctx);
 
-  if (memoryStore.maps.has("mapHexes")) {
-    ctx.mapHexes = memoryStore.maps.get("mapHexes");
-  } else {
-    ctx.mapHexes = generateHexMap(MAP_RADIUS, ctx);
-    memoryStore.maps.set("mapHexes", ctx.mapHexes);
-  }
+  const date = new Date().toISOString();
 
-  if (memoryStore.maps.has("nations")) {
-    ctx.nations = memoryStore.maps.get("nations");
-  } else {
-    generateNations(ctx);
-    memoryStore.maps.set("nations", ctx.nations);
-  }
+  const game = {
+    id,
+    userId,
+    metadata: {
+      createdAt: date,
+      updatedAt: date,
+      turn: 0,
+      playerNationId: getPlayerNation(ctx)?.id,
+    },
+    data: ctx,
+  };
 
-  if (memoryStore.maps.has("turn")) {
-    ctx.turn = memoryStore.maps.get("turn");
-  } else {
-    memoryStore.maps.set("turn", ctx.turn);
-  }
+  memoryStore.maps.set(id, game);
+  return game;
+}
 
-  if (memoryStore.maps.has("roads")) {
-    ctx.roads = memoryStore.maps.get("roads");
-  } else {
-    memoryStore.maps.set("roads", ctx.roads);
-  }
+function populateWorld(ctx: GameCtx) {
+  generateHexMap(ctx);
+  generateNations(ctx);
+}
 
-  if (memoryStore.maps.has("buildings")) {
-    ctx.buildings = memoryStore.maps.get("buildings");
-  } else {
-    memoryStore.maps.set("buildings", ctx.buildings);
-  }
+export function updateStore({
+  gameId,
+  userId,
+  gameCtx,
+}: {
+  gameId: string;
+  userId: string;
+  gameCtx: GameCtx;
+}) {
+  const game = memoryStore.maps.get(gameId);
+  if (!game) return;
+  if (game?.userId !== userId) return;
 
-  // DO NOT SEND MODIFIERS TO CLIENT FOR NOW
-  if (memoryStore.maps.has("modifiers")) {
-    ctx.modifiers = memoryStore.maps.get("modifiers");
-  } else {
-    memoryStore.maps.set("modifiers", ctx.modifiers);
-  }
+  const newMetadata = updateMetadata(gameCtx, game.metadata);
 
-  if (memoryStore.maps.has("mails")) {
-    ctx.mails = memoryStore.maps.get("mails");
-  } else {
-    memoryStore.maps.set("mails", ctx.mails);
-  }
-  return ctx;
+  const obj = {
+    ...game,
+    data: gameCtx,
+    metadata: newMetadata,
+  };
+
+  memoryStore.maps.set(game.id, obj);
+}
+
+function updateMetadata(ctx: GameCtx, metadata: GameMetadata) {
+  return {
+    ...metadata,
+    turn: ctx.turn,
+    updatedAt: new Date().toISOString(),
+    playerNationId: getPlayerNation(ctx)?.id,
+  } as GameMetadata;
+}
+
+export function getPlayerSaves(userId: string) {
+  return [...memoryStore.maps.entries()]
+    .filter(([_, save]) => save.userId === userId)
+    .map((save) => save[1]);
 }

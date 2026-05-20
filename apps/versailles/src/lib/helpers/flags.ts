@@ -11,6 +11,6 @@ export function getFlagImage(nationId: string) {
   return flagCache[nationId];
 }
 
-export function getNationFlagURL(nationId: string) {
-  return `/flags/${nationId.toLowerCase()}.png`;
+export function getNationFlagURL(nationId: string | undefined | null) {
+  return nationId ? `/flags/${nationId.toLowerCase()}.png` : "/flags/tribes.png";
 }

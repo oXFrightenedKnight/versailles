@@ -2,7 +2,13 @@ import { Building, Hex, Mail, MODIFIER, Nation, Road } from "@repo/shared";
 
 import { inferProcedureInput, TRPCError } from "@trpc/server";
 import z from "zod";
-import { memoryStore, populateGameCtx } from "../server/memoryStore.js";
+import {
+  createNewGame,
+  getPlayerSaves,
+  memoryStore,
+  populateGameCtx,
+  updateStore,
+} from "../server/memoryStore.js";
 import { buildingOutput, giveProgressBuilding } from "../services/buildings.js";
 import { executeContracts, recalculateContractsAmounts } from "../services/contracts.js";
 
@@ -24,111 +30,118 @@ export type GameCtx = {
   mails: Mail[];
 };
 
-export type IntentInput = inferProcedureInput<AppRouter["nextTurn"]>;
+export type NextTurnType = inferProcedureInput<AppRouter["nextTurn"]>;
+export type IntentInput = NextTurnType["playerIntents"];
 
 export const appRouter = router({
   // Init game
-  initialLoad: authedProcedure.mutation(async () => {
-    const ctx = populateGameCtx();
+  initialLoad: authedProcedure
+    .input(
+      z.object({
+        gameId: z.string(),
+      })
+    )
+    .query(async ({ input, ctx: reqCtx }) => {
+      const gameId = input.gameId;
 
-    // FILTERING/FOG OF WAR LOGIC
-    const data = filterPlayerLogic(ctx);
+      const ctx = populateGameCtx({ gameId, userId: reqCtx.clerkId });
+      if (!ctx) throw new TRPCError({ code: "NOT_FOUND" });
 
-    return data;
-  }),
+      // FILTERING/FOG OF WAR LOGIC
+      const data = filterPlayerLogic(ctx);
+
+      return data;
+    }),
   nextTurn: authedProcedure
     .input(
       z.object({
-        newQueuedBuildings: z.array(
-          z.object({
-            hexId: z.int(),
-            buildingType: z.string(),
-            levelsToUpgrade: z.int().min(1),
-          })
-        ),
-        buildingCancel: z.array(z.number()),
-        buildingDelete: z.array(z.string()),
-        movePlayerArmy: z.array(
-          z.object({
-            hexId: z.int(),
-            amount: z.int(),
-            direction: z.object({
-              dq: z.int(),
-              dr: z.int(),
-            }),
-          })
-        ),
-        buildRoads: z.array(
-          z.object({
-            id: z.string(),
-            points: z.array(
-              z.object({
-                q: z.int(),
-                r: z.int(),
-                d1: z.number(),
-                d2: z.number(),
-              })
-            ),
-          })
-        ),
-        cancelRoadBuild: z.array(z.string()),
-        createNewContracts: z.array(
-          z.object({
-            startBuildingId: z.string(), // export from
-            endBuildingId: z.string(), // import to
-            amount: z.int().min(0),
-            resource: z.string(),
-            autoAdjust: z.boolean(),
-          })
-        ),
-        deleteContracts: z.array(z.string()),
-        updateContracts: z.array(
-          z.object({
-            contractId: z.string(),
-            changes: z.object({
-              amount: z.number().optional(),
-              resource: z.string().optional(),
-              autoAdjust: z.boolean().optional(),
-            }),
-          })
-        ),
-        trainNewArmy: z.array(
-          z.object({
-            amount: z.int().min(0),
-            barrackId: z.string(),
-          })
-        ),
-        deleteArmyTrain: z.array(z.string()),
-        declareWar: z.array(z.string()),
-        readMails: z.array(z.string()),
-        answeredMails: z.array(
-          z.object({
-            id: z.string(),
-            answer: z.boolean(),
-          })
-        ),
-        signPeaceReq: z.array(z.string()),
+        gameId: z.string(),
+        playerIntents: z.object({
+          newQueuedBuildings: z.array(
+            z.object({
+              hexId: z.int(),
+              buildingType: z.string(),
+              levelsToUpgrade: z.int().min(1),
+            })
+          ),
+          buildingCancel: z.array(z.number()),
+          buildingDelete: z.array(z.string()),
+          movePlayerArmy: z.array(
+            z.object({
+              hexId: z.int(),
+              amount: z.int(),
+              direction: z.object({
+                dq: z.int(),
+                dr: z.int(),
+              }),
+            })
+          ),
+          buildRoads: z.array(
+            z.object({
+              id: z.string(),
+              points: z.array(
+                z.object({
+                  q: z.int(),
+                  r: z.int(),
+                  d1: z.number(),
+                  d2: z.number(),
+                })
+              ),
+            })
+          ),
+          cancelRoadBuild: z.array(z.string()),
+          createNewContracts: z.array(
+            z.object({
+              startBuildingId: z.string(), // export from
+              endBuildingId: z.string(), // import to
+              amount: z.int().min(0),
+              resource: z.string(),
+              autoAdjust: z.boolean(),
+            })
+          ),
+          deleteContracts: z.array(z.string()),
+          updateContracts: z.array(
+            z.object({
+              contractId: z.string(),
+              changes: z.object({
+                amount: z.number().optional(),
+                resource: z.string().optional(),
+                autoAdjust: z.boolean().optional(),
+              }),
+            })
+          ),
+          trainNewArmy: z.array(
+            z.object({
+              amount: z.int().min(0),
+              barrackId: z.string(),
+            })
+          ),
+          deleteArmyTrain: z.array(z.string()),
+          declareWar: z.array(z.string()),
+          readMails: z.array(z.string()),
+          answeredMails: z.array(
+            z.object({
+              id: z.string(),
+              answer: z.boolean(),
+            })
+          ),
+          signPeaceReq: z.array(z.string()),
+        }),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       // create gameCtx
-      const gameCtx = populateGameCtx();
+      const gameId = input.gameId;
+      const gameCtx = populateGameCtx({ userId: ctx.clerkId, gameId });
+      if (!gameCtx) throw new TRPCError({ code: "NOT_FOUND" });
+
       const playerIntentCtx: IntentInput = {
-        ...input,
+        ...input.playerIntents,
       };
 
       const playerNation = gameCtx.nations.find((nation) => nation.isPlayer);
 
       // checks
-      if (
-        !gameCtx.mapHexes ||
-        gameCtx.mapHexes.length === 0 ||
-        !gameCtx.nations ||
-        gameCtx.nations.length === 0 ||
-        gameCtx.turn === undefined
-      ) {
-        throw new TRPCError({ code: "NOT_FOUND" });
-      }
       if (!playerNation) throw new TRPCError({ code: "NOT_FOUND" });
 
       // step 0.5: run player diplomacy first
@@ -174,20 +187,21 @@ export const appRouter = router({
       // fine for now, but when adding db/reddis, consider special
       // functions to update state
       gameCtx.turn++;
-      memoryStore.maps.set("turn", gameCtx.turn);
 
-      // step 11: update values in memory store
-      memoryStore.maps.set("mapHexes", gameCtx.mapHexes);
-      memoryStore.maps.set("roads", gameCtx.roads);
-      memoryStore.maps.set("nations", gameCtx.nations);
-      memoryStore.maps.set("buildings", gameCtx.buildings);
-      memoryStore.maps.set("modifiers", gameCtx.modifiers);
-      memoryStore.maps.set("mails", gameCtx.mails);
+      // step 11: update store / db
+      updateStore({ gameId, userId: ctx.clerkId, gameCtx });
 
       // step 12: filter logic for player
       const data = filterPlayerLogic(gameCtx);
       return data;
     }),
+  createNewGame: authedProcedure.mutation(async ({ ctx }) => {
+    const game = createNewGame(ctx.clerkId);
+    return { id: game.id, metadata: game.metadata };
+  }),
+  loadPlayerGames: authedProcedure.query(async ({ ctx }) => {
+    return getPlayerSaves(ctx.clerkId);
+  }),
 });
 // Export type router type signature,
 // NOT the router itself.

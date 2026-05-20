@@ -1,6 +1,7 @@
-import { findNeighbors, hasSegment, Hex, Nation, Road } from "@repo/shared";
+import { BASE_ROAD_COST, findNeighbors, hasSegment, Hex, Nation, Road } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
 import { recalculateContractsPaths } from "./contracts.js";
+import { subtractGold } from "./genNations.js";
 
 export function buildNationRoads({
   gameCtx,
@@ -83,8 +84,11 @@ export function buildNationRoads({
       road.constructing = { progress: 0, owner: nation.id };
     }
 
-    // add road to approved roads for building
-    roads.push(road);
+    const cost = road.points.length * BASE_ROAD_COST;
+    if (subtractGold(gameCtx, nation.id, cost)) {
+      // add road to approved roads for building
+      roads.push(road);
+    }
   }
 
   // add progress to every road that is currently constructing
@@ -134,8 +138,13 @@ export function cancelRoadBuild(ctx: GameCtx, cancelIds: string[], nation: Natio
     if (road.constructing.owner !== nation.id) continue;
 
     // cancel building road further
-    road.points = road.points.filter((p) => !p.isConstructing);
+    const finishedPoints = road.points.filter((p) => !p.isConstructing);
+    const unfinishedAmount = road.points.length - finishedPoints.length;
+    road.points = finishedPoints;
     road.constructing = null;
+
+    // return cost
+    nation.gold += unfinishedAmount * BASE_ROAD_COST;
 
     // delete road if it's 1 or fewer points long
     if (road.points.length <= 1) {
@@ -144,6 +153,9 @@ export function cancelRoadBuild(ctx: GameCtx, cancelIds: string[], nation: Natio
       if (idx !== -1) {
         ctx.roads.splice(idx, 1);
       }
+
+      // return gold for that point
+      nation.gold += BASE_ROAD_COST;
     }
   }
 }

@@ -2,6 +2,7 @@ import {
   AVAILABLE_TILES,
   BASE_NATION_GOLD,
   BUILDINGS_CATEGORY,
+  Hex,
   Nation,
   NATION_NAMES,
   NATION_NUMBER,
@@ -49,6 +50,7 @@ export function generateNations(ctx: GameCtx) {
 
   // every country starts with a village (capital)
   for (const nation of ctx.nations) {
+    if (nation.capitalTileIdx === null) continue;
     if (AVAILABLE_TILES.includes(nation.capitalTileIdx)) {
       const tile = getHexById(nation.capitalTileIdx, ctx);
       if (tile) {
@@ -64,11 +66,8 @@ export function generateNations(ctx: GameCtx) {
   }
 }
 
-export function getNationById(nationId: string) {
-  const nations = memoryStore.maps.get("nations") as Nation[];
-  if (!nations) return null;
-
-  const nation = nations.find((n) => n.id === nationId);
+export function getNationById(ctx: GameCtx, nationId: string) {
+  const nation = ctx.nations.find((n) => n.id === nationId);
   if (nation) return nation;
   return null;
 }
@@ -135,6 +134,7 @@ export function addPopulation({
 
 export function setDefeated(nation: Nation) {
   // place player logic here later (eg. set playerMode)
+  nation.capitalTileIdx = null;
   nation.isDefeated = true;
 }
 
@@ -148,4 +148,21 @@ export function subtractGold(ctx: GameCtx, nationId: string, amount: number) {
   } else {
     return false;
   }
+}
+
+// assigns hex with highest population of owner to be new capital
+export function assignNewCapital(ctx: GameCtx, nationId: string) {
+  const nation = getNationById(ctx, nationId);
+  if (!nation) return;
+  const ownerHexes = ctx.mapHexes.filter((h) => h.owner === nationId);
+
+  const newCapital = ownerHexes.reduce<Hex>((acc, h) => {
+    return (h.population ?? 0) > (acc.population ?? 0) ? h : acc;
+  }, ownerHexes[0]);
+
+  nation.capitalTileIdx = newCapital.id;
+}
+
+export function getPlayerNation(ctx: GameCtx) {
+  return ctx.nations.find((n) => n.isPlayer);
 }

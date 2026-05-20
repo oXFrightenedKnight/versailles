@@ -9,3 +9,6 @@ export type Road = {
     owner: string; // the owner of this construction
   } | null;
 };
+
+// base road cost per 1 segment
+export const BASE_ROAD_COST = 50;

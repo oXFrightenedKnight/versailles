@@ -10,7 +10,7 @@ import { mergeConstructingBuildings } from "@/lib/UI/mergeData/uiBuildings";
 import { calcAvailableArmy } from "@/lib/UI/optimisticCalc/army";
 import { Hex, HEX_DIRECTIONS } from "@repo/shared/data/hex_map";
 import { Nation } from "@repo/shared/data/nations";
-import { Road } from "@repo/shared/data/roads";
+import { BASE_ROAD_COST, Road } from "@repo/shared/data/roads";
 import {
   Building,
   building_categoires,
@@ -250,8 +250,17 @@ function handleBuildMode(hex: Hex, ctx: ClickCtx) {
   }
 }
 function handleRoadBuild(hex: Hex, ctx: ClickCtx) {
-  const { playerNation, roadStartRef, randomIdRef, tempRoadRef, setBuildRoads, d, setBuildMode } =
-    ctx;
+  const {
+    playerNation,
+    roadStartRef,
+    randomIdRef,
+    tempRoadRef,
+    setBuildRoads,
+    d,
+    setBuildMode,
+    effectiveGold,
+    setPopup,
+  } = ctx;
   // check if clicked hex belongs to player
   if (hex.owner !== playerNation?.id) return;
 
@@ -268,8 +277,15 @@ function handleRoadBuild(hex: Hex, ctx: ClickCtx) {
   } else {
     // add logic to submit the road from temp to actual array and clean up
     const roadToCommit = tempRoadRef.current;
-    if (roadToCommit && roadStartRef.current !== hex) {
-      setBuildRoads((prev) => [...prev, roadToCommit]);
+    if (!roadToCommit) return;
+
+    const cost = roadToCommit.points.length * BASE_ROAD_COST;
+    if (effectiveGold >= cost) {
+      if (roadToCommit && roadStartRef.current !== hex) {
+        setBuildRoads((prev) => [...prev, roadToCommit]);
+      }
+    } else {
+      createNewPopup(setPopup, "missing_gold");
     }
 
     // cleanup
@@ -461,17 +477,17 @@ export function handleRoadDrag(event: MouseEvent, ctx: RoadDragCtx) {
     // --- RESET BACK TO HEX IF IT ALREADY EXISTS ---
     const points = tempRoadArray.points;
 
-    // найти индекс хекса в дороге
+    // find hex index in road
     const idx = points.findIndex((p) => p.q === hex.q && p.r === hex.r);
 
-    // если этот хекс уже есть в дороге
+    // if this hex is already in road
     if (idx !== -1) {
-      // если это последний — ничего не делаем
+      // if its last - don't do anything
       if (idx === points.length - 1) {
         return;
       }
 
-      // иначе откатываем дорогу до него
+      // otherwise rollback road back to it
       points.splice(idx + 1);
       return;
     }

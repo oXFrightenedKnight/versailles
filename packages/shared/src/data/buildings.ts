@@ -8,6 +8,10 @@ export type Building = {
   id: string;
   category: BUILDINGS_CATEGORY;
   level: number;
+  statistics: {
+    consumed: { resource: RESOURCES; amount: number }[];
+    produced: { resource: RESOURCES; amount: number }[];
+  };
 
   // dynamic
   // civilian
@@ -162,7 +166,7 @@ export const topLevelsByCategory = Object.values(
     }
 
     return acc;
-  }, {} as AccType) // <-- Явно говорим, что это объект с ключами-строками
+  }, {} as AccType)
 );
 
 export const ALL_BUILDING_CATEGORIES = topLevelsByCategory.map((obj) => obj.category);
