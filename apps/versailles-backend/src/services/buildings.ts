@@ -394,6 +394,7 @@ export function calculateConsumption({
     const consumed = Math.max(currStoredResource.amount - left, 0); // just in case
 
     addConsumptionStat(building, resource, consumed);
+    console.log("consumed this turn", consumed);
 
     currStoredResource.amount = left;
 

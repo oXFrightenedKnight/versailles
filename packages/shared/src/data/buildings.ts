@@ -177,4 +177,4 @@ export type BuildingType = keyof typeof BUILDINGS;
 export const BASE_CAPITAL_WHEAT = 20;
 
 // starting gold
-export const BASE_NATION_GOLD = 100;
+export const BASE_NATION_GOLD = 1000;

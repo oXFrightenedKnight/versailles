@@ -19,6 +19,7 @@ export default function GameSaveBlock({ save, idx }: { save: GameSave; idx: numb
     { key: "Last Played", value: formatDistanceToNow(new Date(updatedIso), { addSuffix: true }) },
     { key: "Turn", value: save.metadata.turn },
     { key: "Playing as", value: save.metadata.playerNationId },
+    { key: "Nations Left", value: save.metadata.nationsLeft },
   ];
 
   return (

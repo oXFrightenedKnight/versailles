@@ -8,6 +8,9 @@ export type SupplyContract = {
   resource: RESOURCES;
   progress: number; // make progress to depend on biome. starts from 0
   //  and when it reaches 1 or above add resource to destination
+  metadata: {
+    lastAmountSent: number;
+  };
   autoAdjust: boolean;
 };
 

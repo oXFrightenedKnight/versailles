@@ -34,9 +34,13 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { initBiomePatterns, initTextures, renderMap } from "../../../canvas/render";
 import { GameData, trpc } from "../../_trpc/client";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { Menu } from "lucide-react";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import SettingDialog from "./settingDialog";
 
 export default function Home() {
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const gameId = params.id;
 
@@ -85,6 +89,7 @@ export default function Home() {
 
   // MENUS
   const [openMenu, setOpenMenu] = useState<OpenMenus>("none");
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
 
   // ui states
   const setPopup = useUIStore((s) => s.setPopup);
@@ -112,7 +117,7 @@ export default function Home() {
     useGameStore.getState().reset();
     useIntentStore.getState().reset();
   }
-  const mapData = trpc.initialLoad.useQuery({ gameId });
+  const mapData = trpc.initialLoad.useQuery({ gameId }, { retry: false });
   const nextTurn = trpc.nextTurn.useMutation({
     onSuccess(data) {
       cleanAndUpdateData(data);
@@ -120,11 +125,18 @@ export default function Home() {
   });
 
   useEffect(() => {
-    if (!mapData.data) return;
+    if (mapData.error?.message) {
+      router.push("/home");
+      return;
+    }
+
+    if (!mapData.data) {
+      return;
+    }
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     cleanAndUpdateData(mapData.data);
-  }, [mapData.data]);
+  }, [mapData.data, mapData.error?.message]);
 
   useEffect(() => {
     console.log(selectedHex);
@@ -660,6 +672,9 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Dialogs */}
+          <SettingDialog open={settingsOpen} setOpen={setSettingsOpen}></SettingDialog>
+
           <div className="absolute left-0 top-0 pointer-events-auto h-[10%] w-full">
             <div className="flex justify-start items-center h-full bg-gray-800">
               <div className="flex justify-between items-center w-full h-full p-1">
@@ -725,6 +740,9 @@ export default function Home() {
                         }
                       >
                         Build
+                      </Button>
+                      <Button onClick={() => setSettingsOpen(!settingsOpen)}>
+                        <Menu className="w-12 h-12 text-amber-200 rounded-xs shrink-0"></Menu>
                       </Button>
                     </div>
                   </div>

@@ -95,6 +95,9 @@ export function createContracts({
         resource: contract.resource,
         progress: 0,
         autoAdjust: contract.autoAdjust,
+        metadata: {
+          lastAmountSent: 0,
+        },
       },
     ];
   }
@@ -125,18 +128,22 @@ export function executeContracts({ buildings }: GameCtx) {
         if (!destName) continue;
 
         const amount = Math.min(startResourceStore.amount, contract.amount);
+        //console.log("Freaking stupid amount to send initially:", amount);
         const endResourceMax = BUILDINGS[destName].storageCap[contract.resource] ?? 0;
+        //console.log("maximum storage:", endResourceMax);
 
         // amount of resource that will be actually sent
         const outForDelivery = Math.min(amount, endResourceMax - endResourceStore.amount);
 
-        console.log("currently stored:", startResourceStore.amount);
+        //console.log("currently stored (below is amount for this):", startResourceStore.amount);
         startResourceStore.amount -= outForDelivery;
         endResourceStore.amount += outForDelivery;
 
-        console.log("amount sent", amount);
+        //console.log("amount sent", outForDelivery);
 
         contract.progress = 0;
+
+        contract.metadata.lastAmountSent = outForDelivery;
       }
     }
   }
@@ -197,7 +204,7 @@ export function recalculateContractsAmounts({ buildings, mapHexes }: GameCtx) {
 
       if (!amount) continue;
 
-      console.log(`amount for ${endHex}:`, amount);
+      console.log(`amount for ${endHex.id}:`, amount);
       contract.amount = amount;
     }
   }

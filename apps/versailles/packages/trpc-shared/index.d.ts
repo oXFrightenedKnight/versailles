@@ -115,6 +115,7 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
           updatedAt: string;
           turn: number;
           playerNationId: string | undefined;
+          nationsLeft: number;
         };
       };
       meta: object;
@@ -129,6 +130,7 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
           updatedAt: string;
           turn: number;
           playerNationId: string | undefined;
+          nationsLeft: number;
         };
         data: GameCtx;
       }[];

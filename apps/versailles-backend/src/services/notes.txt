@@ -3,10 +3,8 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
-8. Add small popup that will be shown when player loses (or wins) on client and allow
-to either start new game (gameId reset) or continue spectating
-9. Fix weird contract calculations (also no purpose allowing custom numbers to send if you
-only send as much as the game thinks it needs to, so fix that as well)
+8. Add settings to return home etc.
+9. Update UI to show how much amount was sent last time
 9. start working on ai
 9,5. remember that when ai attacks, it first declares war, and next turn it checks
 if its at war and moves its troops.
@@ -18,6 +16,7 @@ consuming
 14. deploy
 
 --- NON-URGENT TASKS ---
+1. Rethink how building contracts work
 1. Make sure nation flags and assets are pre-loaded so player doesn't wait
 for them to load (which can take up to a second)
 2. Implement modifier support for other variables
@@ -31,6 +30,7 @@ and calculate surrender percentage based off of that.
 8. Figure out what to do with roads and that +1 gold refund if you only got one
 point when cancelling building. Think about refactoring how roads work. maybe make 
 them a union of buildings. BuildNationRoads as well
+9. Make win/lose menu to and allow player to start new game or continue in spectator
 
 --- RULES ---
 1. Delete/Update first, Build/Add second.

@@ -75,7 +75,7 @@ export function calculateExportAmount({
     : 0;
   const totalNeededExport = neededForExport * length;
   if (neededForExport > 0) {
-    console.log("totalNeededForExport", totalNeededExport);
+    console.log(`totalNeededForExport of ${resource}`, totalNeededExport);
     return totalNeededExport;
   }
 }

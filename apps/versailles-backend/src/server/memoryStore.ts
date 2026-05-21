@@ -16,6 +16,7 @@ type GameMetadata = {
   updatedAt: string;
   turn: number;
   playerNationId: string | undefined;
+  nationsLeft: number;
 };
 
 export const memoryStore = {
@@ -60,6 +61,7 @@ export function createNewGame(userId: string) {
       updatedAt: date,
       turn: 0,
       playerNationId: getPlayerNation(ctx)?.id,
+      nationsLeft: ctx.nations.filter((n) => !n.isDefeated).length,
     },
     data: ctx,
   };
@@ -103,6 +105,7 @@ function updateMetadata(ctx: GameCtx, metadata: GameMetadata) {
     turn: ctx.turn,
     updatedAt: new Date().toISOString(),
     playerNationId: getPlayerNation(ctx)?.id,
+    nationsLeft: ctx.nations.filter((n) => !n.isDefeated).length,
   } as GameMetadata;
 }
 
