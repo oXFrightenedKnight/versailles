@@ -30,13 +30,12 @@ import { calculateOptimisticManpower } from "@/lib/UI/optimisticCalc/manpower";
 import { numberConverter } from "@/lib/utils";
 import { Hex } from "@repo/shared/data/hex_map";
 import { Nation } from "@repo/shared/data/nations";
+import { Menu } from "lucide-react";
 import Image from "next/image";
+import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { initBiomePatterns, initTextures, renderMap } from "../../../canvas/render";
 import { GameData, trpc } from "../../_trpc/client";
-import { useParams, useRouter } from "next/navigation";
-import { Menu } from "lucide-react";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import SettingDialog from "./settingDialog";
 
 export default function Home() {

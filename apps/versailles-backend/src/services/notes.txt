@@ -3,20 +3,18 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
-8. Add settings to return home etc.
-9. Update UI to show how much amount was sent last time
 9. start working on ai
 9,5. remember that when ai attacks, it first declares war, and next turn it checks
 if its at war and moves its troops.
 10. setup a database to store game state in ( or redis )
-11. Make logistics system more intuitive. Show how much the building is currently
-consuming
 12. bug fixes + ui polishment + refactor clicking handler on client, clean up architecture
 13. Music, sound effects, reusable components
 14. deploy
 
 --- NON-URGENT TASKS ---
-1. Rethink how building contracts work
+1. Rethink how building contracts work (let the building calculate consumption,
+and contract to adjust based on required resource and % of efficiency. Ex: 
+50 wheat needed, 0.3 efficiency, so you update contract to compensate required .7)
 1. Make sure nation flags and assets are pre-loaded so player doesn't wait
 for them to load (which can take up to a second)
 2. Implement modifier support for other variables

@@ -19,32 +19,41 @@ export default function Home() {
   function handleLoadGame() {
     router.push(`/game`);
   }
+  function handleExit() {
+    router.push("/");
+  }
   return (
-    <div className="w-screen h-screen border border-red-500 bg-blue-500">
-      <div className="w-full h-full flex flex-col justify-center items-center">
-        {/* Header */}
-        <div className="w-full h-[25%] flex justify-center items-center border">
-          <span className="text-6xl text-white">Versailles</span>
-        </div>
+    <div className="w-screen h-screen flex justify-end items-center">
+      <div className="w-[30%] h-full border">
+        <div className="w-full h-full flex flex-col justify-center items-center gap-20">
+          {/* Header */}
+          <div className="w-full h-[30%] flex justify-center items-center border">
+            <span className="text-6xl text-white">Versailles</span>
+          </div>
 
-        {/* Body */}
-        <div className="max-w-7xl flex-1 flex justify-center items-center border gap-2">
-          <Button
-            className="p-2"
-            onClick={() => {
-              handleNewGame();
-            }}
-          >
-            New Game
-          </Button>
-          <Button
-            className="p-2"
-            onClick={() => {
-              handleLoadGame();
-            }}
-          >
-            Load Game
-          </Button>
+          {/* Body */}
+          <div className="w-full flex-1 flex justify-end items-center border p-10">
+            <div className=" h-full flex flex-col justify-start items-end gap-2 border text-end">
+              <div
+                className="w-full text-4xl p-2 text-white hover:underline cursor-pointer"
+                onClick={handleNewGame}
+              >
+                New Game
+              </div>
+              <div
+                className="w-full text-4xl p-2 text-white hover:underline cursor-pointer"
+                onClick={handleLoadGame}
+              >
+                Load Game
+              </div>
+              <div
+                className="w-full text-4xl p-2 text-white hover:underline cursor-pointer"
+                onClick={handleExit}
+              >
+                Exit
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

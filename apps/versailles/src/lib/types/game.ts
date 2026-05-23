@@ -31,6 +31,7 @@ export type Contract = {
   resource: RESOURCES;
   progress: number;
   autoAdjust: boolean;
+  lastSentAmount: number;
 };
 export type BuildModeType = "road" | "none" | BUILDINGS_CATEGORY;
 export type ArmyTraining = {

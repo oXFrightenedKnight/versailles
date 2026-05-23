@@ -21,6 +21,7 @@ import { roundToNearestDecimal } from "../lib/helpers.js";
 import { GameCtx } from "../trpc/index.js";
 import { calculatePopulationChange, getHexById } from "./map.js";
 import { newBuildings, subtractGold } from "./genNations.js";
+import { BuildingsByCategoryAndLevel } from "./ai/types/analyze.js";
 
 export function buildingOutput(gameCtx: GameCtx) {
   const { buildings } = gameCtx;
@@ -546,4 +547,24 @@ function calculateResourceOutput(
 
     addProductionStat(building, resource, added);
   }
+}
+
+export function getNationBuildingCount(ctx: GameCtx, nationId: string) {
+  const nation = ctx.nations.find((n) => n.id === nationId);
+  if (!nation) return null;
+
+  const nationBuildHexes = ctx.mapHexes.filter((h) => h.buildingId && h.owner === nationId);
+
+  const buildingIdMap = new Map(ctx.buildings.map((b) => [b.id, b]));
+  const BuildCount: BuildingsByCategoryAndLevel = {};
+
+  for (const hex of nationBuildHexes) {
+    const building = buildingIdMap.get(hex.buildingId!);
+    if (!building) continue;
+
+    const categoryCount = (BuildCount[building.category] ??= {});
+    categoryCount[building.level] = (categoryCount[building.level] ?? 0) + 1;
+  }
+
+  return BuildCount;
 }

@@ -8,6 +8,7 @@ import {
   ChevronDown,
   CircleMinus,
   CirclePlus,
+  Send,
   Trash2,
   X,
 } from "lucide-react";
@@ -30,6 +31,7 @@ import { findBuildingNameByCategory, getBuilding } from "@repo/shared/helpers/bu
 import { MergedContractChanges } from "@repo/shared/data/contracts";
 import { calculateExportAmount } from "@repo/shared/helpers/contracts";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import Image from "next/image";
 
 export default function ContractComponent({
   contract,
@@ -104,6 +106,10 @@ export default function ContractComponent({
     ),
   }));
 
+  const buildingResourceAmount = startBuilding?.storage
+    ? startBuilding.storage.find((s) => s.type === contract.resource)?.amount
+    : undefined;
+
   // --- FUNCTIONS ---
   const updateMergedContract = useCallback(
     (newChanges: MergedContractChanges) => {
@@ -158,7 +164,7 @@ export default function ContractComponent({
   );
 
   return (
-    <div className="w-full h-[75px] bg-gray-800 rounded-xl flex justify-center items-center gap-1 p-1">
+    <div className="w-full h-[110px] bg-gray-800 rounded-xl flex justify-center items-center gap-0.5 p-1">
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="flex flex-col h-full bg-gray-900 items-center justify-between p-2 rounded-md">
@@ -179,7 +185,55 @@ export default function ContractComponent({
       </Tooltip>
 
       <div className="flex flex-col justify-center items-center h-full w-full gap-0.5 max-h-full">
-        <div className="flex justify-center items-center bg-gray-900 p-1 rounded-md w-full gap-1 h-[70%]">
+        <div className="flex justify-center items-center bg-gray-900 p-1 rounded-md w-full gap-1 flex-1">
+          <div className="w-full flex justify-between items-center">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                {buildingResourceAmount && (
+                  <div className="w-full flex justify-center items-center">
+                    <div className="flex justify-center items-center gap-1 bg-gray-900 rounded-md">
+                      <span className="text-xs bg-gray-800 p-0.5 rounded">
+                        {buildingResourceAmount}/{contract.amount}
+                      </span>
+                      <Image
+                        src={
+                          contract.resource
+                            ? getResourceImage(contract.resource)
+                            : "/icons/unknown.png"
+                        }
+                        width={64}
+                        height={64}
+                        className="w-3.5 h-3.5"
+                        alt="Resource Icon"
+                      ></Image>
+                    </div>
+                  </div>
+                )}
+              </TooltipTrigger>
+              <TooltipContent>
+                <span>{"Stored vs Needed"}</span>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="w-full flex justify-center items-center">
+                  <div className="w-full flex justify-center items-center gap-1 bg-gray-900 rounded-md">
+                    <Send className="w-3.5 h-3.5 text-amber-200"></Send>
+                    <span className="text-xs bg-gray-800 rounded p-0.5">
+                      {contract.lastSentAmount}
+                    </span>
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span>{"Amount sent during last batch"}</span>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+
+        <div className="flex justify-center items-center bg-gray-900 p-1 rounded-md w-full gap-1 h-[50%]">
           <div
             className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
             onClick={(e) => {

@@ -53,6 +53,7 @@ export function mergeServerContracts(contractObj: ServerContract) {
       progress: contract.progress,
       resource: contract.resource,
       autoAdjust: contract.autoAdjust,
+      lastSentAmount: contract.metadata.lastAmountSent,
       fromServer: true,
     })) as MergedContract[];
 }
@@ -69,6 +70,7 @@ export function getServerContractsFromBuildings(buildings: Building[]) {
 export function mergeClientContracts(contracts: Contract[]) {
   return contracts.map((c) => ({
     ...c,
+    lastSentAmount: 0,
     fromServer: false,
   })) as MergedContract[];
 }
@@ -103,6 +105,7 @@ export function getMergedContracts(
       autoAdjust: c.autoAdjust,
       resource: c.resource,
       progress: c.progress,
+      lastSentAmount: c.lastSentAmount,
       fromServer: true,
       ...updateIntent,
     };

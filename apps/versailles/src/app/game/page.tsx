@@ -6,7 +6,7 @@ import GameSaveBlock from "./GameSave";
 export default function Home() {
   const saves = trpc.loadPlayerGames.useQuery().data;
   return (
-    <div className="w-screen h-auto border border-red-500 bg-blue-500">
+    <div className="w-screen h-auto">
       <div className="w-full h-full flex flex-col">
         {/* Header */}
         <div className="w-full h-[25%] flex justify-center items-center border">

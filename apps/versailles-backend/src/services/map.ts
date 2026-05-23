@@ -10,6 +10,7 @@ import {
   findNeighbors,
   getBuilding,
   Hex,
+  HEX_DIRECTIONS,
   MAP_RADIUS,
   WOOD_MOD,
 } from "@repo/shared";
@@ -211,4 +212,30 @@ function randomLengthArray(array: Hex[], min: number, max: number) {
   const arr = [...array].sort(() => Math.random() - 0.5);
 
   return arr.slice(0, count);
+}
+
+export function getBorderHexes(ctx: GameCtx, nationId: string) {
+  const nation = ctx.nations.find((n) => nationId === n.id);
+  if (!nation) return null;
+
+  const hexAxialMap = new Map(ctx.mapHexes.map((h) => [`${h.q},${h.r}`, h]));
+  const hexIdMap = new Map(ctx.mapHexes.map((h) => [h.id, h]));
+
+  const nationHexes = ctx.mapHexes.filter((h) => h.owner === nation.id);
+
+  const neighborHexIds = new Set<number>();
+
+  for (const hex of nationHexes) {
+    for (const dir of HEX_DIRECTIONS) {
+      const q = hex.q + dir.dq;
+      const r = hex.r + dir.dr;
+
+      const neighborHex = hexAxialMap.get(`${q},${r}`);
+      if (!neighborHex) continue;
+      if (neighborHex.owner === nation.id) continue;
+
+      neighborHexIds.add(neighborHex.id);
+    }
+  }
+  return [...neighborHexIds].flatMap((id) => hexIdMap.get(id) ?? []);
 }
