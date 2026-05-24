@@ -5,7 +5,7 @@
 list of changes to make next:
 9. start working on ai
 9,5. remember that when ai attacks, it first declares war, and next turn it checks
-if its at war and moves its troops.
+if its at war and moves its troops
 10. setup a database to store game state in ( or redis )
 12. bug fixes + ui polishment + refactor clicking handler on client, clean up architecture
 13. Music, sound effects, reusable components

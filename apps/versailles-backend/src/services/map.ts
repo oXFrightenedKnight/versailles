@@ -239,3 +239,7 @@ export function getBorderHexes(ctx: GameCtx, nationId: string) {
   }
   return [...neighborHexIds].flatMap((id) => hexIdMap.get(id) ?? []);
 }
+
+export function getNationArmyFromHex(hex: Hex, nationId: string) {
+  return hex.army.find((obj) => obj.nationId === nationId)?.amount ?? 0;
+}

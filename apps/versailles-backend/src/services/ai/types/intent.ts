@@ -50,10 +50,20 @@ export type DeclareWarIntent = BaseAIIntent & {
 };
 export type AnswerMail = BaseAIIntent & {
   type: "answerMail";
-  id: string;
+  mailId: string;
   answer: boolean;
 };
 export type SignPeaceReqIntent = BaseAIIntent & {
   type: "signPeaceReqIntent";
   nationId: string;
 };
+
+export type AIIntent =
+  | BuildIntent
+  | ArmyTrain
+  | MoveArmy
+  | BuildRoad
+  | CreateContract
+  | DeclareWarIntent
+  | AnswerMail
+  | SignPeaceReqIntent;

@@ -551,7 +551,7 @@ function calculateResourceOutput(
 
 export function getNationBuildingCount(ctx: GameCtx, nationId: string) {
   const nation = ctx.nations.find((n) => n.id === nationId);
-  if (!nation) return null;
+  if (!nation) return {};
 
   const nationBuildHexes = ctx.mapHexes.filter((h) => h.buildingId && h.owner === nationId);
 
