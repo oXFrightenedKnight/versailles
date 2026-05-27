@@ -1,10 +1,7 @@
 import {
   BASE_CAPITAL_WHEAT,
   BASE_HEX_POPULATION,
-  baseGoldRate,
   baseTrainingProgress,
-  baseWheatRate,
-  baseWoodRate,
   Building,
   building_categoires,
   BUILDINGS,
@@ -14,6 +11,7 @@ import {
   getBuilding,
   Hex,
   Nation,
+  ResourceRates,
   RESOURCES,
   topLevelsByCategory,
 } from "@repo/shared";
@@ -59,7 +57,8 @@ function calculateFarm(building: Building, gameCtx: GameCtx) {
   calculatePopulationChange(hex, gameCtx, 1); // 1 means 100% consumption (since farm does not consume anything)
 
   // now calculate wheat output
-  calculateResourceOutput(building, "wheat", hex, baseWheatRate);
+  const wheatProduced = calculateResourceOutput(hex, "wheat");
+  addResourceToStorage(building, "wheat", wheatProduced);
 }
 
 function calculateCivilian(building: Building, gameCtx: GameCtx) {
@@ -80,12 +79,14 @@ function calculateCivilian(building: Building, gameCtx: GameCtx) {
 
   calculatePopulationChange(hex, gameCtx, avgConsumption);
 
-  // now calculate gold output
+  const goldProduced = calculateResourceOutput(hex, "gold", avgConsumption);
+
+  // add gold to nation
   const nation = nations.find((n) => n.id === hex.owner);
   if (!nation) return;
 
-  const gold = Math.round(hex.population * baseGoldRate * avgConsumption);
-  nation.gold += gold;
+  nation.gold += goldProduced;
+  addProductionStat(building, "gold", goldProduced);
 }
 
 function calculateBarracks(building: Building, gameCtx: GameCtx) {
@@ -172,7 +173,8 @@ function calculateWoodcamp(building: Building, gameCtx: GameCtx) {
 
   calculatePopulationChange(hex, gameCtx, avgConsumption);
 
-  calculateResourceOutput(building, "wood", hex, baseWoodRate, avgConsumption);
+  const woodProduced = calculateResourceOutput(hex, "wood", avgConsumption);
+  addResourceToStorage(building, "wood", woodProduced);
 }
 
 function calculateWatchtower(building: Building, gameCtx: GameCtx) {
@@ -391,7 +393,9 @@ export function calculateConsumption({
     if (!storageCap || storageCap === 0) continue;
 
     // consume resource
-    const left = Math.round(Math.max(currStoredResource.amount - estConsumption[resource], 0));
+    const left = Math.round(
+      Math.max(currStoredResource.amount - (estConsumption[resource] ?? 0), 0)
+    );
     const consumed = Math.max(currStoredResource.amount - left, 0); // just in case
 
     addConsumptionStat(building, resource, consumed);
@@ -521,14 +525,16 @@ function addProductionStat(building: Building, resource: RESOURCES, amount: numb
   }
 }
 
-function calculateResourceOutput(
-  building: Building,
-  resource: RESOURCES,
+export function calculateResourceOutput(
   hex: Hex,
-  baseResourceRate: number,
+  resource: RESOURCES,
   averageConsumption?: number
 ) {
-  if (hex.population === null) return;
+  if (hex.population === null) return 0;
+  const baseResourceRate = ResourceRates[resource];
+  return Math.round(hex.population * baseResourceRate * (averageConsumption ?? 1));
+}
+function addResourceToStorage(building: Building, resource: RESOURCES, amount: number) {
   const name = findBuildingNameByCategory({
     buildingCategory: building.category,
     level: building.level,
@@ -536,12 +542,12 @@ function calculateResourceOutput(
   if (!name) return;
 
   const max = BUILDINGS[name].storageCap[resource] ?? 0;
-  const resourceOutput = Math.round(hex.population * baseResourceRate * (averageConsumption ?? 1));
+
   if (building.storage) {
     const storage = building.storage.find((s) => s.type === resource);
     if (!storage) return;
 
-    const newAmount = Math.min(storage.amount + resourceOutput, max);
+    const newAmount = Math.min(storage.amount + amount, max);
     const added = newAmount - storage.amount;
     storage.amount = newAmount;
 

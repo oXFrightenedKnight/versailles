@@ -166,16 +166,11 @@ export function getPlayerNation(ctx: GameCtx) {
   return ctx.nations.find((n) => n.isPlayer);
 }
 
-export function getNationArmy(ctx: GameCtx, nationId: string, hexIds?: number[]) {
+export function getNationArmy(ctx: GameCtx, nationId: string) {
   const nation = ctx.nations.find((n) => n.id === nationId);
   if (!nation) return null;
 
-  const hexIdMap = new Map(ctx.mapHexes.map((h) => [h.id, h]));
-  const nationHexes = hexIds
-    ? hexIds.flatMap((id) => hexIdMap.get(id) ?? [])
-    : ctx.mapHexes.filter((h) => h.owner === nationId);
-
-  return nationHexes.reduce((acc, h) => {
+  return ctx.mapHexes.reduce((acc, h) => {
     const army = h.army.find((a) => a.nationId === nationId)?.amount ?? 0;
     return acc + army;
   }, 0);

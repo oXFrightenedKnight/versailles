@@ -57,6 +57,7 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     buildCost: 50,
     storageCap: {},
     consumptionMod: { wheat: 1 },
+    producing: ["gold"],
   },
   village: {
     category: "CIVILIAN",
@@ -66,6 +67,7 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     buildCost: 400,
     storageCap: { wheat: 80 },
     consumptionMod: { wheat: 1.2 },
+    producing: ["gold"],
   },
   settlement: {
     category: "CIVILIAN",
@@ -75,6 +77,7 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     buildCost: 3000,
     storageCap: { wheat: 180, wood: 260 },
     consumptionMod: { wheat: 1.5, wood: 1.3 },
+    producing: ["gold"],
   },
   city: {
     category: "CIVILIAN",
@@ -84,6 +87,7 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     buildCost: 15000,
     storageCap: { wheat: 700, wood: 1200 },
     consumptionMod: { wheat: 1.9, wood: 1.5 },
+    producing: ["gold"],
   },
   imperial_city: {
     category: "CIVILIAN",
@@ -93,6 +97,7 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     buildCost: 100000,
     storageCap: { wheat: 6500, wood: 14000 },
     consumptionMod: { wheat: 2.4, wood: 1.9 },
+    producing: ["gold"],
   },
 
   barrack: {
@@ -139,11 +144,19 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
   },
 } as const;
 
+export const MAIN_CATEGORY_PRODUCTION: Partial<Record<BUILDINGS_CATEGORY, RESOURCES>> = {
+  WOODCAMP: "wood",
+  FARM: "wheat",
+  CIVILIAN: "gold",
+};
+
 export const baseConsumeRate = 0.025; // base consumption rate
 // assuming that 1 person consumes 0.025 of resource per 1 modifier
-export const baseGoldRate = 0.0125; // 0.0125 gold per person
-export const baseWheatRate = 0.32; // 50 wheat bags for every 80 farmers
-export const baseWoodRate = 0.07; // 0.07 wood per woodcamp
+export const ResourceRates: Record<RESOURCES, number> = {
+  gold: 0.0125, // 0.0125 gold per person
+  wheat: 0.32, // 50 wheat bags for every 80 farmers
+  wood: 0.07, // 0.07 wood per woodcamp
+};
 export const baseTrainingProgress = 0.1; // full training in 10 turns 0.1x10
 
 const LEVEL_CATEGORY = Object.entries(BUILDINGS).map(([key, value]) => ({

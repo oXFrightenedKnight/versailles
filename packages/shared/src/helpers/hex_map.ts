@@ -21,14 +21,21 @@ export function getHexByAxial(q: number, r: number, mapHexes: Hex[]) {
   return mapHexes.find((hex) => hex.q === q && hex.r === r);
 }
 
-export function findNeighbors(hex: Hex, hexes: Hex[]) {
+export function findNeighbors(hex: Hex, hexes: Hex[], axialMap?: Map<string, Hex>) {
   const neighbors: Hex[] = [];
 
   for (const dir of HEX_DIRECTIONS) {
     const q = hex.q + dir.dq;
     const r = hex.r + dir.dr;
 
-    const neighbor = hexes.find((n) => n.q === q && n.r === r);
+    let neighbor: Hex | undefined = undefined;
+
+    if (axialMap) {
+      neighbor = axialMap.get(`${q},${r}`);
+    } else {
+      neighbor = hexes.find((n) => n.q === q && n.r === r);
+    }
+
     if (neighbor) neighbors.push(neighbor);
   }
 

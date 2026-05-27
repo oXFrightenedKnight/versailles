@@ -2,6 +2,7 @@ import { baseConsumeRate, Building, BUILDINGS } from "#data/buildings";
 import { SupplyContract } from "#data/contracts";
 import { Hex, RESOURCES } from "#data/hex_map";
 import { findBuildingNameByCategory } from "./buildings";
+import { typedEntries } from "./tsHelpers";
 
 // estimates consumption of every resource this building can accept
 export function estimateConsumption({
@@ -21,15 +22,17 @@ export function estimateConsumption({
   if (!name) return;
 
   const consumedResources = BUILDINGS[name].consumptionMod;
+  if (!consumedResources) return;
 
-  const estConsumption = new Map<string, number>();
-  for (const [resource, modifier] of Object.entries(consumedResources)) {
+  const estConsumption = new Map<RESOURCES, number>();
+  for (const [resource, modifier] of typedEntries(consumedResources)) {
+    if (modifier === undefined) continue;
     const consumptionAmount = Math.round(hex.population * modifier * baseConsumeRate);
 
     estConsumption.set(resource, consumptionAmount);
   }
 
-  return Object.fromEntries(estConsumption);
+  return Object.fromEntries(estConsumption) as Partial<Record<RESOURCES, number>>;
 }
 
 // calculates how much a building should export based on road length, amount, etc.

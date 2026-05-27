@@ -8,13 +8,17 @@ export function startDijkstrasAlgo({
   endHex,
   mapHexes,
   roads,
+  useSimpleGraph,
 }: {
   startingHex: Hex;
   endHex: Hex;
   mapHexes: Hex[];
   roads: Road[];
+  useSimpleGraph?: boolean;
 }) {
-  const weightedGraph = Object.fromEntries(createWeightedGraph({ mapHexes, roads, startingHex }));
+  const weightedGraph = useSimpleGraph
+    ? Object.fromEntries(createSimpleHexGraph(mapHexes, startingHex))
+    : Object.fromEntries(createWeightedGraph({ mapHexes, roads, startingHex }));
   const totalNodes = Object.keys(weightedGraph).length;
 
   const endingPointKey = `${endHex.q},${endHex.r}`;
@@ -209,4 +213,17 @@ function createWeightedGraph({
     }
   }
   return weightedGraph;
+}
+
+export function createSimpleHexGraph(mapHexes: Hex[], startingHex: Hex) {
+  const graph = new Map<string, graphObj>();
+
+  for (const hex of mapHexes) {
+    const prev = graph.get(`${startingHex.q},${startingHex.r}`) ?? [];
+    const CubeStart = axialToCube(startingHex.q, startingHex.r);
+    const CubeEnd = axialToCube(hex.q, hex.r);
+    const dist = cubeDistance(CubeStart, CubeEnd);
+    graph.set(`${startingHex.q},${startingHex.r}`, [...prev, { hexId: hex.id, distance: dist }]);
+  }
+  return graph;
 }

@@ -3,6 +3,7 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
+8. Consider adding a multiplier to delta when calculating army movement
 9. start working on ai
 9,5. remember that when ai attacks, it first declares war, and next turn it checks
 if its at war and moves its troops

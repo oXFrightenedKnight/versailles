@@ -1,4 +1,4 @@
-import { Biome, BUILDINGS_CATEGORY, Hex } from "@repo/shared";
+import { BUILDINGS_CATEGORY, Hex } from "@repo/shared";
 
 export type WorldAnalysis = {
   // world data
