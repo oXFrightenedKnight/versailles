@@ -5,7 +5,9 @@ import {
   cubeDistance,
   estimateConsumption,
   findBuildingNameByCategory,
+  findNeighbors,
   Hex,
+  MAP_RADIUS,
   Nation,
   RESOURCES,
 } from "@repo/shared";
@@ -13,7 +15,9 @@ import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { GameCtx } from "../../../trpc";
 import { calculateResourceOutput } from "../../buildings";
 import { WorldAnalysis } from "../types/analyze";
-import { SAFETY_CF } from "../types/intent";
+import { MoveArmyTable, SAFETY_CF } from "../types/intent";
+import { getHexAxialMap, getHexIdMap, getNationArmyFromHex } from "../../map";
+import { getNationArmy } from "../../genNations";
 
 export function getHexesWithRoads(ctx: GameCtx, hexAxialMap: Map<string, Hex>) {
   const hexesWithRoads = new Set<number>();
@@ -199,4 +203,124 @@ export function calculateFrontlineDistances(
   }
 
   return frontlineDistance;
+}
+
+export function scoreDistanceDelta(
+  currentDistance: number,
+  nextDistance: number,
+  mult: number,
+  customPower?: number
+) {
+  const delta = currentDistance - nextDistance;
+
+  if (delta <= 0) return -5;
+
+  const power = customPower ? customPower : 2;
+  return Math.pow(delta, power) * mult;
+}
+
+function calcBorderDist(ctx: GameCtx, analysis: WorldAnalysis, hex: Hex) {
+  const hexIdMap = getHexIdMap(ctx);
+  const allBordering = analysis.worldData.currentBorders.map((b) => hexIdMap.get(b.hexId));
+
+  const borderDist: { hexId: number; dist: number }[] = [];
+  for (const borderHex of allBordering) {
+    if (!borderHex) continue;
+
+    const startDist = axialToCube(hex.q, hex.r);
+    const endDist = axialToCube(borderHex.q, borderHex.r);
+    const dist = cubeDistance(startDist, endDist);
+    borderDist.push({ hexId: borderHex.id, dist });
+  }
+
+  return borderDist;
+}
+
+// score based on general ai army movement rules
+// decides score for border hexes to which ai would aim to
+// move its army towards. Hexes get different score based
+// on their state
+export function scoreBorderHexes(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation, hex: Hex) {
+  const borderDist = calcBorderDist(ctx, analysis, hex);
+
+  const hexIdMap = getHexIdMap(ctx);
+  const axialMap = getHexAxialMap(ctx);
+
+  const fightingHexesMap = new Map(analysis.worldData.fightingHexes.map((fh) => [fh.hexId, fh]));
+
+  // map over nation hexes that border other hexes and calculate their score
+  const borderScore: { hexId: number; score: number; dist: number }[] = [];
+  for (const borderObj of borderDist) {
+    const hex = hexIdMap.get(borderObj.hexId);
+    if (!hex) continue;
+    let score = 0;
+
+    // 1. Half-score based on enemy army ratio
+    const neighborHexes = findNeighbors(hex, ctx.mapHexes, axialMap);
+    const enemyNeighborHexes = neighborHexes.filter((h) => h.owner && h.owner !== nation.id);
+    const totalArmyAtHexBorder = enemyNeighborHexes.reduce((acc, h) => {
+      return getNationArmyFromHex(h, h.owner!) + acc;
+    }, 0);
+    const totalNationArmyInHex = getNationArmyFromHex(hex, nation.id);
+    // buff if ratio is below 1:1 on border
+    score += getEnemyPressureScore(totalNationArmyInHex, totalArmyAtHexBorder);
+
+    // 2. Score if is fighting hex and losing
+    const fightingHex = fightingHexesMap.get(hex.id);
+    if (fightingHex) {
+      score +=
+        getEnemyPressureScore(fightingHex.ownArmy, fightingHex.enemyArmy) *
+        (1 + fightingHex.hexPriority);
+    }
+
+    // MOVE this part out
+    // 3. Score based on the distance from original hex to border hex
+    const base = 20;
+    const falloff = getDistanceFalloff(borderObj.dist, MAP_RADIUS * 1.3);
+    score += base * (1 + falloff);
+
+    borderScore.push({ hexId: hex.id, score, dist: borderObj.dist });
+  }
+  return borderScore;
+}
+function getEnemyPressureScore(
+  nationArmy: number,
+  enemyArmy: number,
+  mult?: number,
+  soft?: number
+) {
+  const ratio = enemyArmy > 0 ? enemyArmy / Math.max(nationArmy, 1) : 1.1; // force ai to move to border
+  const pressure = Math.max(0, ratio - 1);
+
+  const multiplier = mult ? mult : 60;
+  const softness = soft ? soft : 1.5;
+
+  return multiplier * (pressure / (pressure + softness));
+}
+export function calcHexDist(hex1: Hex, hex2: Hex) {
+  const dist1 = axialToCube(hex1.q, hex1.r);
+  const dist2 = axialToCube(hex2.q, hex2.r);
+  return cubeDistance(dist1, dist2);
+}
+
+export function getBestScoreBorderHex(
+  borderHexScore: {
+    hexId: number;
+    score: number;
+    dist: number;
+  }[],
+  hexIdMap: Map<number, Hex>,
+  mode: "MOVING" | "AT_BORDER"
+) {
+  const appliedDistanceBorderScore = borderHexScore.map((obj) => {
+    const base = 40;
+    const maxRelevantDistance = mode === "MOVING" ? MAP_RADIUS * 1.3 : MAP_RADIUS / 1.5;
+    const falloff = getDistanceFalloff(obj.dist, maxRelevantDistance);
+    const addScore = (1 + falloff) * base;
+    return { ...obj, score: obj.score + addScore };
+  });
+  const bestHexScore = appliedDistanceBorderScore.sort(
+    ({ score: score1 }, { score: score2 }) => score2 - score1
+  )[0];
+  return hexIdMap.get(bestHexScore.hexId);
 }

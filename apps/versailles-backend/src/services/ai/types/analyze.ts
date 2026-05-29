@@ -11,6 +11,7 @@ export type WorldData = {
   nationsAtPeace: NationsAtPeace[]; // all nations at peace
   neighborStrength: StrengthRatio[];
   currentFrontlines: Frontline[];
+  currentBorders: { hexId: number; neighborIds: (string | null)[] }[];
   borderingHexes: Hex[];
   fightingHexes: FightingHex[];
 };
@@ -34,7 +35,7 @@ export type Frontline = {
   hexIds: number[]; // hexes of nation that border enemy
 };
 export type FightingHex = {
-  id: number;
+  hexId: number;
   ownArmy: number;
   enemyArmy: number;
   hexPriority: number; // 0 - not important, 1 - very important

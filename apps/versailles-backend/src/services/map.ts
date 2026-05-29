@@ -214,6 +214,7 @@ function randomLengthArray(array: Hex[], min: number, max: number) {
   return arr.slice(0, count);
 }
 
+// returns enemy hexes that border with nation
 export function getBorderHexes(ctx: GameCtx, nationId: string) {
   const nation = ctx.nations.find((n) => nationId === n.id);
   if (!nation) return null;
@@ -238,6 +239,37 @@ export function getBorderHexes(ctx: GameCtx, nationId: string) {
     }
   }
   return [...neighborHexIds].flatMap((id) => hexIdMap.get(id) ?? []);
+}
+
+// returns hexes of nation that border with other nation
+export function getNationBorderHexes(ctx: GameCtx, nationId: string) {
+  const nation = ctx.nations.find((n) => nationId === n.id);
+  if (!nation) return [];
+
+  const hexAxialMap = new Map(ctx.mapHexes.map((h) => [`${h.q},${h.r}`, h]));
+
+  const nationHexes = ctx.mapHexes.filter((h) => h.owner === nation.id);
+
+  // <hexId, who owns bordering hex>
+  const nationBorderHexIds = new Map<number, (string | null)[]>();
+
+  for (const hex of nationHexes) {
+    for (const dir of HEX_DIRECTIONS) {
+      const q = hex.q + dir.dq;
+      const r = hex.r + dir.dr;
+
+      const neighborHex = hexAxialMap.get(`${q},${r}`);
+      if (!neighborHex) continue;
+      if (neighborHex.owner === nation.id) continue;
+
+      const prevSet = nationBorderHexIds.get(hex.id) ?? [];
+      nationBorderHexIds.set(hex.id, [...prevSet, neighborHex.owner]);
+    }
+  }
+  return [...nationBorderHexIds].flatMap(([id, ownerArray]) => ({
+    hexId: id,
+    neighborIds: ownerArray,
+  }));
 }
 
 export function getNationArmyFromHex(hex: Hex, nationId: string) {

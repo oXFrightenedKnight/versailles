@@ -116,3 +116,8 @@ export const BASE_AI_TRAIN_AMOUNT = 100;
 
 // coefficient by which ai predicts could be possible real nation army based on what it sees on the border
 export const SAFETY_CF = 1.5;
+
+// ARMY MOVE
+export const MoveArmyTable = {
+  closer_to_frontline: 10,
+};

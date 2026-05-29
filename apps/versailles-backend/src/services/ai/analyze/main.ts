@@ -10,7 +10,7 @@ import {
 import { GameCtx } from "../../../trpc";
 import { getNationBuildingCount } from "../../buildings";
 import { getNationArmy } from "../../genNations";
-import { getBorderHexes, getNationArmyFromHex } from "../../map";
+import { getBorderHexes, getNationArmyFromHex, getNationBorderHexes } from "../../map";
 import {
   ARMY_WEIGHT,
   BUILDING_PRIORITY,
@@ -41,7 +41,8 @@ export function AIWorldAnalysis({
     nationsAtPeace: getNationsAtPeace(ctx),
     neighborStrength: getNeighborStrength(ctx, nation),
     currentFrontlines: getFrontlines(ctx, nation),
-    borderingHexes: getBorderingHexesData(ctx, nation),
+    currentBorders: getNationBorderHexes(ctx, nation.id), // hexes of this nation that border others
+    borderingHexes: getBorderingHexesData(ctx, nation), // hexes that this nation borders
     fightingHexes: getFightingHexes(ctx, nation),
   };
   const selfData: SelfData = {
@@ -176,7 +177,7 @@ function getFightingHexes(ctx: GameCtx, nation: Nation) {
         return nationsAtWar.has(obj.nationId) ? acc + obj.amount : acc;
       }, 0);
       const hexPriority = getHexPriority(ctx, hex);
-      fightingHexes.push({ id: hex.id, ownArmy, enemyArmy, hexPriority });
+      fightingHexes.push({ hexId: hex.id, ownArmy, enemyArmy, hexPriority });
     }
   }
 
@@ -186,7 +187,7 @@ function getHexPriority(ctx: GameCtx, hex: Hex) {
   let hexImportance = 0;
 
   function updateImportance(newValue: number) {
-    hexImportance = Math.round(Math.max(newValue, 0));
+    hexImportance = Math.round(Math.max(hexImportance + newValue, 0));
   }
 
   if (hex.buildingId) {
@@ -194,12 +195,12 @@ function getHexPriority(ctx: GameCtx, hex: Hex) {
     if (building && building.level) {
       const topCategoryLevel =
         topLevelsByCategory.find((t) => t.category === building.category)?.level ?? 1;
-      const score =
-        (building.level / Math.max(1, topCategoryLevel)) *
-        BUILDING_PRIORITY[building.category] *
-        100;
+      const score = Math.min(
+        1,
+        (building.level / Math.max(1, topCategoryLevel)) * BUILDING_PRIORITY[building.category]
+      );
 
-      updateImportance(hexImportance + score);
+      updateImportance(score);
     }
   }
 

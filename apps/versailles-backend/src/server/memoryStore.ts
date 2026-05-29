@@ -48,6 +48,7 @@ export function createNewGame(userId: string) {
     buildings: [],
     modifiers: [],
     mails: [],
+    aiMemory: {},
   };
   populateWorld(ctx);
 
