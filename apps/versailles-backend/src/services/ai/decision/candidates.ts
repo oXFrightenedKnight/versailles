@@ -3,12 +3,10 @@ import {
   BUILDINGS_CATEGORY,
   findBuildingDataByCategory,
   findNeighbors,
-  HEX_DIRECTIONS,
-  MAP_RADIUS,
   Nation,
 } from "@repo/shared";
 import { GameCtx } from "../../../trpc";
-import { getHexAxialMap, getHexIdMap } from "../../map";
+import { getHexAxialMap } from "../../map";
 import { WorldAnalysis } from "../types/analyze";
 import {
   AIScoreReasons,
@@ -18,24 +16,17 @@ import {
   BUILDING_RATIO,
   BuildingScoreTable,
   BuildIntent,
-  MoveArmy,
   WAR_DEBUFF_CATEGORIES,
 } from "../types/intent";
 import {
-  calcHexDist,
   findClosestHexFromHexes,
-  getBestScoreBorderHex,
   getBuildingsByIdMap,
-  getDistanceFalloff,
   getDistanceScore,
   getHexesBuildings,
   getHexesWithRoads,
   getResourcePrediction,
   getResourceShortage,
-  scoreBorderHexes,
-  scoreDistanceDelta,
 } from "./helpers";
-import { createNationMemo } from "../memory/main";
 
 {
   /*export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation): AIIntent[] {
@@ -219,108 +210,6 @@ function generateArmyTrainCandidates(
     // Only put rules that allow intents to compete here.
   }
   return armyTrainIntents;
-}
-
-// Make sure ai remembers armies that are already going to a specific front later, to avoid
-// sending all new army to one border/frontline
-function generateArmyMoveCandidates(
-  ctx: GameCtx,
-  analysis: WorldAnalysis,
-  nation: Nation
-): MoveArmy[] {
-  // Split army amount based on how many high-score intents this hex receives
-  const armyMoveIntents: MoveArmy[] = [];
-  const addMoveIntent = (fromHexId: number, toHexId: number, score: number) => {
-    armyMoveIntents.push({ id: crypto.randomUUID(), fromHexId, toHexId, type: "moveArmy", score });
-  };
-
-  const nationMemo = ctx.aiMemory[nation.id] ?? createNationMemo(ctx, nation);
-
-  const hexIdMap = getHexIdMap(ctx);
-  const hexAxialMap = getHexAxialMap(ctx);
-  const armyMoveMemoryMap = new Map(nationMemo.armyMovement.map((a) => [a.currHexId, a]));
-  const borderHexMap = new Map(analysis.worldData.currentBorders.map((h) => [h.hexId, h]));
-
-  for (const obj of analysis.selfData.armyInHexes) {
-    const hex = hexIdMap.get(obj.hexId);
-    if (!hex) continue;
-
-    // Get currently moving-to hex from memory and compare to new bestHex
-    let destinationId: number | null = null;
-    let currentDist = 0;
-    const currentMoveTo = armyMoveMemoryMap.get(hex.id);
-
-    const isBorderHex = borderHexMap.has(hex.id);
-    const mode = isBorderHex ? "AT_BORDER" : "MOVING";
-
-    const borderHexScore = scoreBorderHexes(ctx, analysis, nation, hex);
-    const bestHex = getBestScoreBorderHex(borderHexScore, hexIdMap, mode);
-    if (!bestHex) continue;
-
-    // compare best hex to hex
-    if (currentMoveTo) {
-      destinationId = currentMoveTo.endHexId;
-
-      const currentEndHexScore = borderHexScore[currentMoveTo.endHexId].score;
-      const newBestHexScore = borderHexScore[bestHex.id].score;
-
-      if (currentEndHexScore * 1.2 < newBestHexScore) {
-        destinationId = bestHex.id;
-        // replace move to destination with new best hex
-      }
-    } else {
-      destinationId = bestHex.id;
-      // create new move-to from best hex
-    }
-    const destinationHex = hexIdMap.get(destinationId);
-    if (!destinationHex) continue;
-    currentDist = calcHexDist(hex, destinationHex);
-
-    // consider 7 possible directions (including staying at same hex)
-    const dir7 = [...HEX_DIRECTIONS, { dq: 0, dr: 0 }];
-
-    for (const dir of dir7) {
-      const neighbor = hexAxialMap.get(`${hex.q + dir.dq},${hex.r + dir.dr}`);
-      if (!neighbor) continue;
-
-      // calculate score for each possible direction for army in this hex
-      let score = 0;
-      const reasons: AIScoreReasons[] = [];
-      const add = (key: string, value: number, reason?: string) => {
-        score += value;
-        reasons.push({ key, value, description: reason });
-      };
-
-      // split into two parts: moving / already at the border
-      // moving armies should aim towards getting as close as possible to
-      // highest score hex at border
-      // armies at border should have separate logic, but same hex score calc
-      // except they value dist more, and have enemy border hex calc to attack
-      // realize move-to logic
-
-      switch (mode) {
-        case "MOVING":
-          // --- Moving Towards Border ---
-
-          // 1. Score based on proximity to destination hex
-          const newDist = calcHexDist(neighbor, destinationHex);
-          // FILTER OUT NON-PASSABLE HEXES
-          const deltaScore = scoreDistanceDelta(currentDist, newDist, 20);
-          add("best_border_hex", deltaScore);
-          break;
-
-        case "AT_BORDER":
-          // --- IF already at border logic (justify staying or moving to more important hex) ---
-          // 2. If already at best hex - add
-
-          // --- ATTACK ENEMY HEX LOGIC ---
-          // 3. If hex is empty - add score
-          break;
-      }
-    }
-  }
-
-  return armyMoveIntents;
 }
 
 {

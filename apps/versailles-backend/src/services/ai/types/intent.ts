@@ -35,6 +35,7 @@ export type MoveArmy = BaseAIIntent & {
   type: "moveArmy";
   fromHexId: number;
   toHexId: number;
+  amount: number;
 };
 export type BuildRoad = BaseAIIntent & {
   type: "buildRoad";
@@ -70,6 +71,14 @@ export type AIIntent =
   | DeclareWarIntent
   | AnswerMail
   | SignPeaceReqIntent;
+
+export type AIPlanningState = {
+  availableArmyByHex: Map<number, number>;
+  incomingArmyByHex: Map<number, number>;
+  outgoingArmyByHex: Map<number, number>;
+  reservedArmyByHex: Map<number, number>;
+  plannedMoves: MoveArmy[];
+};
 
 export const BIOME_SCORE_MULT: Record<Biome, number> = {
   plains: 1,
@@ -117,7 +126,16 @@ export const BASE_AI_TRAIN_AMOUNT = 100;
 // coefficient by which ai predicts could be possible real nation army based on what it sees on the border
 export const SAFETY_CF = 1.5;
 
-// ARMY MOVE
-export const MoveArmyTable = {
-  closer_to_frontline: 10,
+export type BorderNeed = {
+  hexId: number;
+  currentArmy: number;
+  enemyArmyNearby: number;
+  desiredArmy: number;
+  deficit: number;
+  priority: number;
+};
+export type ArmyGroup = {
+  hexId: number;
+  amount: number;
+  availableAmount: number;
 };

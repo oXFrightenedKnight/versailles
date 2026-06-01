@@ -49,12 +49,17 @@ export type SelfData = {
 
   buildingCounts: BuildingsByCategoryAndLevel;
   constructing: Constructing[];
+  borderBFS: BFSResult[];
 };
 export type Constructing = {
   hexId: number;
   category: BUILDINGS_CATEGORY;
   levels: number;
   progress: number;
+};
+export type BFSResult = {
+  startHexId: number;
+  cameFrom: Map<number, number | null>;
 };
 
 export type BuildingsByCategoryAndLevel = Partial<

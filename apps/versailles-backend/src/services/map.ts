@@ -1,4 +1,5 @@
 import {
+  axialToCube,
   Biome,
   BIOME_GROWTH,
   BIOME_MOD,
@@ -6,12 +7,14 @@ import {
   Building,
   BUILDINGS,
   CreatedHexes,
+  cubeDistance,
   findBuildingNameByCategory,
   findNeighbors,
   getBuilding,
   Hex,
   HEX_DIRECTIONS,
   MAP_RADIUS,
+  Nation,
   WOOD_MOD,
 } from "@repo/shared";
 import { memoryStore } from "../server/memoryStore.js";
@@ -281,4 +284,34 @@ export function getHexAxialMap(ctx: GameCtx) {
 }
 export function getHexIdMap(ctx: GameCtx) {
   return new Map(ctx.mapHexes.map((h) => [h.id, h]));
+}
+
+// returns hexIds in which nation army is allowed to walk into
+export function getAllowedArmyWalk(ctx: GameCtx, nation: Nation) {
+  const hexes = new Set<number>();
+
+  for (const hex of ctx.mapHexes) {
+    // 1. Nation hexes
+    if (hex.owner === nation.id) {
+      hexes.add(hex.id);
+    }
+
+    // 2. Empty hexes
+    if (!hex.owner) {
+      hexes.add(hex.id);
+    }
+
+    // 3. Enemy hexes
+    if (hex.owner && nation.atWar.includes(hex.owner)) {
+      hexes.add(hex.id);
+    }
+  }
+
+  return [...hexes];
+}
+
+export function calcHexDist(hex1: Hex, hex2: Hex) {
+  const dist1 = axialToCube(hex1.q, hex1.r);
+  const dist2 = axialToCube(hex2.q, hex2.r);
+  return cubeDistance(dist1, dist2);
 }

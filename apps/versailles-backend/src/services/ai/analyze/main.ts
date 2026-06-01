@@ -10,9 +10,17 @@ import {
 import { GameCtx } from "../../../trpc";
 import { getNationBuildingCount } from "../../buildings";
 import { getNationArmy } from "../../genNations";
-import { getBorderHexes, getNationArmyFromHex, getNationBorderHexes } from "../../map";
+import {
+  getAllowedArmyWalk,
+  getBorderHexes,
+  getHexAxialMap,
+  getHexIdMap,
+  getNationArmyFromHex,
+  getNationBorderHexes,
+} from "../../map";
 import {
   ARMY_WEIGHT,
+  BFSResult,
   BUILDING_PRIORITY,
   BUILDING_WEIGHT,
   BuildingsByCategoryAndLevel,
@@ -25,6 +33,7 @@ import {
   WorldAnalysis,
   WorldData,
 } from "../types/analyze";
+import { bfs } from "../algos/bfs";
 
 export function AIWorldAnalysis({
   ctx,
@@ -52,6 +61,7 @@ export function AIWorldAnalysis({
     armyInHexes: getNationArmyInHexes(ctx, nation),
     buildingCounts: getNationBuildingCount(ctx, nation.id),
     constructing: getConstructing(ctx, nation),
+    borderBFS: getBorderBFS(ctx, nation),
   };
 
   const worldAnalysis: WorldAnalysis = { worldData, selfData };
@@ -183,7 +193,7 @@ function getFightingHexes(ctx: GameCtx, nation: Nation) {
 
   return fightingHexes;
 }
-function getHexPriority(ctx: GameCtx, hex: Hex) {
+export function getHexPriority(ctx: GameCtx, hex: Hex) {
   let hexImportance = 0;
 
   function updateImportance(newValue: number) {
@@ -241,4 +251,29 @@ function getConstructing(ctx: GameCtx, nation: Nation): Constructing[] {
       levels: h.build_queue!.levels,
       progress: h.build_queue!.progress,
     }));
+}
+function getBorderBFS(ctx: GameCtx, nation: Nation): BFSResult[] {
+  const borderHexes = getBorderHexes(ctx, nation.id);
+  if (!borderHexes) return [];
+
+  const hexIdMap = getHexIdMap(ctx);
+  const axialMap = getHexAxialMap(ctx);
+
+  // allowed hexes to walk in
+  const allowedWalk = getAllowedArmyWalk(ctx, nation);
+
+  const borderBFS: BFSResult[] = [];
+  for (const borderHex of borderHexes) {
+    const cameFrom = bfs({
+      ctx,
+      startHexId: borderHex.id,
+      hexIdMap,
+      axialMap,
+      allowedHexIds: allowedWalk,
+    });
+
+    borderBFS.push({ startHexId: borderHex.id, cameFrom });
+  }
+
+  return borderBFS;
 }
