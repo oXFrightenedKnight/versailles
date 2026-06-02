@@ -1,10 +1,11 @@
 // This file holds all logic for ai tracking and planning on what army it
 // already sent or will send, etc.
 
-import { GameCtx } from "../../../../trpc";
+import { GameCtx } from "#trpc/index.js";
 import { getNationArmyFromHex } from "../../../map";
-import { AIPlanningState, MoveArmy } from "../../types/intent";
-import { AIMemory } from "../../types/memory";
+import { AIMemory } from "../../memory/types";
+import { MoveArmy } from "../../types/intent";
+import { AIPlanningState } from "./types";
 
 export function createPlanningState(ctx: GameCtx, nationId: string) {
   const availableArmyByHex = new Map<number, number>();

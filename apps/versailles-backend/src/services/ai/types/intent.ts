@@ -72,14 +72,6 @@ export type AIIntent =
   | AnswerMail
   | SignPeaceReqIntent;
 
-export type AIPlanningState = {
-  availableArmyByHex: Map<number, number>;
-  incomingArmyByHex: Map<number, number>;
-  outgoingArmyByHex: Map<number, number>;
-  reservedArmyByHex: Map<number, number>;
-  plannedMoves: MoveArmy[];
-};
-
 export const BIOME_SCORE_MULT: Record<Biome, number> = {
   plains: 1,
   forest: 0.8,

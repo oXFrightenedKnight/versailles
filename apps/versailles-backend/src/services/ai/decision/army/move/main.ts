@@ -1,13 +1,13 @@
-import { findNeighbors, Nation } from "@repo/shared";
-import { GameCtx } from "../../../../trpc";
-import { getHexAxialMap, getHexIdMap } from "../../../map";
-import { createNationMemo } from "../../memory/main";
-import { WorldAnalysis } from "../../types/analyze";
-import { MoveArmy } from "../../types/intent";
+import { getHexAxialMap, getHexIdMap } from "#services/map.js";
+import { GameCtx } from "#trpc/index.js";
+import { Nation } from "@repo/shared";
+import { createNationMemo } from "../../../memory/main";
+import { WorldAnalysis } from "../../../types/analyze";
+import { MoveArmy } from "../../../types/intent";
+import { createPlanningState, planArmyMove, populateIncomingPlanning } from "../../planning/main";
 import { analyzeNationBorder, getArmySupply } from "./analyze";
 import { calcEmptyHexAttack, calcEnemyAttack } from "./attackOptions";
 import { calcAIDefenseMove } from "./defenseOptions";
-import { createPlanningState, planArmyMove, populateIncomingPlanning } from "./planning";
 
 export function generateArmyMoveCandidates(
   ctx: GameCtx,

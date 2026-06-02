@@ -19,7 +19,7 @@ import { runIntentForEachNation } from "../services/intents/executeIntents.js";
 import { peaceCountdown } from "../services/army.js";
 import { mailsExpire } from "../services/mails.js";
 import { runAIDiplomacy, runNationDiplomacy } from "../services/intents/diplomacyIntents.js";
-import { AIMemory, MemoryCtx } from "../services/ai/types/memory.js";
+import { MemoryCtx } from "../services/ai/memory/types.js";
 
 export type GameCtx = {
   mapHexes: Hex[];

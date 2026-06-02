@@ -1,9 +1,9 @@
 import { findNeighbors, Hex, Nation } from "@repo/shared";
-import { GameCtx } from "../../../../trpc";
-import { getNationArmy } from "../../../genNations";
-import { WorldAnalysis } from "../../types/analyze";
-import { AIPlanningState } from "../../types/intent";
+import { GameCtx } from "#trpc/index.js";
+import { getNationArmy } from "../../../../genNations";
+import { WorldAnalysis } from "../../../types/analyze";
 import { getEnemyBorderScore } from "./analyze";
+import { AIPlanningState } from "../../planning/types";
 
 export function calcEnemyAttack(
   ctx: GameCtx,

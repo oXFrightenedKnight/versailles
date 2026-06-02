@@ -2,15 +2,15 @@
 // AI decides which hexes have highest priority to get army first from supply.
 
 import { findNeighbors, Hex, Nation } from "@repo/shared";
-import { GameCtx } from "../../../../trpc";
-import { WorldAnalysis } from "../../types/analyze";
-import { ArmyGroup, BorderNeed } from "../../types/intent";
+import { WorldAnalysis } from "../../../types/analyze";
+import { ArmyGroup, BorderNeed } from "../../../types/intent";
+import { GameCtx } from "#trpc/index.js";
 import {
   getHexAxialMap,
   getHexIdMap,
   getNationArmyFromHex,
   getNationBorderHexes,
-} from "../../../map";
+} from "#services/map.js";
 
 // calculate border needs
 export function analyzeNationBorder(

@@ -162,56 +162,6 @@ function generateBuildCandidates(
   return BuildIntents;
 }
 
-function generateArmyTrainCandidates(
-  ctx: GameCtx,
-  analysis: WorldAnalysis,
-  nation: Nation
-): ArmyTrain[] {
-  const armyTrainIntents: ArmyTrain[] = [];
-  const addTrainIntent = (barrackId: string, score: number) => {
-    armyTrainIntents.push({ id: crypto.randomUUID(), score, type: "armyTrain", barrackId });
-  };
-
-  const buildingIdHexMap = new Map(ctx.mapHexes.map((h) => [h.buildingId, h]));
-
-  for (const building of ctx.buildings) {
-    if (building.category !== "BARRACK") continue;
-    const hex = buildingIdHexMap.get(building.id);
-    if (!hex) continue;
-
-    let score = 0;
-    const reasons: AIScoreReasons[] = [];
-    const add = (key: string, value: number, reason?: string) => {
-      score += value;
-      reasons.push({ key, value, description: reason });
-    };
-
-    // 1. Buff score depending on how close barrack is to frontline
-    const frontlineHexIds = analysis.worldData.currentFrontlines.flatMap((f) =>
-      f.hexIds.flatMap((id) => id)
-    );
-    const frontlineDistance = findClosestHexFromHexes(ctx, frontlineHexIds, hex);
-    if (frontlineDistance) {
-      const distScore = getDistanceScore({
-        max: ctx.mapHexes.length,
-        softness: 10,
-        distance: frontlineDistance.dist,
-      });
-      add("distance_to_frontline", distScore, "Score based on distance to frontlines");
-    }
-
-    // 2. Higher level buff
-    add("higher_level", ArmyTrainTable["higher_level"] * building.level);
-
-    addTrainIntent(building.id, score);
-
-    // GENERAL SUGGESTIONS - most logic in dynamic threshold, amount based on enemies/strehgth ratios, put logic in budget calculation.
-    // Budget is what you use to control how much and on what ai will spend its resources. So allocate more budget to training when at war.
-    // Only put rules that allow intents to compete here.
-  }
-  return armyTrainIntents;
-}
-
 {
   /*function generateBuildRoadCandidates(
   ctx: GameCtx,

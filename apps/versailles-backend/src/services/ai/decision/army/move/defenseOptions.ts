@@ -1,7 +1,8 @@
-import { reconstructPath } from "../../algos/bfs";
-import { BFSResult } from "../../types/analyze";
-import { AIPlanningState, ArmyGroup, BorderNeed } from "../../types/intent";
-import { getOptimisticArmyAtHex } from "./planning";
+import { reconstructPath } from "../../../algos/bfs";
+import { BFSResult } from "../../../types/analyze";
+import { ArmyGroup, BorderNeed } from "../../../types/intent";
+import { getOptimisticArmyAtHex } from "../../planning/main";
+import { AIPlanningState } from "../../planning/types";
 
 export function calcAIDefenseMove(
   borderHex: BorderNeed,
