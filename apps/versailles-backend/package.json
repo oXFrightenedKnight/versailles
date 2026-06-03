@@ -27,6 +27,7 @@
   },
   "imports": {
     "#trpc/*": "./src/trpc/*",
-    "#services/*": "./src/services/*"
+    "#services/*": "./src/services/*",
+    "#lib/*": "./src/lib/*"
   }
 }

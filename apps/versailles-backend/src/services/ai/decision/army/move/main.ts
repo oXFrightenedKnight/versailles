@@ -4,18 +4,23 @@ import { Nation } from "@repo/shared";
 import { createNationMemo } from "../../../memory/main";
 import { WorldAnalysis } from "../../../types/analyze";
 import { MoveArmy } from "../../../types/intent";
-import { createPlanningState, planArmyMove, populateIncomingPlanning } from "../../planning/main";
+import {
+  createPlanningState,
+  planArmyMove,
+  populateIncomingPlanning,
+  updateMoveGoal,
+} from "../../planning/main";
 import { analyzeNationBorder, getArmySupply } from "./analyze";
 import { calcEmptyHexAttack, calcEnemyAttack } from "./attackOptions";
 import { calcAIDefenseMove } from "./defenseOptions";
+import { AIPlanningState } from "../../planning/types";
 
 export function generateArmyMoveCandidates(
   ctx: GameCtx,
   analysis: WorldAnalysis,
-  nation: Nation
+  nation: Nation,
+  planning: AIPlanningState
 ): MoveArmy[] {
-  const planning = createPlanningState(ctx, nation.id);
-
   const armyMoveIntents: MoveArmy[] = [];
   const addMoveIntent = (fromHexId: number, toHexId: number, score: number, amount: number) => {
     const intent = planArmyMove(planning, fromHexId, toHexId, amount, score);
@@ -34,6 +39,13 @@ export function generateArmyMoveCandidates(
   const axialMap = getHexAxialMap(ctx);
   const nationIdMap = new Map(ctx.nations.map((n) => [n.id, n]));
   const borderBFSMap = new Map(analysis.selfData.borderBFS.map((b) => [b.startHexId, b]));
+
+  // move armies that were already following a path
+  for (const moveGoal of planning.plannedMoves) {
+    const move = updateMoveGoal(moveGoal.id, planning);
+    if (!move) continue;
+    addMoveIntent(move.fromHexId, move.toHexId, 10, moveGoal.amount);
+  }
 
   // for each border hex, find closest army supply point and create army move intent
   // start from highest priority hexes

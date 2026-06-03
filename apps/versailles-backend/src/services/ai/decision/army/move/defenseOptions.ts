@@ -1,7 +1,7 @@
 import { reconstructPath } from "../../../algos/bfs";
 import { BFSResult } from "../../../types/analyze";
 import { ArmyGroup, BorderNeed } from "../../../types/intent";
-import { getOptimisticArmyAtHex } from "../../planning/main";
+import { createMoveGoal, getOptimisticArmyAtHex } from "../../planning/main";
 import { AIPlanningState } from "../../planning/types";
 
 export function calcAIDefenseMove(
@@ -32,6 +32,11 @@ export function calcAIDefenseMove(
     const remainingDeficit = Math.max(0, borderHex.desiredArmy - optimisticBorderArmy);
 
     const send = Math.min(available, remainingDeficit);
+
+    // create move goal to remember if path is longer than one tile
+    if (supply.path.length > 1) {
+      createMoveGoal(planning, supply.path.splice(0, 1), send);
+    }
 
     defenseIntent.push({ startId: supply.hexId, endId: supply.path[1], amount: send });
   }

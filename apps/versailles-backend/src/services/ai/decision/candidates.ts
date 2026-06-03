@@ -10,37 +10,34 @@ import { getHexAxialMap } from "../../map";
 import { WorldAnalysis } from "../types/analyze";
 import {
   AIScoreReasons,
-  ArmyTrain,
-  ArmyTrainTable,
   BIOME_SCORE_MULT,
   BUILDING_RATIO,
   BuildingScoreTable,
   BuildIntent,
   WAR_DEBUFF_CATEGORIES,
 } from "../types/intent";
+import { generateArmyMoveCandidates } from "./army/move/main";
+import { generateArmyTrainCandidates } from "./army/train/main";
 import {
-  findClosestHexFromHexes,
   getBuildingsByIdMap,
-  getDistanceScore,
   getHexesBuildings,
   getHexesWithRoads,
   getResourcePrediction,
   getResourceShortage,
 } from "./helpers";
+import { createPlanningState } from "./planning/main";
 
-{
-  /*export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation): AIIntent[] {
-  return [
-    ...generateBuildCandidates(ctx, analysis, nation),
-    ...generateArmyTrainCandidates(ctx, analysis, nation),
-    ...generateArmyMoveCandidates(ctx, analysis, nation),
-    ...generateBuildRoadCandidates(ctx, analysis, nation),
-    ...generateCreateContractCandidates(ctx, analysis, nation),
-    ...generateDeclareWarCandidates(ctx, analysis, nation),
-    ...generateAnswerMailCandidates(ctx, analysis, nation),
-    ...generateSignPeaceReqCandidates(ctx, analysis, nation),
-  ];
-}*/
+export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation) {
+  const planning = createPlanningState(ctx, nation.id);
+
+  // 1. Run building (w Score)
+  const buildIntents = generateBuildCandidates(ctx, analysis, nation);
+
+  // 2. Run army movement
+  const moveIntents = generateArmyMoveCandidates(ctx, analysis, nation, planning);
+
+  // 3. Run army training
+  const trainIntents = generateArmyTrainCandidates(ctx, analysis, planning, nation);
 }
 
 function generateBuildCandidates(
