@@ -18,9 +18,9 @@ export function generateArmyTrainCandidates(
     armyTrainIntents.push({ id: crypto.randomUUID(), score, type: "armyTrain", barrackId });
   };
 
-  // WHAT IF BORDER STATE CHANGES AFTER PLAYER MAKES MOVES?
+  // WHAT IF BORDER STATE CHANGES AFTER AI MAKES MOVES?
   // MAYBE USE PLANNING WHEN CALCULATING BORDER ANALYSIS
-  const borderAnalysis = analyzeNationBorder(ctx, analysis, nation);
+  const borderAnalysis = analyzeNationBorder(ctx, analysis, nation, planning);
 
   // remember to include manpower as a limit
   const deficitTrainIntents = calcArmyTrain(ctx, analysis, planning, borderAnalysis);

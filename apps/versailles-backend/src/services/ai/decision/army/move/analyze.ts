@@ -11,12 +11,15 @@ import {
   getNationArmyFromHex,
   getNationBorderHexes,
 } from "#services/map.js";
+import { AIPlanningState } from "../../planning/types";
+import { getOptimisticArmyAtHex } from "../../planning/main";
 
 // calculate border needs
 export function analyzeNationBorder(
   ctx: GameCtx,
   analysis: WorldAnalysis,
-  nation: Nation
+  nation: Nation,
+  planning: AIPlanningState
 ): BorderNeed[] {
   const borderHexesNeed: BorderNeed[] = [];
 
@@ -27,7 +30,7 @@ export function analyzeNationBorder(
     const hex = hexIdMap.get(hexObj.hexId);
     if (!hex) continue;
 
-    const currentArmyAtHex = getNationArmyFromHex(hex, nation.id);
+    const currentArmyAtHex = getOptimisticArmyAtHex(planning, hex.id);
 
     const neighbors = findNeighbors(hex, ctx.mapHexes, axialMap);
     const allNerabyHexes = [...neighbors, hex];
@@ -48,7 +51,7 @@ export function analyzeNationBorder(
     const avgEnemyArmyPerHex = totalBorderingArmy / Math.max(1, enemyNeighbors.length);
 
     const armyNeed = Math.max(0, avgEnemyArmyPerHex - currentArmyAtHex) * 1.1;
-    const priority = scoreBorderHex(ctx, analysis, nation, hex);
+    const priority = scoreBorderHex(ctx, analysis, planning, nation, hex);
 
     borderHexesNeed.push({
       hexId: hex.id,
@@ -64,7 +67,13 @@ export function analyzeNationBorder(
 }
 
 // uses to sort hexes by priority when deciding what hex needs army most
-export function scoreBorderHex(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation, hex: Hex) {
+export function scoreBorderHex(
+  ctx: GameCtx,
+  analysis: WorldAnalysis,
+  planning: AIPlanningState,
+  nation: Nation,
+  hex: Hex
+) {
   const axialMap = getHexAxialMap(ctx);
 
   const fightingHexesMap = new Map(analysis.worldData.fightingHexes.map((fh) => [fh.hexId, fh]));
@@ -78,7 +87,7 @@ export function scoreBorderHex(ctx: GameCtx, analysis: WorldAnalysis, nation: Na
   const totalArmyAtHexBorder = enemyNeighborHexes.reduce((acc, h) => {
     return getNationArmyFromHex(h, h.owner!) + acc;
   }, 0);
-  const totalNationArmyInHex = getNationArmyFromHex(hex, nation.id);
+  const totalNationArmyInHex = getOptimisticArmyAtHex(planning, hex.id);
   // buff if ratio is below 1:1 on border
   score += getEnemyPressureScore(totalNationArmyInHex, totalArmyAtHexBorder);
 
@@ -93,7 +102,12 @@ export function scoreBorderHex(ctx: GameCtx, analysis: WorldAnalysis, nation: Na
 }
 
 // calculate score for each hex and decide which to strike
-export function getEnemyBorderScore(ctx: GameCtx, nation: Nation, enemy: Nation) {
+export function getEnemyBorderScore(
+  ctx: GameCtx,
+  planning: AIPlanningState,
+  nation: Nation,
+  enemy: Nation
+) {
   // get hexes of enemy nation at border
   const border = getNationBorderHexes(ctx, enemy.id);
   const hexIdsAtBorder = border
@@ -121,7 +135,7 @@ export function getEnemyBorderScore(ctx: GameCtx, nation: Nation, enemy: Nation)
     let totalEnemyArmy = 0;
     for (const neighbor of neighbors) {
       if (neighbor.owner === nation.id) {
-        totalNationArmy += getNationArmyFromHex(neighbor, nation.id);
+        totalNationArmy += getOptimisticArmyAtHex(planning, neighbor.id);
       } else if (neighbor.owner === enemy.id) {
         totalEnemyArmy = getNationArmyFromHex(neighbor, enemy.id);
       }

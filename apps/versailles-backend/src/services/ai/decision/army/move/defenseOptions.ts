@@ -1,7 +1,8 @@
 import { reconstructPath } from "../../../algos/bfs";
 import { BFSResult } from "../../../types/analyze";
 import { ArmyGroup, BorderNeed } from "../../../types/intent";
-import { createMoveGoal, getOptimisticArmyAtHex } from "../../planning/main";
+import { getLongOptimisticArmy } from "../../planning/main";
+import { createMoveGoal } from "../../planning/moveGoals";
 import { AIPlanningState } from "../../planning/types";
 
 export function calcAIDefenseMove(
@@ -27,7 +28,7 @@ export function calcAIDefenseMove(
   for (const supply of orderedSupply) {
     const available = planning.availableArmyByHex.get(supply.hexId) ?? 0;
 
-    const optimisticBorderArmy = getOptimisticArmyAtHex(planning, borderHex.hexId);
+    const optimisticBorderArmy = getLongOptimisticArmy(planning, borderHex.hexId);
 
     const remainingDeficit = Math.max(0, borderHex.desiredArmy - optimisticBorderArmy);
 

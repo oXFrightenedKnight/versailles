@@ -1,6 +1,8 @@
 // This file holds all logic for ai tracking and planning on what army it
 // already sent or will send, etc.
 
+import { reconstructPath } from "#services/ai/algos/bfs.js";
+import { BFSResult } from "#services/ai/types/analyze.js";
 import { GameCtx } from "#trpc/index.js";
 import { getNationArmyFromHex } from "../../../map";
 import { AIMemory } from "../../memory/types";
@@ -62,45 +64,23 @@ export function planArmyMove(
   return intent;
 }
 
-// UPDATE TO INCLUDE INCOMING
+// This function gets immediate army in hex that will be available next turn
+// DOES NOT INCLUDE MOVE GOALS
 export function getOptimisticArmyAtHex(planning: AIPlanningState, hexId: number) {
   const available = planning.availableArmyByHex.get(hexId) ?? 0;
   const incoming = planning.incomingArmyByHex.get(hexId) ?? 0;
 
-  // hexId as final destination
+  return available + incoming;
+}
+// This function returns total armies going in that hex that will be there some turn
+// INCLUDES MOVE GOALS
+export function getLongOptimisticArmy(planning: AIPlanningState, hexId: number) {
+  const shortTermOpt = getOptimisticArmyAtHex(planning, hexId);
+
   const incomingGoals = planning.plannedMoves.filter((m) => m.path.at(-1) === hexId);
   const totalIncoming = incomingGoals.reduce((acc, m) => acc + m.amount, 0);
 
-  // DO NOT count outgoing as it is already counted inside calcDefense function in the beggining
+  // Do NOT count outgoing because it is already counted when you send goal army
 
-  return available + incoming + totalIncoming;
-}
-
-export function populateIncomingPlanning(planning: AIPlanningState, nationMemo: AIMemory) {
-  for (const armyMove of nationMemo.armyMovement) {
-    planning.incomingArmyByHex.set(armyMove.endHexId, armyMove.amount);
-  }
-}
-
-// Use move goals for ai to memorize paths over couple turns
-export function createMoveGoal(planning: AIPlanningState, path: number[], amount: number) {
-  planning.plannedMoves.push({ id: crypto.randomUUID(), path, amount });
-}
-// update move goal by one
-export function updateMoveGoal(id: string, planning: AIPlanningState) {
-  const goal = planning.plannedMoves.find((m) => m.id === id);
-  if (!goal) return null;
-
-  // if no more army left for this goal - delete
-  const currentArmy = planning.availableArmyByHex.get(goal.path[0]) ?? 0;
-  if (currentArmy <= 0 || goal.path.length <= 1) {
-    const idx = planning.plannedMoves.indexOf(goal);
-    planning.plannedMoves.splice(idx, 1);
-    return 0;
-  }
-
-  const fromHexId = goal.path.shift();
-  if (!fromHexId) return null;
-  const toHexId = goal.path[0];
-  return { fromHexId, toHexId };
+  return shortTermOpt + totalIncoming;
 }

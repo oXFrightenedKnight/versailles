@@ -2,8 +2,10 @@ import {
   building_categoires,
   BUILDINGS_CATEGORY,
   findBuildingDataByCategory,
+  findBuildingNameByCategory,
   findNeighbors,
   Nation,
+  topLevelsByCategory,
 } from "@repo/shared";
 import { GameCtx } from "../../../trpc";
 import { getHexAxialMap } from "../../map";
@@ -26,9 +28,12 @@ import {
   getResourceShortage,
 } from "./helpers";
 import { createPlanningState } from "./planning/main";
+import { getAIBudget } from "../budget/main";
 
 export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation) {
   const planning = createPlanningState(ctx, nation.id);
+
+  const budget = getAIBudget();
 
   // 1. Run building (w Score)
   const buildIntents = generateBuildCandidates(ctx, analysis, nation);
@@ -38,6 +43,8 @@ export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nat
 
   // 3. Run army training
   const trainIntents = generateArmyTrainCandidates(ctx, analysis, planning, nation);
+
+  // Filter intents through budget. As long as there is enough budget, execute intent
 }
 
 function generateBuildCandidates(
@@ -79,6 +86,10 @@ function generateBuildCandidates(
     const neighborCategories = getHexesBuildings(neighbors, buildingsById).map((b) => b.category);
 
     const existing = hex.buildingId ? buildingsById.get(hex.buildingId) : undefined;
+
+    const maxLevel = topLevelsByCategory.find((c) => c.category === existing?.category) ?? 0;
+    const isMax = existing && existing.level === maxLevel;
+    if (isMax) continue;
 
     for (const category of building_categoires) {
       let score = 0;

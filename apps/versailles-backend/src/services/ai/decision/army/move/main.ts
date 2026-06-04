@@ -4,16 +4,12 @@ import { Nation } from "@repo/shared";
 import { createNationMemo } from "../../../memory/main";
 import { WorldAnalysis } from "../../../types/analyze";
 import { MoveArmy } from "../../../types/intent";
-import {
-  createPlanningState,
-  planArmyMove,
-  populateIncomingPlanning,
-  updateMoveGoal,
-} from "../../planning/main";
+import { createPlanningState, planArmyMove } from "../../planning/main";
 import { analyzeNationBorder, getArmySupply } from "./analyze";
 import { calcEmptyHexAttack, calcEnemyAttack } from "./attackOptions";
 import { calcAIDefenseMove } from "./defenseOptions";
 import { AIPlanningState } from "../../planning/types";
+import { checkMoveGoalDeficit, executeMoveGoal, populateArmyGoals } from "../../planning/moveGoals";
 
 export function generateArmyMoveCandidates(
   ctx: GameCtx,
@@ -28,21 +24,27 @@ export function generateArmyMoveCandidates(
     armyMoveIntents.push(intent);
   };
 
-  const borderAnalysis = analyzeNationBorder(ctx, analysis, nation);
+  const borderAnalysis = analyzeNationBorder(ctx, analysis, nation, planning);
   const sortedBorders = borderAnalysis.sort((a, b) => b.priority - a.priority);
   const armySupplyPoints = getArmySupply(ctx, analysis, borderAnalysis);
-
-  const nationMemo = ctx.aiMemory[nation.id] ?? createNationMemo(ctx, nation);
-  populateIncomingPlanning(planning, nationMemo);
 
   const hexIdMap = getHexIdMap(ctx);
   const axialMap = getHexAxialMap(ctx);
   const nationIdMap = new Map(ctx.nations.map((n) => [n.id, n]));
   const borderBFSMap = new Map(analysis.selfData.borderBFS.map((b) => [b.startHexId, b]));
 
+  const nationMemo = ctx.aiMemory[nation.id] ?? createNationMemo(ctx, nation);
+  populateArmyGoals(planning, nationMemo, borderBFSMap);
+
+  // for each border hex, update all move goals from memo based on its current deficit
+  for (const border of borderAnalysis) {
+    checkMoveGoalDeficit(planning, border.hexId, border.deficit);
+  }
+
+  // make sure this runs first
   // move armies that were already following a path
   for (const moveGoal of planning.plannedMoves) {
-    const move = updateMoveGoal(moveGoal.id, planning);
+    const move = executeMoveGoal(moveGoal.id, planning);
     if (!move) continue;
     addMoveIntent(move.fromHexId, move.toHexId, 10, moveGoal.amount);
   }

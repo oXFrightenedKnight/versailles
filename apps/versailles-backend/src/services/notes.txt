@@ -3,7 +3,8 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
-8. Consider adding a multiplier to delta when calculating army movement
+Also don't forget to make function to translate planned moves into nation memo at the end of ai turn
+Think how you are going to validate ai memo after simulation runs (maybe return intent results like rejected/accepted)
 9. start working on ai
 9,5. remember that when ai attacks, it first declares war, and next turn it checks
 if its at war and moves its troops
@@ -30,6 +31,7 @@ and calculate surrender percentage based off of that.
 point when cancelling building. Think about refactoring how roads work. maybe make 
 them a union of buildings. BuildNationRoads as well
 9. Make win/lose menu to and allow player to start new game or continue in spectator
+10. Change how paths work to make sure moving goals armies in hex are always reserved no matter the order they run
 
 --- RULES ---
 1. Delete/Update first, Build/Add second.

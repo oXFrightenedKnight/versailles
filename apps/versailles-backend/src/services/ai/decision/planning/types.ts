@@ -1,9 +1,8 @@
 export type AIPlanningState = {
   availableArmyByHex: Map<number, number>;
-  incomingArmyByHex: Map<number, number>;
-  outgoingArmyByHex: Map<number, number>;
-  reservedArmyByHex: Map<number, number>;
-  plannedMoves: ArmyMoveGoal[];
+  incomingArmyByHex: Map<number, number>; // army that will be in this hex NEXT TURN
+  outgoingArmyByHex: Map<number, number>; // army that will leave next turn
+  plannedMoves: ArmyMoveGoal[]; // army that may take several turns to get there
 };
 
 // planned moves over long distances

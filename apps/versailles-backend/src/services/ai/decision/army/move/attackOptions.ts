@@ -24,7 +24,7 @@ export function calcEnemyAttack(
   if (!neighbors.includes(enemyId)) return; // skip if doesn't border
 
   let budgetArmy = aiAttackBudget(ctx, analysis, nation, enemy);
-  const scoredEnemyHexes = getEnemyBorderScore(ctx, nation, enemy);
+  const scoredEnemyHexes = getEnemyBorderScore(ctx, planning, nation, enemy);
   const sorted = [...scoredEnemyHexes.entries()].sort((a, b) => b[1].score - a[1].score);
 
   while (budgetArmy > 0) {
