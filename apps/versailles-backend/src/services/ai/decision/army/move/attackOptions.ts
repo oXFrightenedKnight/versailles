@@ -2,8 +2,8 @@ import { findNeighbors, Hex, Nation } from "@repo/shared";
 import { GameCtx } from "#trpc/index.js";
 import { getNationArmy } from "../../../../genNations";
 import { WorldAnalysis } from "../../../types/analyze";
-import { getEnemyBorderScore } from "./analyze";
 import { AIPlanningState } from "../../planning/types";
+import { getEnemyBorderScore } from "../militaryAnalysis/main";
 
 export function calcEnemyAttack(
   ctx: GameCtx,
@@ -20,7 +20,7 @@ export function calcEnemyAttack(
   const enemy = nationIdMap.get(enemyId);
   if (!enemy) return;
 
-  const neighbors = analysis.worldData.neighborStrength.map((n) => n.nationId);
+  const neighbors = analysis.worldData.neighbors;
   if (!neighbors.includes(enemyId)) return; // skip if doesn't border
 
   let budgetArmy = aiAttackBudget(ctx, analysis, nation, enemy);

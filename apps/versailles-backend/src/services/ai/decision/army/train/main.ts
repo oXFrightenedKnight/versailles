@@ -1,11 +1,12 @@
 import { GameCtx } from "#trpc/index.js";
 import { BUILDINGS, findBuildingNameByCategory, Hex, Nation } from "@repo/shared";
 import { WorldAnalysis } from "../../../types/analyze";
-import { ArmyTrain, BorderNeed } from "../../../types/intent";
+import { ArmyTrain } from "../../../types/intent";
 import { getBuildingsByIdMap } from "../../helpers";
 import { getOptimisticArmyAtHex } from "../../planning/main";
 import { AIPlanningState } from "../../planning/types";
-import { analyzeNationBorder } from "../move/analyze";
+import { analyzeNationBorder } from "../militaryAnalysis/main";
+import { BorderNeed } from "../militaryAnalysis/types";
 
 export function generateArmyTrainCandidates(
   ctx: GameCtx,

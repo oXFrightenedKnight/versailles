@@ -5,11 +5,11 @@ import { createNationMemo } from "../../../memory/main";
 import { WorldAnalysis } from "../../../types/analyze";
 import { MoveArmy } from "../../../types/intent";
 import { createPlanningState, planArmyMove } from "../../planning/main";
-import { analyzeNationBorder, getArmySupply } from "./analyze";
 import { calcEmptyHexAttack, calcEnemyAttack } from "./attackOptions";
 import { calcAIDefenseMove } from "./defenseOptions";
 import { AIPlanningState } from "../../planning/types";
 import { checkMoveGoalDeficit, executeMoveGoal, populateArmyGoals } from "../../planning/moveGoals";
+import { analyzeNationBorder, getArmySupply } from "../militaryAnalysis/main";
 
 export function generateArmyMoveCandidates(
   ctx: GameCtx,

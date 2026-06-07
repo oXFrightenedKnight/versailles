@@ -9,7 +9,9 @@ export type WorldAnalysis = {
 export type WorldData = {
   nationsAtWar: NationsWar[]; // ALL nations at war (select own nation later)
   nationsAtPeace: NationsAtPeace[]; // all nations at peace
-  neighborStrength: StrengthRatio[];
+  neighbors: string[];
+  neighborArmies: NeighborArmy[];
+  neighborEconomyRatio: EconomyRatio[];
   currentFrontlines: Frontline[];
   currentBorders: { hexId: number; neighborIds: (string | null)[] }[];
   borderingHexes: Hex[];
@@ -25,9 +27,13 @@ type NationsAtPeace = {
   turnsLeft: number;
 };
 // strength ratio is average combined stats of neighbor to nation
-export type StrengthRatio = {
+export type NeighborArmy = {
   nationId: string;
-  ratio: number; // enemy army compared to your army
+  army: number;
+};
+export type EconomyRatio = {
+  nationId: string;
+  ratio: number;
 };
 // frontline of this nation with enemy
 export type Frontline = {

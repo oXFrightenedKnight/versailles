@@ -1,6 +1,6 @@
-import { Building, Hex, Nation } from "@repo/shared";
+import { Building, Hex, Nation, TRAIN_COST } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
-import { assignNewCapital, getNationById, setDefeated } from "./genNations.js";
+import { assignNewCapital, getNationById, setDefeated, subtractGold } from "./genNations.js";
 import { addMail, createWarMail } from "./mails.js";
 import { getHexById } from "./map.js";
 import { addModifier } from "./modifiers.js";
@@ -182,6 +182,11 @@ export function queueArmyTraining({
 
     // check ownership
     if (hex.owner !== nationId) continue;
+
+    // subtract gold
+    const cost = newArmy.amount * TRAIN_COST;
+    const success = subtractGold(gameCtx, nationId, cost);
+    if (!success) continue;
 
     if (barrack.trainingTroops) {
       barrack.trainingTroops.push({

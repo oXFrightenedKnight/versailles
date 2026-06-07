@@ -3,7 +3,6 @@
 
 import { findNeighbors, Hex, Nation } from "@repo/shared";
 import { WorldAnalysis } from "../../../types/analyze";
-import { ArmyGroup, BorderNeed } from "../../../types/intent";
 import { GameCtx } from "#trpc/index.js";
 import {
   getHexAxialMap,
@@ -13,6 +12,7 @@ import {
 } from "#services/map.js";
 import { AIPlanningState } from "../../planning/types";
 import { getOptimisticArmyAtHex } from "../../planning/main";
+import { ArmyGroup, BorderNeed } from "./types";
 
 // calculate border needs
 export function analyzeNationBorder(

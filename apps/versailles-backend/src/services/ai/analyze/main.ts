@@ -25,11 +25,12 @@ import {
   BUILDING_WEIGHT,
   BuildingsByCategoryAndLevel,
   Constructing,
+  EconomyRatio,
   FightingHex,
   Frontline,
   GOLD_WEIGHT,
+  NeighborArmy,
   SelfData,
-  StrengthRatio,
   WorldAnalysis,
   WorldData,
 } from "../types/analyze";
@@ -48,7 +49,9 @@ export function AIWorldAnalysis({
   const worldData: WorldData = {
     nationsAtWar: getNationsAtWar(ctx),
     nationsAtPeace: getNationsAtPeace(ctx),
-    neighborStrength: getNeighborStrength(ctx, nation),
+    neighborArmies: getNeighborArmies(ctx, nation),
+    neighbors: getNationNeighbors(ctx, nation),
+    neighborEconomyRatio: getNeighborEconomyRatio(ctx, nation),
     currentFrontlines: getFrontlines(ctx, nation),
     currentBorders: getNationBorderHexes(ctx, nation.id), // hexes of this nation that border others
     borderingHexes: getBorderingHexesData(ctx, nation), // hexes that this nation borders
@@ -106,23 +109,21 @@ function getNationsAtPeace(ctx: GameCtx) {
 
   return [...atPeace.values()];
 }
-function getNeighborStrength(ctx: GameCtx, nation: Nation) {
+function getNeighborEconomyRatio(ctx: GameCtx, nation: Nation) {
   const nationIdMap = new Map(ctx.nations.map((n) => [n.id, n]));
 
-  const borderHexes = getBorderHexes(ctx, nation.id) ?? [];
-  const neighbors = new Set<string>(borderHexes.filter((h) => !h.owner).map((h) => h.owner!));
+  const neighbors = getNationNeighbors(ctx, nation);
 
-  const neighborPower: StrengthRatio[] = [];
+  const neighborPower: EconomyRatio[] = [];
 
   function calcPower(nationId: string) {
     const nation = nationIdMap.get(nationId);
     if (!nation) return 1; // minimum viable power
 
-    const army = getNationArmy(ctx, nation.id) ?? 0;
     const gold = nation.gold;
     const buildings = getNationBuildingCount(ctx, nation.id);
 
-    const power = getPower(army, gold, buildings);
+    const power = getEconomicPower(gold, buildings);
     return power;
   }
 
@@ -135,8 +136,7 @@ function getNeighborStrength(ctx: GameCtx, nation: Nation) {
   }
   return neighborPower;
 }
-function getPower(army: number, gold: number, buildings: BuildingsByCategoryAndLevel) {
-  const armyPower = army * ARMY_WEIGHT;
+function getEconomicPower(gold: number, buildings: BuildingsByCategoryAndLevel) {
   const goldPower = gold * GOLD_WEIGHT;
 
   let buildingPower = 0;
@@ -151,7 +151,31 @@ function getPower(army: number, gold: number, buildings: BuildingsByCategoryAndL
     }
   }
 
-  return armyPower + goldPower + buildingPower;
+  return goldPower + buildingPower;
+}
+
+function getNeighborArmies(ctx: GameCtx, nation: Nation): NeighborArmy[] {
+  const neighbors = getNationNeighbors(ctx, nation);
+
+  const nationIdMap = new Map(ctx.nations.map((n) => [n.id, n]));
+
+  const neighborArmies: NeighborArmy[] = [];
+  for (const id of neighbors) {
+    const neighbor = nationIdMap.get(id);
+    if (!neighbor) continue;
+
+    const army = getNationArmy(ctx, neighbor.id) ?? 0;
+    neighborArmies.push({ nationId: neighbor.id, army });
+  }
+
+  return neighborArmies;
+}
+
+export function getNationNeighbors(ctx: GameCtx, nation: Nation) {
+  const borderHexes = getBorderHexes(ctx, nation.id) ?? [];
+  const neighbors = new Set<string>(borderHexes.filter((h) => !h.owner).map((h) => h.owner!));
+
+  return [...neighbors];
 }
 
 function getFrontlines(ctx: GameCtx, nation: Nation) {

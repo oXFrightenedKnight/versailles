@@ -20,6 +20,7 @@ export function createPlanningState(ctx: GameCtx, nationId: string) {
   }
 
   return {
+    intendedBuildings: new Map(),
     availableArmyByHex,
     incomingArmyByHex: new Map(),
     outgoingArmyByHex: new Map(),

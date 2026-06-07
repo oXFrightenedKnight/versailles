@@ -12,6 +12,8 @@ import {
 } from "@/lib/UI/mergeData/uiTraining";
 import { numberConverter } from "@/lib/utils";
 import { Building } from "@repo/shared/data/buildings";
+import { hasEnoughGold } from "@/lib/UI/optimisticCalc/gold";
+import { getArmyTrainCost } from "@repo/shared";
 
 export default function TrainingBlock({ building }: { building: Building }) {
   const playerNation = useGameStore((s) => s.playerNation);
@@ -69,6 +71,9 @@ export default function TrainingBlock({ building }: { building: Building }) {
             onClick={() => {
               if (!armyTraining || !setArmyTraining || !playerNation) return;
               if (amount > playerNation.manpower || amount === 0) return;
+
+              const cost = getArmyTrainCost(amount);
+              hasEnoughGold(effectiveGold, cost);
 
               setArmyTraining((prev) => [
                 ...prev,

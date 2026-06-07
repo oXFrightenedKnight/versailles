@@ -1,5 +1,5 @@
-import { newBuilding, roadObject } from "@/lib/types/game";
-import { BASE_ROAD_COST, Road } from "@repo/shared";
+import { ArmyTraining, newBuilding, roadObject } from "@/lib/types/game";
+import { BASE_ROAD_COST, getArmyTrainCost, Road, TRAIN_COST } from "@repo/shared";
 import { Building, BUILDINGS } from "@repo/shared/data/buildings";
 import { Hex } from "@repo/shared/data/hex_map";
 import { Nation } from "@repo/shared/data/nations";
@@ -14,7 +14,8 @@ export function calculateOptimisticGold(
   serverCancelBuilding: number[], // hexId[]
   buildRoads: roadObject[],
   serverCancelRoadBuilding: string[], // roadId[]
-  roads: Road[]
+  roads: Road[],
+  trainNewArmy: ArmyTraining[]
 ) {
   let totalCost = 0;
 
@@ -79,6 +80,10 @@ export function calculateOptimisticGold(
   // return canceled road cost
   const canceledServerRoadCost = getCanceledRoadCostServer(serverCancelRoadBuilding, roads);
   totalCost -= canceledServerRoadCost;
+
+  // add training cost
+  const totalTrainCost = trainNewArmy.reduce((acc, a) => acc + getArmyTrainCost(a.amount), 0);
+  totalCost += totalTrainCost;
 
   return playerNation?.gold !== undefined ? playerNation.gold - totalCost : 0;
 }
