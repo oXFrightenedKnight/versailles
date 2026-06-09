@@ -1,5 +1,12 @@
 import { GameCtx } from "#trpc/index.js";
-import { BUILDINGS, findBuildingNameByCategory, Hex, Nation } from "@repo/shared";
+import {
+  BUILDINGS,
+  findBuildingNameByCategory,
+  getArmyTrainCost,
+  Hex,
+  Nation,
+  typeNationResource,
+} from "@repo/shared";
 import { WorldAnalysis } from "../../../types/analyze";
 import { ArmyTrain } from "../../../types/intent";
 import { getBuildingsByIdMap } from "../../helpers";
@@ -7,29 +14,53 @@ import { getOptimisticArmyAtHex } from "../../planning/main";
 import { AIPlanningState } from "../../planning/types";
 import { analyzeNationBorder } from "../militaryAnalysis/main";
 import { BorderNeed } from "../militaryAnalysis/types";
+import { BudgetMap } from "../../budget/types";
+import { typedEntries } from "@repo/shared/helpers/tsHelpers";
+import { sortCandidates } from "../../candidates";
 
 export function generateArmyTrainCandidates(
   ctx: GameCtx,
   analysis: WorldAnalysis,
   planning: AIPlanningState,
+  budget: BudgetMap,
   nation: Nation
 ): ArmyTrain[] {
+  const budgetUsed = new Map(Object.keys(budget).map((key) => [key, 0]));
+
   const armyTrainIntents: ArmyTrain[] = [];
-  const addTrainIntent = (barrackId: string, score: number) => {
-    armyTrainIntents.push({ id: crypto.randomUUID(), score, type: "armyTrain", barrackId });
+  const addTrainIntent = (
+    barrackId: string,
+    amount: number,
+    score: number,
+    cost: Partial<Record<typeNationResource, number>>
+  ) => {
+    for (const [resource, amount] of typedEntries(cost)) {
+      if (amount === undefined) return null;
+
+      const resBudget = budget.get(resource)?.building;
+      if (!resBudget) return null;
+
+      const prevUsed = budgetUsed.get(resource) ?? 0;
+
+      const total = prevUsed + amount;
+      if (total > resBudget) return null;
+
+      budgetUsed.set(resource, total);
+    }
+
+    armyTrainIntents.push({ id: crypto.randomUUID(), amount, score, type: "armyTrain", barrackId });
   };
 
-  // WHAT IF BORDER STATE CHANGES AFTER AI MAKES MOVES?
-  // MAYBE USE PLANNING WHEN CALCULATING BORDER ANALYSIS
   const borderAnalysis = analyzeNationBorder(ctx, analysis, nation, planning);
 
   // remember to include manpower as a limit
   const deficitTrainIntents = calcArmyTrain(ctx, analysis, planning, borderAnalysis);
   for (const intent of deficitTrainIntents) {
-    addTrainIntent(intent.barrackId, intent.amount);
+    const goldCost = getArmyTrainCost(intent.amount);
+    addTrainIntent(intent.barrackId, intent.amount, intent.score, { gold: goldCost });
   }
 
-  return armyTrainIntents;
+  return sortCandidates(armyTrainIntents);
 }
 
 // REMEMBER TO INCLUDE MOVING AI ARMY
@@ -39,7 +70,7 @@ function calcArmyTrain(
   planning: AIPlanningState,
   borderNeed: BorderNeed[]
 ) {
-  const trainIntents: { barrackId: string; amount: number }[] = [];
+  const trainIntents: { barrackId: string; score: number; amount: number }[] = [];
 
   const sortedNeed = borderNeed.sort((a, b) => b.deficit - a.deficit);
 
@@ -90,7 +121,7 @@ function calcArmyTrain(
       const amount = Math.min(max, deficit);
       trained += amount;
 
-      trainIntents.push({ barrackId: hex.buildingId, amount: amount });
+      trainIntents.push({ barrackId: hex.buildingId, score: border.priority, amount: amount });
     }
   }
 

@@ -236,6 +236,7 @@ function createContract(hex: Hex, ctx: ClickCtx) {
         progress: 0,
         hexIds,
         autoAdjust: true,
+        lastSentAmount: 0,
       },
     ]);
   }

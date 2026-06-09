@@ -1,12 +1,13 @@
 // This file holds all logic for ai tracking and planning on what army it
 // already sent or will send, etc.
 
-import { reconstructPath } from "#services/ai/algos/bfs.js";
-import { BFSResult } from "#services/ai/types/analyze.js";
+import { getBorderBFSMap } from "#services/ai/algos/bfs.js";
+import { AIMemory } from "#services/ai/memory/types.js";
+import { WorldAnalysis } from "#services/ai/types/analyze.js";
 import { GameCtx } from "#trpc/index.js";
 import { getNationArmyFromHex } from "../../../map";
-import { AIMemory } from "../../memory/types";
 import { MoveArmy } from "../../types/intent";
+import { populateArmyGoals } from "./moveGoals";
 import { AIPlanningState, ArmyMoveGoal } from "./types";
 
 export function createPlanningState(ctx: GameCtx, nationId: string) {
@@ -27,6 +28,16 @@ export function createPlanningState(ctx: GameCtx, nationId: string) {
     reservedArmyByHex: new Map(),
     plannedMoves: [] as ArmyMoveGoal[],
   } as AIPlanningState;
+}
+
+// this function updates nation planning with nation long term memory
+export function setNationMemoPlanning(
+  analysis: WorldAnalysis,
+  planning: AIPlanningState,
+  nationMemo: AIMemory
+) {
+  const bfsMap = getBorderBFSMap(analysis);
+  populateArmyGoals(planning, nationMemo, bfsMap);
 }
 
 // use this function to update ai move that is 1 hex long

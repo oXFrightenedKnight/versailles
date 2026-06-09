@@ -1,4 +1,4 @@
-import { AIScoreReasons, BuildIntent } from "#services/ai/types/intent.js";
+import { AIIntent, AIScoreReasons, BuildIntent } from "#services/ai/types/intent.js";
 import {
   building_categoires,
   BUILDINGS_CATEGORY,
@@ -16,7 +16,7 @@ import {
   getResourceShortage,
 } from "../helpers";
 import { getHexAxialMap } from "#services/map.js";
-import { AIBudget } from "../budget/types";
+import { AIBudget, BudgetMap } from "../budget/types";
 import { AIPlanningState } from "../planning/types";
 import { WorldAnalysis } from "#services/ai/types/analyze.js";
 import { GameCtx } from "#trpc/index.js";
@@ -28,13 +28,14 @@ import {
   WAR_DEBUFF_CATEGORIES,
 } from "./types";
 import { getOptimisticCategoryLevels } from "./optimistic";
+import { sortCandidates } from "../candidates";
 
 export function generateBuildCandidates(
   ctx: GameCtx,
   analysis: WorldAnalysis,
   planning: AIPlanningState,
   nation: Nation,
-  budget: Map<typeNationResource, AIBudget>
+  budget: BudgetMap
 ): BuildIntent[] {
   const budgetUsed = new Map(Object.keys(budget).map((key) => [key, 0]));
 
@@ -105,6 +106,7 @@ export function generateBuildCandidates(
         reasons.push({ key, value, description: reason });
       };
 
+      // --- VALIDATION ---
       const expectedBuilding = {
         buildingCategory: category,
         level: existing ? existing.level + 1 : 1,
@@ -113,6 +115,8 @@ export function generateBuildCandidates(
       if (!buildingData) continue;
 
       if (existing && existing.category !== category) continue;
+
+      if (planning.intendedBuildings.has(hex.id)) continue;
 
       // 1. Biome score
       add(
@@ -172,5 +176,5 @@ export function generateBuildCandidates(
     }
   }
 
-  return BuildIntents;
+  return sortCandidates(BuildIntents);
 }

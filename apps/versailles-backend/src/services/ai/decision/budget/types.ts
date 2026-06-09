@@ -1,3 +1,5 @@
+import { typeNationResource } from "@repo/shared";
+
 // values from 0 to 1 (0 - whatever, 1 - i really need to do this intent)
 export type AIPressure = {
   enemyStrengthPressure: number; // how much stronger enemies are
@@ -18,3 +20,5 @@ export type GoldBudget = BaseBudget & {
 export type ResourceBudget = {
   gold: GoldBudget;
 };
+
+export type BudgetMap = Map<typeNationResource, AIBudget>;

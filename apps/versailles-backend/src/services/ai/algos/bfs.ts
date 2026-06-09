@@ -1,6 +1,7 @@
 import { findNeighbors, Hex } from "@repo/shared";
 import { GameCtx } from "../../../trpc";
 import { getHexAxialMap, getHexIdMap } from "../../map";
+import { WorldAnalysis } from "../types/analyze";
 
 export function bfs({
   ctx,
@@ -51,4 +52,8 @@ export function reconstructPath(cameFrom: Map<number, number | null>, targetHexI
   }
 
   return path.reverse();
+}
+
+export function getBorderBFSMap(analysis: WorldAnalysis) {
+  return new Map(analysis.selfData.borderBFS.map((b) => [b.startHexId, b]));
 }

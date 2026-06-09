@@ -17,9 +17,10 @@ import {
 } from "@repo/shared";
 import { roundToNearestDecimal } from "../lib/helpers.js";
 import { GameCtx } from "../trpc/index.js";
-import { calculatePopulationChange, getHexById } from "./map.js";
+import { calculatePopulationChange, getHexById, getHexIdMap } from "./map.js";
 import { newBuildings, subtractGold } from "./genNations.js";
 import { BuildingsByCategoryAndLevel } from "./ai/types/analyze.js";
+import { ValidationResult, ValidBuildIntentData } from "./types.js";
 
 export function buildingOutput(gameCtx: GameCtx) {
   const { buildings } = gameCtx;
@@ -288,75 +289,120 @@ export function buildNewIntentBuildings({
   newBuildings: newBuildings;
   nation: Nation;
 }) {
-  const { mapHexes } = gameCtx;
-
-  // check if building types are valid
-  if (newBuildings.some((b) => !building_categoires.includes(b.buildingType)))
-    throw new Error("Invalid Building Type!");
-
-  // check if hex ids' exist
-  const hexIdSet = new Set<number>(mapHexes.map((hex) => hex.id));
-  if (!newBuildings.every((obj) => hexIdSet.has(obj.hexId)))
-    throw new Error("Hex id doesn't exist!");
-
-  const hexIdsToBuild = newBuildings.map((obj) => obj.hexId);
-  if (hexIdsToBuild.length !== new Set(hexIdsToBuild).size)
-    throw new Error("Duplicate hex ids in buildings are not allowed!");
-
-  const hexIdMap = new Map<number, Hex>(mapHexes.map((h) => [h.id, h]));
+  const hexIdMap = getHexIdMap(gameCtx);
   const buildingIdMap = new Map(gameCtx.buildings.map((b) => [b.id, b]));
-  const buildingMap = new Map(
-    newBuildings.map((obj) => [
-      obj.hexId,
-      { buildingType: obj.buildingType, levelsToUpgrade: obj.levelsToUpgrade },
-    ])
-  );
 
-  for (const hexId of hexIdsToBuild) {
-    const hex = hexIdMap.get(hexId);
+  const successfulIds = new Set<number>();
+  for (const intent of newBuildings) {
+    const result = validateBuildIntent(
+      gameCtx,
+      nation,
+      intent,
+      hexIdMap,
+      buildingIdMap,
+      successfulIds
+    );
+    if (!result.ok) {
+      console.warn(`${result.issue}`);
+      continue;
+    }
 
-    if (!hex) continue;
-    if (hex.owner !== nation.id || !hex.owner) continue;
-
-    const buildingObj = buildingMap.get(hex.id);
-    if (!buildingObj) continue;
-
-    const buildingType = buildingObj?.buildingType;
-    const levelsToUpgrade = buildingObj.levelsToUpgrade;
-
-    // skip if new building doesn't match already existing building category
-    const building = hex.buildingId ? buildingIdMap.get(hex.buildingId) : null;
-    if (building && buildingType !== building.category) continue;
-
-    // skip if new building doesn't match already queued building
-    if (hex.build_queue && buildingType !== hex.build_queue.building) continue;
-
-    // max possible level
-    const maxLevel = topLevelsByCategory.find((obj) => obj.category === buildingType)?.level ?? 0;
-    // current already built level
-    const currentLevel = building ? building.level : 0;
-    // current level in queued object
-    const currentQueuedLevels = hex.build_queue ? hex.build_queue.levels : 0;
-
-    const newTotalLevel = currentLevel + currentQueuedLevels + levelsToUpgrade;
-    if (newTotalLevel > maxLevel) continue;
+    const data = result.data;
 
     // --- SUBTRACT GOLD AND BUILD
     const nextBuilding = findBuildingNameByCategory({
-      buildingCategory: buildingType,
-      level: newTotalLevel,
+      buildingCategory: intent.buildingType,
+      level: data.newTotalLevel,
     });
     const cost = BUILDINGS[nextBuilding].buildCost;
-    if (subtractGold(gameCtx, hex.owner, cost)) {
-      const currentProgress = hex.build_queue ? hex.build_queue.progress : 0;
-      hex.build_queue = {
-        building: buildingType,
+    if (subtractGold(gameCtx, nation.id, cost)) {
+      const currentProgress = data.hex.build_queue ? data.hex.build_queue.progress : 0;
+      data.hex.build_queue = {
+        building: intent.buildingType,
         progress: currentProgress,
-        owner: hex.owner,
-        levels: currentQueuedLevels + levelsToUpgrade,
+        owner: data.hexOwner,
+        levels: data.currentQueuedLevels + intent.levelsToUpgrade,
       };
+
+      successfulIds.add(data.hex.id);
     }
   }
+}
+function validateBuildIntent(
+  ctx: GameCtx,
+  nation: Nation,
+  intent: newBuildings[number],
+  hexIdMap: Map<number, Hex>,
+  buildingIdMap: Map<string, Building>,
+  successfulIds: Set<number>
+): ValidationResult<ValidBuildIntentData> {
+  // skip if intent's category does not exist
+  if (!building_categoires.includes(intent.buildingType)) {
+    return {
+      ok: false,
+      issue: `Invalid building type for hex ${intent.hexId} of ${intent.buildingType} from ${nation.id}`,
+    };
+  }
+
+  // check if hexId is valid
+  const hex = hexIdMap.get(intent.hexId);
+  if (!hex) {
+    return { ok: false, issue: `HexId of ${intent.hexId} does not exist!` };
+  }
+
+  // skip if this hex id already had build intent this turn
+  if (successfulIds.has(intent.hexId)) {
+    return {
+      ok: false,
+      issue: `Building of ${intent.buildingType} on hex ${intent.hexId} failed due to duplicate intents on same hex!`,
+    };
+  }
+
+  // skip if building on non-owned hexes
+  if (hex.owner !== nation.id || !hex.owner) {
+    return {
+      ok: false,
+      issue: `Not enough permissions. ${nation.id} trying to build on ${hex.owner}'s hex`,
+    };
+  }
+
+  // skip if existing building in hex category doesn't match intent category
+  const building = hex.buildingId ? buildingIdMap.get(hex.buildingId) : undefined;
+  if (building && intent.buildingType !== building.category) {
+    return {
+      ok: false,
+      issue: `Invalid intent building category for hex ${hex.id}. Expected ${building.category}, got ${intent.buildingType}`,
+    };
+  }
+
+  // skip if category doesn't match already queued building
+  if (hex.build_queue && intent.buildingType !== hex.build_queue.building) {
+    return {
+      ok: false,
+      issue: `Invalid intent building category for hex ${hex.id}. Expected ${hex.build_queue.building} from queued, got ${intent.buildingType}`,
+    };
+  }
+
+  const maxLevel =
+    topLevelsByCategory.find((obj) => obj.category === intent.buildingType)?.level ?? 0;
+  const currentLevel = building ? building.level : 0;
+  const currentQueuedLevels = hex.build_queue ? hex.build_queue.levels : 0;
+  const newTotalLevel = currentLevel + currentQueuedLevels + intent.levelsToUpgrade;
+  if (newTotalLevel > maxLevel) {
+    return {
+      ok: false,
+      issue: `Error: Building above max level ${maxLevel} in hex ${intent.hexId}`,
+    };
+  }
+
+  const data = {
+    hex,
+    building,
+    newTotalLevel,
+    hexOwner: hex.owner,
+    currentQueuedLevels,
+  };
+  return { ok: true, data };
 }
 
 export function calculateConsumption({

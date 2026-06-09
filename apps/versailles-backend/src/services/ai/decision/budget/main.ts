@@ -52,6 +52,7 @@ function getNeighborEconomyPressure(neighborRatios: number[]) {
 }
 
 function getExpansionOpportunity() {
+  // compare neighbor army + economy to nation army & economy
   return 0;
 }
 

@@ -3,9 +3,9 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
-9. Make sure training takes gold
 Also don't forget to make function to translate planned moves into nation memo at the end of ai turn
 Think how you are going to validate ai memo after simulation runs (maybe return intent results like rejected/accepted)
+make ai send all available army to empty provinces instead of 10, and ai should keep small amount army at hexes with empty borders as backup
 9. start working on ai
 9,5. remember that when ai attacks, it first declares war, and next turn it checks
 if its at war and moves its troops
@@ -34,6 +34,8 @@ them a union of buildings. BuildNationRoads as well
 9. Make win/lose menu to and allow player to start new game or continue in spectator
 10. Change how paths work to make sure moving goals armies in hex are always reserved no matter the order they run
 11. Update analysis to include more relevant data about nation vs neighbors
+12. Skip invalid intents that don't pass domain validation. Aim for architecture to be 
+client data => copy db data => run logic and update data => if error - log and skip, else update db
 
 --- RULES ---
 1. Delete/Update first, Build/Add second.

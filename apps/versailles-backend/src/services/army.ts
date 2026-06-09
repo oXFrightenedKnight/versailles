@@ -1,4 +1,4 @@
-import { Building, Hex, Nation, TRAIN_COST } from "@repo/shared";
+import { Building, getArmyTrainCost, Hex, Nation, TRAIN_COST } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
 import { assignNewCapital, getNationById, setDefeated, subtractGold } from "./genNations.js";
 import { addMail, createWarMail } from "./mails.js";
@@ -184,7 +184,7 @@ export function queueArmyTraining({
     if (hex.owner !== nationId) continue;
 
     // subtract gold
-    const cost = newArmy.amount * TRAIN_COST;
+    const cost = getArmyTrainCost(newArmy.amount);
     const success = subtractGold(gameCtx, nationId, cost);
     if (!success) continue;
 

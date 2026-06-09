@@ -10,6 +10,8 @@ import { calcAIDefenseMove } from "./defenseOptions";
 import { AIPlanningState } from "../../planning/types";
 import { checkMoveGoalDeficit, executeMoveGoal, populateArmyGoals } from "../../planning/moveGoals";
 import { analyzeNationBorder, getArmySupply } from "../militaryAnalysis/main";
+import { getBorderBFSMap } from "#services/ai/algos/bfs.js";
+import { sortCandidates } from "../../candidates";
 
 export function generateArmyMoveCandidates(
   ctx: GameCtx,
@@ -31,10 +33,7 @@ export function generateArmyMoveCandidates(
   const hexIdMap = getHexIdMap(ctx);
   const axialMap = getHexAxialMap(ctx);
   const nationIdMap = new Map(ctx.nations.map((n) => [n.id, n]));
-  const borderBFSMap = new Map(analysis.selfData.borderBFS.map((b) => [b.startHexId, b]));
-
-  const nationMemo = ctx.aiMemory[nation.id] ?? createNationMemo(ctx, nation);
-  populateArmyGoals(planning, nationMemo, borderBFSMap);
+  const borderBFSMap = getBorderBFSMap(analysis);
 
   // for each border hex, update all move goals from memo based on its current deficit
   for (const border of borderAnalysis) {
@@ -90,5 +89,5 @@ export function generateArmyMoveCandidates(
     }
   }
 
-  return armyMoveIntents;
+  return sortCandidates(armyMoveIntents);
 }

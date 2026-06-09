@@ -14,8 +14,13 @@ import { numberConverter } from "@/lib/utils";
 import { Building } from "@repo/shared/data/buildings";
 import { hasEnoughGold } from "@/lib/UI/optimisticCalc/gold";
 import { getArmyTrainCost } from "@repo/shared";
+import { useEffectiveGold } from "@/hooks/useEffectiveGold";
+import { useUIStore } from "@/lib/stores/uiStore";
+import { createNewPopup } from "@/lib/helpers/popups";
 
 export default function TrainingBlock({ building }: { building: Building }) {
+  const gold = useEffectiveGold();
+
   const playerNation = useGameStore((s) => s.playerNation);
   const armyTraining = useIntentStore((s) => s.armyTraining);
   const setArmyTraining = useIntentStore((s) => s.setArmyTraining);
@@ -24,6 +29,8 @@ export default function TrainingBlock({ building }: { building: Building }) {
 
   const serverTraining = getTrainingArmyServer(building);
   const clientTraining = mergeTrainingArmyClient(building.id, armyTraining);
+
+  const setPopup = useUIStore((s) => s.setPopup);
 
   const training = useMemo(() => {
     return mergeTraining(serverTraining, clientTraining);
@@ -73,7 +80,11 @@ export default function TrainingBlock({ building }: { building: Building }) {
               if (amount > playerNation.manpower || amount === 0) return;
 
               const cost = getArmyTrainCost(amount);
-              hasEnoughGold(effectiveGold, cost);
+
+              if (!hasEnoughGold(gold, cost)) {
+                createNewPopup(setPopup, "missing_gold");
+                return;
+              }
 
               setArmyTraining((prev) => [
                 ...prev,

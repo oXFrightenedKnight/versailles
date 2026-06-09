@@ -20,6 +20,7 @@ import { peaceCountdown } from "../services/army.js";
 import { mailsExpire } from "../services/mails.js";
 import { runAIDiplomacy, runNationDiplomacy } from "../services/intents/diplomacyIntents.js";
 import { MemoryCtx } from "../services/ai/memory/types.js";
+import { runAIPipeline } from "#services/ai/main.js";
 
 export type GameCtx = {
   mapHexes: Hex[];
@@ -30,6 +31,25 @@ export type GameCtx = {
   modifiers: MODIFIER[];
   mails: Mail[];
   aiMemory: MemoryCtx;
+};
+
+// change later so server does not expect full intent input. Skip running intent if there is none
+export const emptyIntentCtx: IntentInput = {
+  newQueuedBuildings: [],
+  buildingCancel: [],
+  buildingDelete: [],
+  movePlayerArmy: [],
+  signPeaceReq: [],
+  buildRoads: [],
+  cancelRoadBuild: [],
+  createNewContracts: [],
+  deleteContracts: [],
+  updateContracts: [],
+  trainNewArmy: [],
+  deleteArmyTrain: [],
+  declareWar: [],
+  readMails: [],
+  answeredMails: [],
 };
 
 export type NextTurnType = inferProcedureInput<AppRouter["nextTurn"]>;
@@ -150,9 +170,28 @@ export const appRouter = router({
       runNationDiplomacy(gameCtx, playerNation, playerIntentCtx);
 
       // step 1: calculate ai decisions (build, attack, move)
-
       // merge ai intents in here later
-      const intents = [{ input: playerIntentCtx, nationId: playerNation.id }];
+      const intents: { input: IntentInput; nationId: string }[] = [
+        { input: playerIntentCtx, nationId: playerNation.id },
+      ];
+
+      for (const nation of gameCtx.nations) {
+        if (nation.isPlayer) continue;
+
+        try {
+          const aiIntents = runAIPipeline(gameCtx, nation);
+          intents.push({
+            input: {
+              ...emptyIntentCtx,
+              ...aiIntents,
+            },
+            nationId: nation.id,
+          });
+        } catch (err) {
+          console.log("AI Pipeline failed for", nation.id, err);
+        }
+      }
+
       // step 1.5: run ai diplomacy
       runAIDiplomacy(gameCtx, intents);
 

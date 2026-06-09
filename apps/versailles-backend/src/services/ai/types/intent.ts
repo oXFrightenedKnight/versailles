@@ -30,6 +30,7 @@ export type BuildIntent = BaseAIIntent & {
 export type ArmyTrain = BaseAIIntent & {
   type: "armyTrain";
   barrackId: string;
+  amount: number;
 };
 export type MoveArmy = BaseAIIntent & {
   type: "moveArmy";

@@ -37,6 +37,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { initBiomePatterns, initTextures, renderMap } from "../../../canvas/render";
 import { GameData, trpc } from "../../_trpc/client";
 import SettingDialog from "./settingDialog";
+import { useEffectiveGold } from "@/hooks/useEffectiveGold";
 
 export default function Home() {
   const router = useRouter();
@@ -178,27 +179,7 @@ export default function Home() {
     return calculateOptimisticManpower(armyTraining, playerNation);
   }, [playerNation, armyTraining]);
 
-  const effectiveGold = useMemo(() => {
-    return calculateOptimisticGold(
-      mapHexes,
-      BuildingsUI,
-      playerNation,
-      buildBuildings,
-      serverBuildingsCancel,
-      buildRoads,
-      serverCancelRoadBuilding,
-      roads
-    );
-  }, [
-    playerNation,
-    mapHexes,
-    BuildingsUI,
-    buildBuildings,
-    buildRoads,
-    roads,
-    serverBuildingsCancel,
-    serverCancelRoadBuilding,
-  ]);
+  const effectiveGold = useEffectiveGold();
 
   // --- CAMERA CONTROLING ---
   const {

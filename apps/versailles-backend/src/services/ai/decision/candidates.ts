@@ -5,11 +5,17 @@ import { WorldAnalysis } from "../types/analyze";
 import { generateArmyMoveCandidates } from "./army/move/main";
 import { generateArmyTrainCandidates } from "./army/train/main";
 import { getAIBudget } from "./budget/main";
-import { createPlanningState } from "./planning/main";
+import { createPlanningState, setNationMemoPlanning } from "./planning/main";
 import { generateBuildCandidates } from "./building/main";
+import { createNationMemo } from "../memory/main";
+import { AIIntent } from "../types/intent";
 
 export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation) {
   const planning = createPlanningState(ctx, nation.id);
+
+  const nationMemo = ctx.aiMemory[nation.id] ?? createNationMemo(ctx, nation);
+
+  setNationMemoPlanning(analysis, planning, nationMemo);
 
   const budget = getAIBudget(ctx, analysis, nation);
   const budgetMap = new Map(typedEntries(budget));
@@ -17,14 +23,20 @@ export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nat
   // 1. Run building (w Score)
   // store buildings in planning too
   const buildIntents = generateBuildCandidates(ctx, analysis, planning, nation, budgetMap);
+  console.log(`${nation.id} build`, buildIntents);
 
   // 2. Run army movement
   const moveIntents = generateArmyMoveCandidates(ctx, analysis, nation, planning);
+  console.log(`${nation.id} move`, moveIntents);
 
   // 3. Run army training
-  const trainIntents = generateArmyTrainCandidates(ctx, analysis, planning, nation);
+  const trainIntents = generateArmyTrainCandidates(ctx, analysis, planning, budgetMap, nation);
+  console.log(`${nation.id} train`, trainIntents);
 
-  // Filter intents through budget. As long as there is enough budget, execute intent
+  console.log(`${nation.id} planning`, planning);
+  console.log(`${nation.id} budget`, budget);
+
+  return { buildIntents, moveIntents, trainIntents };
 }
 {
   /*function generateBuildRoadCandidates(
@@ -57,4 +69,8 @@ function generateSignPeaceReqCandidates(
   nation: Nation
 ): SignPeaceReqIntent[] {}
 */
+}
+
+export function sortCandidates<T>(intents: AIIntent[]) {
+  return intents.sort((a, b) => b.score - a.score) as T;
 }
