@@ -277,7 +277,7 @@ function getConstructing(ctx: GameCtx, nation: Nation): Constructing[] {
     }));
 }
 function getBorderBFS(ctx: GameCtx, nation: Nation): BFSResult[] {
-  const borderHexes = getBorderHexes(ctx, nation.id);
+  const borderHexes = getNationBorderHexes(ctx, nation.id);
   if (!borderHexes) return [];
 
   const hexIdMap = getHexIdMap(ctx);
@@ -287,16 +287,16 @@ function getBorderBFS(ctx: GameCtx, nation: Nation): BFSResult[] {
   const allowedWalk = getAllowedArmyWalk(ctx, nation);
 
   const borderBFS: BFSResult[] = [];
-  for (const borderHex of borderHexes) {
+  for (const borderObj of borderHexes) {
     const cameFrom = bfs({
       ctx,
-      startHexId: borderHex.id,
+      startHexId: borderObj.hexId,
       hexIdMap,
       axialMap,
       allowedHexIds: allowedWalk,
     });
 
-    borderBFS.push({ startHexId: borderHex.id, cameFrom });
+    borderBFS.push({ startHexId: borderObj.hexId, cameFrom });
   }
 
   return borderBFS;

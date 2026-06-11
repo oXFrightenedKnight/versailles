@@ -57,11 +57,17 @@ export function executeMoveGoal(id: string, planning: AIPlanningState) {
   if (currentArmy <= 0 || goal.path.length <= 1) {
     const idx = planning.plannedMoves.indexOf(goal);
     planning.plannedMoves.splice(idx, 1);
-    return 0;
+    return null;
   }
 
-  const fromHexId = goal.path.shift();
-  if (!fromHexId) return null;
-  const toHexId = goal.path[0];
+  const fromHexId = goal.path[0];
+  if (fromHexId === undefined) return null;
+  const toHexId = goal.path[1];
   return { fromHexId, toHexId };
+}
+export function updateGoalPath(planning: AIPlanningState, goalId: string) {
+  const goal = planning.plannedMoves.find((m) => m.id === goalId);
+  if (!goal) return null;
+
+  goal.path.shift();
 }

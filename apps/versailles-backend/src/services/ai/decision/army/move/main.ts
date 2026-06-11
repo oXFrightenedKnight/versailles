@@ -4,11 +4,16 @@ import { Nation } from "@repo/shared";
 import { createNationMemo } from "../../../memory/main";
 import { WorldAnalysis } from "../../../types/analyze";
 import { MoveArmy } from "../../../types/intent";
-import { createPlanningState, planArmyMove } from "../../planning/main";
+import { createPlanningState, planArmyMove, reserveBorderArmy } from "../../planning/main";
 import { calcEmptyHexAttack, calcEnemyAttack } from "./attackOptions";
 import { calcAIDefenseMove } from "./defenseOptions";
 import { AIPlanningState } from "../../planning/types";
-import { checkMoveGoalDeficit, executeMoveGoal, populateArmyGoals } from "../../planning/moveGoals";
+import {
+  checkMoveGoalDeficit,
+  executeMoveGoal,
+  populateArmyGoals,
+  updateGoalPath,
+} from "../../planning/moveGoals";
 import { analyzeNationBorder, getArmySupply } from "../militaryAnalysis/main";
 import { getBorderBFSMap } from "#services/ai/algos/bfs.js";
 import { sortCandidates } from "../../candidates";
@@ -22,12 +27,28 @@ export function generateArmyMoveCandidates(
   const armyMoveIntents: MoveArmy[] = [];
   const addMoveIntent = (fromHexId: number, toHexId: number, score: number, amount: number) => {
     const intent = planArmyMove(planning, fromHexId, toHexId, amount, score);
-    if (!intent) return;
+    if (!intent)
+      return {
+        ok: false,
+      };
     armyMoveIntents.push(intent);
+    return { ok: true };
   };
 
   const borderAnalysis = analyzeNationBorder(ctx, analysis, nation, planning);
-  const sortedBorders = borderAnalysis.sort((a, b) => b.priority - a.priority);
+  reserveBorderArmy(borderAnalysis, planning);
+  console.log(`${nation.id} border analysis:`, borderAnalysis);
+
+  // turn into separate function
+  const sortedBorders = borderAnalysis.sort((a, b) => {
+    if (b.priority !== a.priority) {
+      return b.priority - a.priority; // higher priority first
+    }
+
+    return b.deficit - a.deficit; // higher deficit first if priority is equal
+  });
+
+  // LEGACY, REMOVE
   const armySupplyPoints = getArmySupply(ctx, analysis, borderAnalysis);
 
   const hexIdMap = getHexIdMap(ctx);
@@ -42,16 +63,20 @@ export function generateArmyMoveCandidates(
 
   // make sure this runs first
   // move armies that were already following a path
-  for (const moveGoal of planning.plannedMoves) {
+  for (const moveGoal of [...planning.plannedMoves]) {
     const move = executeMoveGoal(moveGoal.id, planning);
     if (!move) continue;
-    addMoveIntent(move.fromHexId, move.toHexId, 10, moveGoal.amount);
+    const success = addMoveIntent(move.fromHexId, move.toHexId, 10, moveGoal.amount);
+
+    if (success.ok) {
+      updateGoalPath(planning, moveGoal.id);
+    }
   }
 
-  // for each border hex, find closest army supply point and create army move intent
+  // for each border hex with deficit, find closest army supply point and create army move intent
   // start from highest priority hexes
   for (const borderHex of sortedBorders) {
-    const intents = calcAIDefenseMove(borderHex, armySupplyPoints, planning, borderBFSMap);
+    const intents = calcAIDefenseMove(borderHex, planning, borderBFSMap);
     if (!intents) continue;
 
     for (const intent of intents) {

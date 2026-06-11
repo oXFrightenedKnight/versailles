@@ -21,8 +21,9 @@ export function bfs({
 
   const totalAllowedVisiting = new Set(allowedHexIds ?? [...newHexIdMap.keys()]);
 
-  // <hex, hexItCameFrom>
+  // <hexId, hexItCameFrom>
   const cameFrom = new Map<number, number | null>();
+  cameFrom.set(startHexId, null);
   const queue = [startHexId];
 
   while (queue.length !== 0) {
@@ -41,6 +42,7 @@ export function bfs({
   }
   return cameFrom;
 }
+// returns path from given hexId to destination hex (border hex) as provided in the map
 export function reconstructPath(cameFrom: Map<number, number | null>, targetHexId: number) {
   const path: number[] = [];
 
@@ -51,7 +53,7 @@ export function reconstructPath(cameFrom: Map<number, number | null>, targetHexI
     current = cameFrom.get(current) ?? null;
   }
 
-  return path.reverse();
+  return path;
 }
 
 export function getBorderBFSMap(analysis: WorldAnalysis) {

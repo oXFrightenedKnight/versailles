@@ -1,7 +1,6 @@
 export type BorderNeed = {
   hexId: number;
   currentArmy: number;
-  enemyArmyNearby: number;
   desiredArmy: number;
   deficit: number;
   priority: number;

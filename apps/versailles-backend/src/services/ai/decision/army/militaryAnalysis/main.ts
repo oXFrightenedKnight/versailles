@@ -11,7 +11,7 @@ import {
   getNationBorderHexes,
 } from "#services/map.js";
 import { AIPlanningState } from "../../planning/types";
-import { getOptimisticArmyAtHex } from "../../planning/main";
+import { getLongOptimisticArmy, getOptimisticArmyAtHex } from "../../planning/main";
 import { ArmyGroup, BorderNeed } from "./types";
 
 // calculate border needs
@@ -27,16 +27,26 @@ export function analyzeNationBorder(
   const axialMap = getHexAxialMap(ctx);
 
   for (const hexObj of analysis.worldData.currentBorders) {
+    console.log("ta frick");
     const hex = hexIdMap.get(hexObj.hexId);
     if (!hex) continue;
 
-    const currentArmyAtHex = getOptimisticArmyAtHex(planning, hex.id);
+    const currentArmyAtHex = getNationArmyFromHex(hex, nation.id);
 
+    let enemyArmyInHex = 0;
+    for (const enemyId of nation.atWar) {
+      const armyInHex = getNationArmyFromHex(hex, enemyId);
+      if (armyInHex) {
+        enemyArmyInHex += armyInHex;
+      }
+    }
+
+    const enemySet = new Set(nation.atWar);
     const neighbors = findNeighbors(hex, ctx.mapHexes, axialMap);
-    const allNerabyHexes = [...neighbors, hex];
-    const enemyNeighbors = allNerabyHexes.filter((h) => h.owner !== nation.id);
+    const enemyNeighbors = neighbors.filter((h) => h.owner && enemySet.has(h.owner));
+    const neutralNeighbors = neighbors.filter((h) => h.owner && h.owner !== nation.id);
 
-    let totalBorderingArmy = 0;
+    let totalBorderingEnemyArmy = 0;
     for (const enemyHex of enemyNeighbors) {
       let totalEnemyArmyInHex = 0;
 
@@ -46,21 +56,80 @@ export function analyzeNationBorder(
           return acc + a.amount;
         }, 0);
 
-      totalBorderingArmy += totalBorderingArmy;
+      totalBorderingEnemyArmy += totalEnemyArmyInHex;
     }
-    const avgEnemyArmyPerHex = totalBorderingArmy / Math.max(1, enemyNeighbors.length);
 
-    const armyNeed = Math.max(0, avgEnemyArmyPerHex - currentArmyAtHex) * 1.1;
-    const priority = scoreBorderHex(ctx, analysis, planning, nation, hex);
+    let totalNeutralBordering = 0;
+    for (const nationHex of neutralNeighbors) {
+      let totalNeutralArmyInHex = 0;
 
-    borderHexesNeed.push({
-      hexId: hex.id,
-      currentArmy: currentArmyAtHex,
-      enemyArmyNearby: totalBorderingArmy,
-      desiredArmy: armyNeed + currentArmyAtHex,
-      deficit: armyNeed,
-      priority,
-    });
+      totalNeutralArmyInHex += nationHex.army
+        .filter((a) => a.nationId !== nation.id)
+        .reduce((acc, a) => {
+          return acc + a.amount;
+        }, 0);
+
+      totalNeutralBordering += totalNeutralArmyInHex;
+    }
+
+    // 1. If fighting hex - 4
+    if (enemyArmyInHex) {
+      const armyNeed = Math.round(enemyArmyInHex - currentArmyAtHex * 1.5);
+
+      borderHexesNeed.push({
+        hexId: hex.id,
+        currentArmy: currentArmyAtHex,
+        desiredArmy: armyNeed + currentArmyAtHex,
+        deficit: Math.max(armyNeed, 0),
+        priority: 4,
+      });
+      continue;
+    }
+
+    // 2. If borders nation at war - 3
+    if (enemyNeighbors.length > 0) {
+      const avgEnemyArmyPerHex = totalBorderingEnemyArmy / Math.max(1, enemyNeighbors.length);
+      const armyNeed = Math.round(avgEnemyArmyPerHex - currentArmyAtHex * 1.25);
+
+      borderHexesNeed.push({
+        hexId: hex.id,
+        currentArmy: currentArmyAtHex,
+        desiredArmy: armyNeed + currentArmyAtHex,
+        deficit: Math.max(0, armyNeed),
+        priority: 3,
+      });
+      continue;
+    }
+
+    // 3. Neutral borders deficit
+    // ADD A BASE MODIFIER HERE SO AI PUSHES SOME ARMY TO EMPTY HEXES
+    if (neutralNeighbors.length > 0) {
+      const avgNeutralArmyPerHex = totalNeutralBordering / Math.max(1, neutralNeighbors.length);
+      const armyNeed = Math.round(avgNeutralArmyPerHex - currentArmyAtHex * 1.1 + 10);
+
+      borderHexesNeed.push({
+        hexId: hex.id,
+        currentArmy: currentArmyAtHex,
+        desiredArmy: armyNeed + currentArmyAtHex,
+        deficit: Math.max(armyNeed, 0),
+        priority: 2,
+      });
+      continue;
+    }
+
+    // 4. Hexes that border empty hexes
+    if (neighbors.some((n) => !n.owner)) {
+      const armyNeed = Math.round(10 - currentArmyAtHex);
+
+      borderHexesNeed.push({
+        hexId: hex.id,
+        currentArmy: currentArmyAtHex,
+        desiredArmy: armyNeed + currentArmyAtHex,
+        deficit: Math.max(0, armyNeed),
+        priority: 1,
+      });
+      continue;
+    }
   }
 
   return borderHexesNeed;

@@ -102,7 +102,7 @@ function calcArmyTrain(
 
     // While loop for training whats in the deficit
     let trained = 0;
-    while (deficit > trained || sorted.length > 0) {
+    while (deficit > trained && sorted.length > 0) {
       const hexObj = sorted.shift();
       if (!hexObj) continue;
 

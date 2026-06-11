@@ -49,9 +49,9 @@ export function calcEnemyAttack(
     // loop over all nation hexes until enough army is sent or no more army can be sent
     let safety = 0;
     while (
-      totalMoved < totalArmyNeeded ||
-      nationNeighbors.length !== 0 ||
-      budgetArmy > 0 ||
+      totalMoved < totalArmyNeeded &&
+      nationNeighbors.length !== 0 &&
+      budgetArmy > 0 &&
       safety < 720
     ) {
       safety++;
@@ -117,7 +117,7 @@ export function calcEmptyHexAttack(
   const neighbors = findNeighbors(hex, ctx.mapHexes, axialMap);
   for (const neighbor of neighbors) {
     const army = planning.availableArmyByHex.get(neighbor.id) ?? 0;
-    if (army > 10) attackIntent.push({ startId: neighbor.id, endId: hex.id, amount: 10 });
+    if (army >= 10) attackIntent.push({ startId: neighbor.id, endId: hex.id, amount: 10 });
   }
 
   return attackIntent;

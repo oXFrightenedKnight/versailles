@@ -7,7 +7,6 @@ import { ArmyGroup, BorderNeed } from "../militaryAnalysis/types";
 
 export function calcAIDefenseMove(
   borderHex: BorderNeed,
-  armySupplyPoints: ArmyGroup[],
   planning: AIPlanningState,
   borderBFSMap: Map<number, BFSResult>
 ) {
@@ -18,9 +17,16 @@ export function calcAIDefenseMove(
 
   const armySupplyDist: { hexId: number; available: number; path: number[] }[] = [];
   if (borderHex.deficit > 0) {
-    for (const army of armySupplyPoints) {
-      const path = reconstructPath(hexBFS.cameFrom, army.hexId);
-      armySupplyDist.push({ hexId: army.hexId, available: army.availableAmount, path });
+    console.log("DEFICIT CALC REACHED");
+    // use dynamic planning to map over hexes with available army
+    for (const [hexId, amount] of planning.availableArmyByHex) {
+      if (amount === 0) continue;
+      console.log(`Available army in hex ${hexId}:`, amount);
+      console.log(`current army in hex:`, borderHex.currentArmy);
+      console.log(`deficit in hex`, borderHex.deficit);
+      const path = reconstructPath(hexBFS.cameFrom, hexId);
+      console.log("PATH", path);
+      armySupplyDist.push({ hexId, available: amount, path });
     }
   }
   // start assigning available army from closest supply
@@ -35,9 +41,10 @@ export function calcAIDefenseMove(
     const send = Math.min(available, remainingDeficit);
 
     // create move goal to remember if path is longer than one tile
-    if (supply.path.length > 1) {
-      createMoveGoal(planning, supply.path.splice(0, 1), send);
+    if (supply.path.length > 1 && send > 0) {
+      createMoveGoal(planning, supply.path.slice(1), send);
     }
+    if (supply.path.length <= 1) continue;
 
     defenseIntent.push({ startId: supply.hexId, endId: supply.path[1], amount: send });
   }

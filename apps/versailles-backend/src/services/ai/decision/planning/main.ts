@@ -7,6 +7,7 @@ import { WorldAnalysis } from "#services/ai/types/analyze.js";
 import { GameCtx } from "#trpc/index.js";
 import { getNationArmyFromHex } from "../../../map";
 import { MoveArmy } from "../../types/intent";
+import { BorderNeed } from "../army/militaryAnalysis/types";
 import { populateArmyGoals } from "./moveGoals";
 import { AIPlanningState, ArmyMoveGoal } from "./types";
 
@@ -95,4 +96,12 @@ export function getLongOptimisticArmy(planning: AIPlanningState, hexId: number) 
   // Do NOT count outgoing because it is already counted when you send goal army
 
   return shortTermOpt + totalIncoming;
+}
+
+export function reserveBorderArmy(borderAnalysis: BorderNeed[], planning: AIPlanningState) {
+  for (const border of borderAnalysis) {
+    const currentAvailable = planning.availableArmyByHex.get(border.hexId) ?? 0;
+    const available = Math.max(0, currentAvailable - border.desiredArmy);
+    planning.availableArmyByHex.set(border.hexId, available);
+  }
 }
