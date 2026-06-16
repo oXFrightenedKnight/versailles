@@ -1,17 +1,17 @@
-import { MODIFIER, Nation } from "@repo/shared";
+import { Nation } from "@repo/shared";
 import { GameCtx, IntentInput } from "../trpc/index.js";
 import { filterNationMails, markReadMails } from "./mails.js";
 
+// Returns every field by default, unless specified
 export function filterPlayerLogic(ctx: GameCtx) {
   const playerNation = ctx.nations.find((n) => n.isPlayer);
   if (!playerNation) return null;
 
+  const { modifiers, aiMemory, mails, ...rest } = ctx;
+
   return {
-    ...ctx,
-
-    mails: filterNationMails(ctx.mails, playerNation.id),
-
-    modifiers: [] as MODIFIER[],
+    ...rest,
+    mails: filterNationMails(mails, playerNation.id),
   };
 }
 

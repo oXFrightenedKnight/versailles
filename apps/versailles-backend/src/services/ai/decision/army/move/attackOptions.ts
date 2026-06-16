@@ -1,9 +1,17 @@
 import { findNeighbors, Hex, Nation } from "@repo/shared";
 import { GameCtx } from "#trpc/index.js";
 import { getNationArmy } from "../../../../genNations";
-import { WorldAnalysis } from "../../../types/analyze";
+import { BFSResult, WorldAnalysis } from "../../../types/analyze";
 import { AIPlanningState } from "../../planning/types";
 import { getEnemyBorderScore } from "../militaryAnalysis/main";
+import { createMoveGoal } from "../../planning/moveGoals";
+import {
+  getAvailableArmyForEmptyAttack,
+  getAvailableArmyForPriority,
+  getLongOptimisticArmy,
+} from "../../planning/main";
+import { reconstructPath } from "#services/ai/algos/bfs.js";
+import { BorderNeed } from "../militaryAnalysis/types";
 
 export function calcEnemyAttack(
   ctx: GameCtx,
@@ -59,8 +67,8 @@ export function calcEnemyAttack(
       const neighbor = nationNeighbors.shift();
       if (!neighbor) continue;
 
-      const army = planning.availableArmyByHex.get(hex.id) ?? 0;
-      const armySent = armySentMap.get(hex.id)?.amount ?? 0;
+      const army = planning.availableArmyByHex.get(neighbor.id) ?? 0;
+      const armySent = armySentMap.get(neighbor.id)?.amount ?? 0;
 
       const needToSend = (totalArmyNeeded - totalMoved) / nationNeighbors.length;
 
@@ -116,9 +124,51 @@ export function calcEmptyHexAttack(
   // find first neighbor hex that has available army and move
   const neighbors = findNeighbors(hex, ctx.mapHexes, axialMap);
   for (const neighbor of neighbors) {
-    const army = planning.availableArmyByHex.get(neighbor.id) ?? 0;
-    if (army >= 10) attackIntent.push({ startId: neighbor.id, endId: hex.id, amount: 10 });
+    const army = getAvailableArmyForEmptyAttack(planning, neighbor.id);
+    if (army >= 0) attackIntent.push({ startId: neighbor.id, endId: hex.id, amount: army });
   }
 
   return attackIntent;
+}
+
+// calculate move intents to border hexes to prepare for expansion
+export function calcAIExpansion(
+  borderHex: BorderNeed,
+  planning: AIPlanningState,
+  borderBFSMap: Map<number, BFSResult>
+) {
+  const expansionIntent: { path: number[]; amount: number }[] = [];
+
+  const hexBFS = borderBFSMap.get(borderHex.hexId);
+  if (!hexBFS) return;
+
+  const neededForExpansion = borderHex.expansionArmy - borderHex.desiredArmy;
+
+  const armySupplyDist: { hexId: number; available: number; path: number[] }[] = [];
+  if (neededForExpansion > 0) {
+    // use dynamic planning to map over hexes with available army
+    for (const [hexId, _] of planning.availableArmyByHex) {
+      const availableAmountInHex = getAvailableArmyForPriority(planning, hexId, borderHex.priority);
+      if (availableAmountInHex === 0) continue;
+      const path = reconstructPath(hexBFS.cameFrom, hexId);
+      armySupplyDist.push({ hexId, available: availableAmountInHex, path });
+    }
+  }
+  // start assigning available army from closest supply
+  const orderedSupply = armySupplyDist.sort((a, b) => a.path.length - b.path.length);
+  for (const supply of orderedSupply) {
+    const available = supply.available;
+
+    const optimisticBorderArmy = getLongOptimisticArmy(planning, borderHex.hexId);
+
+    const remainingNeeded = Math.max(0, borderHex.expansionArmy - optimisticBorderArmy);
+
+    const send = Math.min(available, remainingNeeded);
+
+    if (supply.path.length <= 1) continue;
+
+    expansionIntent.push({ path: supply.path, amount: send });
+  }
+
+  return expansionIntent;
 }

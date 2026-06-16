@@ -23,7 +23,8 @@ export function moveArmy({
   const hex = getHexById(hexId, gameCtx);
   const nationWarList = new Set(getNationById(gameCtx, nationId)?.atWar);
   const contested = hex?.army.some((obj) => nationWarList.has(obj.nationId)) ?? false;
-  if (!hex || contested) return;
+  const flooredAmount = Math.floor(amount);
+  if (!hex || contested || flooredAmount <= 0) return;
 
   // find destination hex
   const hexToMove = mapHexes.find(
@@ -35,7 +36,7 @@ export function moveArmy({
 
   // change later when adding alliances, war, and military accesses
   // CHANGE THIS LOGIC WHEN ADDING HEX CAPTURE
-  if (nationArmyInTile.amount < amount) return;
+  if (nationArmyInTile.amount < flooredAmount) return;
 
   // army of current nation in hex where it wants to move
   let nationArmyInMove = hexToMove.army?.find((obj) => obj.nationId === nationId);
@@ -52,15 +53,15 @@ export function moveArmy({
 
   // move army (only to your own tiles or nations at war)
   if (isAtWarWithOwner || hexToMove.owner === nationId) {
-    nationArmyInTile.amount -= amount;
+    nationArmyInTile.amount -= flooredAmount;
     if (nationArmyInTile.amount === 0) {
       hex.army.splice(hex.army.indexOf(nationArmyInTile), 1);
     }
 
     if (nationArmyInMove) {
-      nationArmyInMove.amount += amount;
+      nationArmyInMove.amount += flooredAmount;
     } else {
-      hexToMove.army?.push({ nationId: nationId, amount: amount });
+      hexToMove.army?.push({ nationId: nationId, amount: flooredAmount });
     }
   }
 }

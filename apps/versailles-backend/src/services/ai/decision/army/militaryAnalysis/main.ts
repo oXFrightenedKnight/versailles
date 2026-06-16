@@ -27,7 +27,6 @@ export function analyzeNationBorder(
   const axialMap = getHexAxialMap(ctx);
 
   for (const hexObj of analysis.worldData.currentBorders) {
-    console.log("ta frick");
     const hex = hexIdMap.get(hexObj.hexId);
     if (!hex) continue;
 
@@ -80,6 +79,7 @@ export function analyzeNationBorder(
         hexId: hex.id,
         currentArmy: currentArmyAtHex,
         desiredArmy: armyNeed + currentArmyAtHex,
+        expansionArmy: armyNeed + currentArmyAtHex,
         deficit: Math.max(armyNeed, 0),
         priority: 4,
       });
@@ -95,6 +95,7 @@ export function analyzeNationBorder(
         hexId: hex.id,
         currentArmy: currentArmyAtHex,
         desiredArmy: armyNeed + currentArmyAtHex,
+        expansionArmy: (armyNeed + currentArmyAtHex) * 1.5, // reserve more army for attack when possible
         deficit: Math.max(0, armyNeed),
         priority: 3,
       });
@@ -105,13 +106,16 @@ export function analyzeNationBorder(
     // ADD A BASE MODIFIER HERE SO AI PUSHES SOME ARMY TO EMPTY HEXES
     if (neutralNeighbors.length > 0) {
       const avgNeutralArmyPerHex = totalNeutralBordering / Math.max(1, neutralNeighbors.length);
-      const armyNeed = Math.round(avgNeutralArmyPerHex - currentArmyAtHex * 1.1 + 10);
+
+      const desiredArmy = avgNeutralArmyPerHex * 1.1;
+      const armyNeed = Math.round(Math.max(desiredArmy - currentArmyAtHex, 0));
 
       borderHexesNeed.push({
         hexId: hex.id,
         currentArmy: currentArmyAtHex,
-        desiredArmy: armyNeed + currentArmyAtHex,
-        deficit: Math.max(armyNeed, 0),
+        desiredArmy,
+        expansionArmy: desiredArmy,
+        deficit: armyNeed,
         priority: 2,
       });
       continue;
@@ -119,13 +123,15 @@ export function analyzeNationBorder(
 
     // 4. Hexes that border empty hexes
     if (neighbors.some((n) => !n.owner)) {
-      const armyNeed = Math.round(10 - currentArmyAtHex);
+      const desiredArmy = 10;
+      const armyNeed = Math.max(0, Math.round(desiredArmy - currentArmyAtHex));
 
       borderHexesNeed.push({
         hexId: hex.id,
         currentArmy: currentArmyAtHex,
-        desiredArmy: armyNeed + currentArmyAtHex,
-        deficit: Math.max(0, armyNeed),
+        desiredArmy,
+        expansionArmy: armyNeed + currentArmyAtHex,
+        deficit: armyNeed,
         priority: 1,
       });
       continue;

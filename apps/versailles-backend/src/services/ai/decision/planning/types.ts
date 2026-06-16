@@ -5,6 +5,7 @@ export type AIPlanningState = {
   intendedBuildings: Map<number, { category: BUILDINGS_CATEGORY; levels: number }>;
   // army
   availableArmyByHex: Map<number, number>;
+  softReservedArmyByHex: Map<number, { amount: number; priority: number; reason: string }[]>;
   incomingArmyByHex: Map<number, number>; // army that will be in this hex NEXT TURN
   outgoingArmyByHex: Map<number, number>; // army that will leave next turn
   plannedMoves: ArmyMoveGoal[]; // army that may take several turns to get there

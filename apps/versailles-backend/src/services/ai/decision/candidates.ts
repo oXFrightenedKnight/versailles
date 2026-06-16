@@ -9,6 +9,7 @@ import { createPlanningState, setNationMemoPlanning } from "./planning/main";
 import { generateBuildCandidates } from "./building/main";
 import { createNationMemo } from "../memory/main";
 import { AIIntent } from "../types/intent";
+import { updateNationMemo } from "./planning/moveGoals";
 
 export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation) {
   const planning = createPlanningState(ctx, nation.id);
@@ -35,6 +36,9 @@ export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nat
 
   console.log(`${nation.id} planning`, planning);
   console.log(`${nation.id} budget`, budget);
+
+  // update ai memo with planning
+  updateNationMemo(planning, nationMemo);
 
   return { buildIntents, moveIntents, trainIntents };
 }

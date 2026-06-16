@@ -1,6 +1,8 @@
 import { reconstructPath } from "#services/ai/algos/bfs.js";
 import { AIMemory } from "#services/ai/memory/types.js";
 import { BFSResult } from "#services/ai/types/analyze.js";
+import { GameCtx } from "#trpc/index.js";
+import { Nation } from "@repo/shared";
 import { AIPlanningState } from "./types";
 
 // check whether the hex that this army is moving to still needs that much army
@@ -70,4 +72,25 @@ export function updateGoalPath(planning: AIPlanningState, goalId: string) {
   if (!goal) return null;
 
   goal.path.shift();
+  console.log(`successfully updated goal ${goal.id}`);
+}
+
+// populates long term ai memo with planned data it gathered this turn
+export function updateNationMemo(planning: AIPlanningState, nationMemo: AIMemory): { ok: boolean } {
+  // update move goals
+  const plannedMoves = planning.plannedMoves;
+  const moveGoals: { currHexId: number; endHexId: number; amount: number }[] = [];
+  for (const goal of plannedMoves) {
+    if (goal.amount <= 0) continue;
+    if (goal.path.length <= 1) continue;
+
+    const currHexId = goal.path[0];
+    const endHexId = goal.path.at(-1);
+    if (!endHexId || !currHexId) continue;
+
+    moveGoals.push({ currHexId, endHexId, amount: goal.amount });
+  }
+  nationMemo.armyMovement = moveGoals;
+
+  return { ok: true };
 }
