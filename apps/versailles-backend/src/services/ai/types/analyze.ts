@@ -69,14 +69,8 @@ export type BFSResult = {
 };
 
 export type BuildingsByCategoryAndLevel = Partial<
-  Record<BUILDINGS_CATEGORY, Record<number, number>>
+  Record<BUILDINGS_CATEGORY, { level: number; amount: number }[]>
 >;
-// example type
-// CIVILIAN: {
-//  1: 15, // level: amount
-// 2: 8,
-// 5: 1
-//}
 
 export const ARMY_WEIGHT = 1;
 export const BORDER_ARMY_WEIGHT = 1.25;

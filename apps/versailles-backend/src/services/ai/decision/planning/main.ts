@@ -8,6 +8,7 @@ import { GameCtx } from "#trpc/index.js";
 import { getNationArmyFromHex } from "../../../map";
 import { MoveArmy } from "../../types/intent";
 import { BorderNeed } from "../army/militaryAnalysis/types";
+import { populateBuildSaving } from "./buildSaving";
 import { populateArmyGoals } from "./moveGoals";
 import { AIPlanningState, ArmyMoveGoal } from "./types";
 
@@ -29,6 +30,7 @@ export function createPlanningState(ctx: GameCtx, nationId: string) {
     outgoingArmyByHex: new Map(),
     reservedArmyByHex: new Map(),
     plannedMoves: [] as ArmyMoveGoal[],
+    buildSaving: new Map(),
   } as AIPlanningState;
 }
 
@@ -40,6 +42,7 @@ export function setNationMemoPlanning(
 ) {
   const bfsMap = getBorderBFSMap(analysis);
   populateArmyGoals(planning, nationMemo, bfsMap);
+  populateBuildSaving(planning, nationMemo);
 }
 
 // use this function to update ai move that is 1 hex long

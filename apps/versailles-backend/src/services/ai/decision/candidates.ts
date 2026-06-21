@@ -34,7 +34,7 @@ export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nat
   const trainIntents = generateArmyTrainCandidates(ctx, analysis, planning, budgetMap, nation);
   console.log(`${nation.id} train`, trainIntents);
 
-  console.log(`${nation.id} planning`, planning);
+  console.dir([`${nation.id} planned move goals`, planning.plannedMoves], { depth: null });
   console.log(`${nation.id} budget`, budget);
 
   // update ai memo with planning

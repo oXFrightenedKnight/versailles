@@ -21,11 +21,7 @@ export function calcAIDefenseMove(
     for (const [hexId, _] of planning.availableArmyByHex) {
       const availableArmyInHex = getAvailableArmyForPriority(planning, hexId, borderHex.priority);
       if (availableArmyInHex === 0) continue;
-      console.log(`Available army in hex ${hexId}:`, availableArmyInHex);
-      console.log(`current army in hex:`, borderHex.currentArmy);
-      console.log(`deficit in hex`, borderHex.deficit);
       const path = reconstructPath(hexBFS.cameFrom, hexId);
-      console.log("PATH", path);
       armySupplyDist.push({ hexId, available: availableArmyInHex, path });
     }
   }

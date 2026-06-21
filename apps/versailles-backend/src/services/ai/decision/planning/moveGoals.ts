@@ -2,7 +2,7 @@ import { reconstructPath } from "#services/ai/algos/bfs.js";
 import { AIMemory } from "#services/ai/memory/types.js";
 import { BFSResult } from "#services/ai/types/analyze.js";
 import { GameCtx } from "#trpc/index.js";
-import { Nation } from "@repo/shared";
+import { BUILDINGS_CATEGORY, Nation } from "@repo/shared";
 import { AIPlanningState } from "./types";
 
 // check whether the hex that this army is moving to still needs that much army
@@ -91,6 +91,15 @@ export function updateNationMemo(planning: AIPlanningState, nationMemo: AIMemory
     moveGoals.push({ currHexId, endHexId, amount: goal.amount });
   }
   nationMemo.armyMovement = moveGoals;
+
+  // update build saving
+  const savingGoals: { hexId: number; targetLevel: number; category: BUILDINGS_CATEGORY }[] = [];
+
+  for (const [hexId, { targetLevel, category }] of planning.buildSaving) {
+    savingGoals.push({ hexId, targetLevel, category });
+  }
+  console.log(`savingGoals:`, savingGoals);
+  nationMemo.buildSaving = savingGoals;
 
   return { ok: true };
 }

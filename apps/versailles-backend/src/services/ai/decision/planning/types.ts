@@ -3,6 +3,7 @@ import { BUILDINGS_CATEGORY } from "@repo/shared";
 export type AIPlanningState = {
   // building
   intendedBuildings: Map<number, { category: BUILDINGS_CATEGORY; levels: number }>;
+  buildSaving: Map<number, { category: BUILDINGS_CATEGORY; targetLevel: number }>;
   // army
   availableArmyByHex: Map<number, number>;
   softReservedArmyByHex: Map<number, { amount: number; priority: number; reason: string }[]>;

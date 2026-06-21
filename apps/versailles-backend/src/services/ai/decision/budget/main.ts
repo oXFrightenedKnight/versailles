@@ -2,13 +2,18 @@ import { clamp } from "#lib/helpers.js";
 import { WorldAnalysis } from "#services/ai/types/analyze.js";
 import { getNationArmy } from "#services/genNations.js";
 import { GameCtx } from "#trpc/index.js";
-import { Nation } from "@repo/shared";
-import { AIPressure, GoldBudget, ResourceBudget } from "./types";
+import { Nation, typeNationResource } from "@repo/shared";
+import { AIBudgetCtx, AIPressure, BudgetMap, GoldBudget, ResourceBudget } from "./types";
+import { typedEntries } from "@repo/shared/helpers/tsHelpers";
+import { getNationBuildingCount } from "#services/buildings.js";
+import { FOUNDATION_MINIMUMS } from "../building/data";
 
 export function getAIBudget(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation): ResourceBudget {
   const pressure = getAIPressure(ctx, analysis, nation);
 
-  return { gold: calculateGoldBudget(nation.gold, pressure) };
+  const budgetCtx = { ctx, nationId: nation.id };
+
+  return { gold: calculateGoldBudget(budgetCtx, nation.gold, pressure) };
 }
 
 // calculates total enemy army
@@ -65,23 +70,35 @@ function getAIPressure(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation): A
 }
 
 // this function is only suitable for calculating gold
-function calculateBudgetWeights(pressure: AIPressure) {
-  const training =
-    0.35 + pressure.enemyStrengthPressure * 1.2 + pressure.expansionOpportunity * 0.3;
+function calculateBudgetWeights(budgetCtx: AIBudgetCtx, pressure: AIPressure) {
+  const barrackLevels =
+    getNationBuildingCount(budgetCtx.ctx, budgetCtx.nationId)["BARRACK"]?.reduce(
+      (acc, counts) => acc + counts.amount * counts.level,
+      0
+    ) ?? 0;
 
-  const building = 0.65 + pressure.economyPressure * 0.8 - pressure.enemyStrengthPressure * 0.6;
+  let training = 0.35 + pressure.enemyStrengthPressure * 1.2 + pressure.expansionOpportunity * 0.3;
 
-  // ENSURE AI SAVES ENOUGH MONEY FOR A BUILDING
-  const reserve = 0.15;
+  let building = 0.65 + pressure.economyPressure * 0.8 - pressure.enemyStrengthPressure * 0.6;
+
+  let reserve = 0.15;
+
+  // --- CONDITIONS ---
+  training *= barrackLevels > 0 ? 1 : 0;
+  reserve *= hasBuiltFoundation(budgetCtx.ctx, budgetCtx.nationId) ? 1 : 0;
 
   return {
-    training: Math.max(0.05, training),
-    building: Math.max(0.05, building),
-    reserve: Math.max(0.05, reserve),
+    training,
+    building,
+    reserve,
   };
 }
-function calculateGoldBudget(gold: number, pressure: AIPressure): GoldBudget {
-  const weights = calculateBudgetWeights(pressure);
+function calculateGoldBudget(
+  budgetCtx: AIBudgetCtx,
+  gold: number,
+  pressure: AIPressure
+): GoldBudget {
+  const weights = calculateBudgetWeights(budgetCtx, pressure);
 
   const totalWeight = weights.training + weights.building + weights.reserve;
 
@@ -91,4 +108,40 @@ function calculateGoldBudget(gold: number, pressure: AIPressure): GoldBudget {
     building: gold * (weights.building / totalWeight),
     reserve: gold * (weights.reserve / totalWeight),
   };
+}
+
+export function subtractBudget(
+  buildingBudget: Map<typeNationResource, number>,
+  cost: Partial<Record<"gold" | "manpower", number>>
+) {
+  const setResources: { resource: typeNationResource; total: number }[] = [];
+  for (const [resource, amount] of typedEntries(cost)) {
+    if (amount === undefined) return { ok: false };
+
+    const resBudget = buildingBudget.get(resource);
+    if (resBudget === undefined) return { ok: false };
+
+    const total = resBudget - amount;
+    if (total < 0) return { ok: false };
+
+    setResources.push({ resource, total });
+  }
+
+  for (const { resource, total } of setResources) {
+    buildingBudget.set(resource, total);
+  }
+
+  return { ok: true };
+}
+
+function hasBuiltFoundation(ctx: GameCtx, nationId: string) {
+  const buildingCount = getNationBuildingCount(ctx, nationId);
+
+  return typedEntries(FOUNDATION_MINIMUMS).every(([category, requirement]) => {
+    const counts = buildingCount[category] ?? [];
+
+    const amount = counts.reduce((total, building) => total + building.amount * building.level, 0);
+
+    return amount >= (requirement?.amount ?? 0);
+  });
 }

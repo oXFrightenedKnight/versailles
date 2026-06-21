@@ -140,14 +140,14 @@ function getEconomicPower(gold: number, buildings: BuildingsByCategoryAndLevel) 
   const goldPower = gold * GOLD_WEIGHT;
 
   let buildingPower = 0;
-  for (const [category, levels] of Object.entries(buildings)) {
-    for (const [level, amount] of Object.entries(levels)) {
+  for (const [category, counts] of Object.entries(buildings)) {
+    for (const levelsObj of counts) {
       const name = findBuildingNameByCategory({
         buildingCategory: category as BUILDINGS_CATEGORY,
-        level: Number(level),
+        level: levelsObj.level,
       });
 
-      buildingPower += BUILDINGS[name].buildCost * BUILDING_WEIGHT * amount;
+      buildingPower += BUILDINGS[name].buildCost * BUILDING_WEIGHT * levelsObj.amount;
     }
   }
 

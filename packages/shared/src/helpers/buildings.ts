@@ -1,4 +1,10 @@
-import { Building, BUILDINGS, BUILDINGS_CATEGORY, BuildingType } from "#data/buildings";
+import {
+  Building,
+  BUILDINGS,
+  BUILDINGS_CATEGORY,
+  BuildingType,
+  topLevelsByCategory,
+} from "#data/buildings";
 import { Hex } from "#data/hex_map";
 
 export function findBuildingNameByCategory({
@@ -52,4 +58,8 @@ export function hasBuilding(key: string, mapHexes: Hex[]) {
 
   const hex = mapHexes.find((hex) => hex.q === Number(point[0]) && hex.r === Number(point[1]));
   return hex?.buildingId ? true : false;
+}
+
+export function getTopCategoryLevel(category: BUILDINGS_CATEGORY) {
+  return topLevelsByCategory.find((c) => c.category === category)?.level ?? 0;
 }
