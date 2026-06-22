@@ -655,3 +655,13 @@ export function getOptimisticBuildInHex(
 
   return { category, level };
 }
+
+export function getNationBuildings(ctx: GameCtx, nation: Nation) {
+  const hexBuildingMap = new Map(
+    ctx.mapHexes
+      .filter((h) => h.owner === nation.id)
+      .flatMap((h) => (h.buildingId !== null ? [[h.buildingId, h] as const] : []))
+  );
+
+  return ctx.buildings.filter((b) => hexBuildingMap.has(b.id));
+}

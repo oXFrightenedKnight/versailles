@@ -3,9 +3,7 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
-update target level use for saving goals
-Teach ai to save resources for expensive buildings for long term (ai memo) and then optimistically subtract it every turn.
-and don't allocate training gold if ai has no barracks
+make a function that will trim duplicate road segments. check whether the server also rejects 2+ identical road segments when building roads, not just 2.
 Think how you are going to validate ai memo after simulation runs (maybe return intent results like rejected/accepted)
 9. start working on ai
 9,5. remember that when ai attacks, it first declares war, and next turn it checks

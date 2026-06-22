@@ -31,6 +31,7 @@ export function createPlanningState(ctx: GameCtx, nationId: string) {
     reservedArmyByHex: new Map(),
     plannedMoves: [] as ArmyMoveGoal[],
     buildSaving: new Map(),
+    buildRoads: new Set(),
   } as AIPlanningState;
 }
 

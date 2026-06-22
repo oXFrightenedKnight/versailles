@@ -43,11 +43,7 @@ export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nat
   return { buildIntents, moveIntents, trainIntents };
 }
 {
-  /*function generateBuildRoadCandidates(
-  ctx: GameCtx,
-  analysis: WorldAnalysis,
-  nation: Nation
-): BuildRoad[] {}
+  /*
 
 function generateCreateContractCandidates(
   ctx: GameCtx,
