@@ -43,8 +43,8 @@ export function buildNationRoads({
       if (!prevPoint && !nextPoint) {
         continue outer; // also prevents roads that only have one point
       }
-      const hexOfPrev = prevPoint ? hexMap.get(`${prevPoint.q},${prevPoint.r}`) : undefined;
-      const hexOfNext = nextPoint ? hexMap.get(`${nextPoint.q},${nextPoint.r}`) : undefined;
+      const hexOfPrev = hexMap.get(`${prevPoint.q},${prevPoint.r}`);
+      const hexOfNext = hexMap.get(`${nextPoint.q},${nextPoint.r}`);
       if (!hexOfPrev && !hexOfNext) continue outer;
 
       // --- IF ALL POINTS BORDER ---
@@ -158,4 +158,70 @@ export function cancelRoadBuild(ctx: GameCtx, cancelIds: string[], nation: Natio
       nation.gold += BASE_ROAD_COST;
     }
   }
+}
+
+// Road edge check
+type Point = { q: number; r: number };
+function pointKey(point: Point) {
+  return `${point.q},${point.r}`;
+}
+
+function edgeKey(a: Point, b: Point) {
+  const ak = pointKey(a);
+  const bk = pointKey(b);
+
+  return ak < bk ? `${ak}|${bk}` : `${bk}|${ak}`;
+}
+
+function getRoadEdges(points: Point[]) {
+  const edges = new Set<string>();
+
+  for (let i = 0; i < points.length - 1; i++) {
+    edges.add(edgeKey(points[i], points[i + 1]));
+  }
+
+  return edges;
+}
+
+// get shared segments between two given roads
+export function getSharedRoadEdges(a: Point[], b: Point[]) {
+  const shared: Set<string> = new Set();
+  const aEdges = getRoadEdges(a);
+
+  for (let i = 0; i < b.length - 1; i++) {
+    const key = edgeKey(b[i], b[i + 1]);
+    if (aEdges.has(key)) {
+      shared.add(key);
+    }
+  }
+
+  return shared;
+}
+
+export function getTrimmedRoadSegments(path: Point[], overlapEdges: Set<string>) {
+  const result: Point[][] = [];
+  let segmentStart = 0;
+
+  for (let i = 0; i < path.length - 1; i++) {
+    const a = path[i];
+    const b = path[i + 1];
+
+    if (overlapEdges.has(edgeKey(a, b))) {
+      const segment = path.slice(segmentStart, i + 1);
+
+      if (segment.length >= 2) {
+        result.push(segment);
+      }
+
+      segmentStart = i + 1;
+    }
+  }
+
+  const finalSegment = path.slice(segmentStart);
+
+  if (finalSegment.length >= 2) {
+    result.push(finalSegment);
+  }
+
+  return result;
 }
