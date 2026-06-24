@@ -279,8 +279,8 @@ export function getNationArmyFromHex(hex: Hex, nationId: string) {
   return hex.army.find((obj) => obj.nationId === nationId)?.amount ?? 0;
 }
 
-export function getHexAxialMap(ctx: GameCtx) {
-  return new Map(ctx.mapHexes.map((h) => [`${h.q},${h.r}`, h]));
+export function getHexAxialMap({ mapHexes }: { mapHexes: Hex[] }) {
+  return new Map(mapHexes.map((h) => [`${h.q},${h.r}`, h]));
 }
 export function getHexIdMap(ctx: GameCtx) {
   return new Map(ctx.mapHexes.map((h) => [h.id, h]));

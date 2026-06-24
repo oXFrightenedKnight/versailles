@@ -1,7 +1,16 @@
-import { BASE_ROAD_COST, findNeighbors, hasSegment, Hex, Nation, Road } from "@repo/shared";
+import {
+  BASE_ROAD_COST,
+  calculateRoadCost,
+  findNeighbors,
+  hasSegment,
+  Hex,
+  Nation,
+  Road,
+} from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
 import { recalculateContractsPaths } from "./contracts.js";
 import { subtractGold } from "./genNations.js";
+import { getHexAxialMap } from "./map.js";
 
 export function buildNationRoads({
   gameCtx,
@@ -84,7 +93,7 @@ export function buildNationRoads({
       road.constructing = { progress: 0, owner: nation.id };
     }
 
-    const cost = road.points.length * BASE_ROAD_COST;
+    const cost = calculateRoadCost(road.points.length);
     if (subtractGold(gameCtx, nation.id, cost)) {
       // add road to approved roads for building
       roads.push(road);
@@ -160,8 +169,35 @@ export function cancelRoadBuild(ctx: GameCtx, cancelIds: string[], nation: Natio
   }
 }
 
+// return roads with points that exist only on nation's owned hexes
+export type RoadPoint = { q: number; r: number; d1: number; d2: number; isConstructing: boolean };
+export function getNationRoads(ctx: GameCtx, nationId: string) {
+  const axialMap = getHexAxialMap(ctx);
+
+  const checked: Road[] = [];
+
+  for (const road of ctx.roads) {
+    const validPoints: RoadPoint[] = [];
+
+    for (const p of road.points) {
+      const hex = axialMap.get(`${p.q},${p.r}`);
+
+      if (!hex) continue;
+      if (hex.owner !== nationId) continue;
+
+      validPoints.push(p);
+    }
+
+    if (validPoints.length < 2) continue;
+
+    checked.push({ ...road, points: validPoints });
+  }
+
+  return checked;
+}
+
 // Road edge check
-type Point = { q: number; r: number };
+export type Point = { q: number; r: number };
 function pointKey(point: Point) {
   return `${point.q},${point.r}`;
 }

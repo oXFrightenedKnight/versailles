@@ -1,11 +1,14 @@
-import { BUILDINGS_CATEGORY } from "@repo/shared";
+import { Point } from "#services/road.js";
+import { BUILDINGS_CATEGORY, RESOURCES } from "@repo/shared";
 
 export type AIPlanningState = {
   // building
   intendedBuildings: Map<number, { category: BUILDINGS_CATEGORY; levels: number }>;
   buildSaving: Map<number, { category: BUILDINGS_CATEGORY; targetLevel: number }>;
   // roads
-  buildRoads: Set<number[]>; // array of hexIds that include roads
+  buildRoads: Set<Point[]>; // array of axial points for new road
+  // contracts
+  occupiedResources: Map<string, Partial<Record<RESOURCES, number>>>; // buildingId: { resource: occupied }
   // army
   availableArmyByHex: Map<number, number>;
   softReservedArmyByHex: Map<number, { amount: number; priority: number; reason: string }[]>;

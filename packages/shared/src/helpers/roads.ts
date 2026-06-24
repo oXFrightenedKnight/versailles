@@ -1,4 +1,4 @@
-import { Road } from "#data/roads";
+import { BASE_ROAD_COST, Road } from "#data/roads";
 
 export function hasSegment(road: Road, a: { q: number; r: number }, b: { q: number; r: number }) {
   const points = road.points;
@@ -15,4 +15,8 @@ export function hasSegment(road: Road, a: { q: number; r: number }, b: { q: numb
   }
 
   return false;
+}
+
+export function calculateRoadCost(roadLength: number) {
+  return roadLength * BASE_ROAD_COST;
 }

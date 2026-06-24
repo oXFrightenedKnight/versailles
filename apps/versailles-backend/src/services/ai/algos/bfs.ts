@@ -6,15 +6,15 @@ import { WorldAnalysis } from "../types/analyze";
 export function bfs({
   ctx,
   startHexId,
+  allowedHexIds,
   hexIdMap,
   axialMap,
-  allowedHexIds,
 }: {
   ctx: GameCtx;
   startHexId: number;
+  allowedHexIds?: number[];
   hexIdMap?: Map<number, Hex>;
   axialMap?: Map<string, Hex>;
-  allowedHexIds?: number[];
 }) {
   const newHexIdMap = hexIdMap ?? getHexIdMap(ctx);
   const newAxialMap = axialMap ?? getHexAxialMap(ctx);

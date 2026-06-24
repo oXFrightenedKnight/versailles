@@ -3,12 +3,16 @@ import { BuildRoad } from "#services/ai/types/intent.js";
 import { GameCtx } from "#trpc/index.js";
 import {
   BUILDINGS,
+  calculateRoadCost,
   estimateConsumption,
   findBuildingNameByCategory,
   getHexByAxial,
+  Hex,
   Nation,
   RESOURCES,
+  Road,
   SupplyContract,
+  typeNationResource,
 } from "@repo/shared";
 import { getHexesBuildings } from "../helpers";
 import { calculateResourceOutput, getNationBuildings } from "#services/buildings.js";
@@ -17,23 +21,33 @@ import { AIPlanningState } from "../planning/types";
 import { bfs, reconstructPath } from "#services/ai/algos/bfs.js";
 import { getHexAxialMap, getHexIdMap } from "#services/map.js";
 import { BuildingProductionNode } from "./types";
+import {
+  getNationRoads,
+  getSharedRoadEdges,
+  getTrimmedRoadSegments,
+  Point,
+} from "#services/road.js";
+import { subtractBudget } from "../budget/main";
 
 // Make sure to add guardrails so ai doesn't build a road if it already exists
 export function generateBuildRoadCandidates(
   ctx: GameCtx,
-  analysis: WorldAnalysis,
   planning: AIPlanningState,
+  budget: Map<typeNationResource, number>,
   nation: Nation
 ): BuildRoad[] {
   const buildRoadIntents: BuildRoad[] = [];
 
   const buildingShortage = getBuildingsShortage(ctx, nation);
+
+  // UPDATE TO INCLUDE OCCUPIED RESOURCES BY PLANNING
   const producingBuildings = getProducingBuildings(ctx, nation);
-  const optimisticRoads = getOptimisticRoads(ctx, planning, nation);
 
   const hexIdMap = getHexIdMap(ctx);
   const axialMap = getHexAxialMap(ctx);
   const allowedHexIds = ctx.mapHexes.filter((h) => h.owner === nation.id).map((h) => h.id);
+
+  const nationRoads = getNationRoads(ctx, nation.id);
 
   // make sure this is called as a function so contract creation can access it
   // run bfs from shortaged building hex
@@ -45,6 +59,7 @@ export function generateBuildRoadCandidates(
     const produceNodeMap = new Map<number, { build: BuildingProductionNode; path: number[] }>();
 
     for (const producing of producingBuildings) {
+      // skip if this building does not produce any low-supply resource
       if (
         !typedEntries(producing.available).some(
           ([res, _]) => build.shortage[res] && build.shortage[res] > 0
@@ -59,8 +74,24 @@ export function generateBuildRoadCandidates(
     // sort by closest
     const sortedNodes = [...produceNodeMap].sort((a, b) => a[1].path.length - b[1].path.length);
 
-    // submit and trim
-    // trim duplicate segments (make special function. maybe even use for server checks)
+    // get optimistic roads including submited ones
+    const roadPoints = getRoadsPoints(nationRoads, planning);
+
+    // trim duplicate segments and submit as individual nodes
+    for (const node of sortedNodes) {
+      const newSegments = uniqueRoadSegments(node[1].path, roadPoints, hexIdMap);
+
+      for (const segment of newSegments) {
+        // apply budget and submit (+planning)
+        const cost = calculateRoadCost(segment.length);
+
+        const success = subtractBudget(budget, { gold: cost });
+
+        if (success.ok) {
+          buildRoadIntents.push();
+        }
+      }
+    }
   }
 
   return buildRoadIntents;
@@ -173,20 +204,26 @@ export function getProducingBuildings(ctx: GameCtx, nation: Nation) {
   return buildShortage;
 }
 
-// return roads as arrays of their hexIds
-export function getOptimisticRoads(ctx: GameCtx, planning: AIPlanningState, nation: Nation) {
-  const axialMap = getHexAxialMap(ctx);
-  const roads = ctx.roads.map((r) =>
-    r.points.flatMap((p) => {
-      const hex = axialMap.get(`${p.q},${p.r}`);
-      return hex ? [hex.id] : [];
-    })
-  );
-  return [...roads, ...planning.buildRoads];
+export function getRoadsPoints(roads: Road[], planning: AIPlanningState): Point[][] {
+  const roadPoints = roads.map((r) => r.points.flatMap((p) => ({ q: p.q, r: p.r })));
+
+  return [...roadPoints, ...planning.buildRoads];
 }
 
-// Find closest hexId that is included in one of the roads that also includes destination hexId
-{
-  /*
-   */
+// returns non-overlapping road segments
+function uniqueRoadSegments(path: number[], roadsPoints: Point[][], hexIdMap: Map<number, Hex>) {
+  const pointPath: Point[] = path.flatMap((p) => {
+    const hex = hexIdMap.get(p);
+    return hex ? [{ q: hex.q, r: hex.r }] : [];
+  });
+
+  // get all shared edges of this road with other
+  const shared = new Set<string>();
+
+  for (const points of roadsPoints) {
+    const edges = getSharedRoadEdges(pointPath, points);
+    edges.forEach((e) => shared.add(e));
+  }
+
+  return getTrimmedRoadSegments(pointPath, shared);
 }

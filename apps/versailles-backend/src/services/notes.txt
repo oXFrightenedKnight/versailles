@@ -3,7 +3,13 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
-make a function that will trim duplicate road segments. check whether the server also rejects 2+ identical road segments when building roads, not just 2.
+1. Make sure you include occupied resources from planning when calulating available builidngs and how much they produce
+2. Solve nation road dilemma (getNationRoads): 
+   - Split road with partially occupied segments, then possible race condition when reading split roads and real ctx.roads
+   - If you leave unsplitted, you will for sure have roads with missing edges.
+   - Make special function only available for ai that will give splitted roads, but won't solve the overall "what happens if road is partially captured" problem.
+3. Update BuildRoadIntent to include path.
+
 Think how you are going to validate ai memo after simulation runs (maybe return intent results like rejected/accepted)
 9. start working on ai
 9,5. remember that when ai attacks, it first declares war, and next turn it checks
