@@ -3,6 +3,7 @@ import { Road } from "#data/roads";
 import { hasBuilding } from "./buildings";
 import { axialToCube, cubeDistance, getHexByAxial } from "./hex_map";
 
+// Consider re-using the graph
 export function startDijkstrasAlgo({
   startingHex,
   endHex,
@@ -175,8 +176,8 @@ function createWeightedGraph({
   }
 
   // turn intersects into array and loop over to add to graph
-  for (const [pointString, roads] of nodePointMap) {
-    const point = pointString.split(","); // [0] - q, [1] - r
+  for (const [key, roads] of nodePointMap) {
+    const point = key.split(","); // [0] - q, [1] - r
     for (const road of roads) {
       // split road in two arrays by finding index of point
       const idx = road.points.findIndex(

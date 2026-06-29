@@ -52,8 +52,8 @@ export function buildNationRoads({
       if (!prevPoint && !nextPoint) {
         continue outer; // also prevents roads that only have one point
       }
-      const hexOfPrev = hexMap.get(`${prevPoint.q},${prevPoint.r}`);
-      const hexOfNext = hexMap.get(`${nextPoint.q},${nextPoint.r}`);
+      const hexOfPrev = prevPoint ? hexMap.get(`${prevPoint.q},${prevPoint.r}`) : undefined;
+      const hexOfNext = nextPoint ? hexMap.get(`${nextPoint.q},${nextPoint.r}`) : undefined;
       if (!hexOfPrev && !hexOfNext) continue outer;
 
       // --- IF ALL POINTS BORDER ---
@@ -171,38 +171,66 @@ export function cancelRoadBuild(ctx: GameCtx, cancelIds: string[], nation: Natio
 
 // return roads with points that exist only on nation's owned hexes
 export type RoadPoint = { q: number; r: number; d1: number; d2: number; isConstructing: boolean };
-export function getNationRoads(ctx: GameCtx, nationId: string) {
+export function getNationRoads(ctx: GameCtx, nationId: string): Point[][] {
   const axialMap = getHexAxialMap(ctx);
 
-  const checked: Road[] = [];
+  const trimmedRoads: Point[][] = [];
 
   for (const road of ctx.roads) {
-    const validPoints: RoadPoint[] = [];
+    const pointMap = new Map<string, RoadPoint>(road.points.map((p) => [`${p.q},${p.r}`, p]));
+    const removePoints = [...pointMap].flatMap(([key, p]) => {
+      const hex = axialMap.get(key);
+      if (!hex) return [];
+      if (hex.owner !== nationId) return [p];
 
-    for (const p of road.points) {
-      const hex = axialMap.get(`${p.q},${p.r}`);
+      return [];
+    });
 
-      if (!hex) continue;
-      if (hex.owner !== nationId) continue;
+    const trimmed = getTrimmedRoad(road.points, removePoints);
 
-      validPoints.push(p);
-    }
-
-    if (validPoints.length < 2) continue;
-
-    checked.push({ ...road, points: validPoints });
+    trimmed.forEach((points) => trimmedRoads.push(points));
   }
 
-  return checked;
+  return trimmedRoads;
+}
+
+// this function REMOVES specific points of the road and returns new segments
+function getTrimmedRoad(original: Point[], removePoints: Point[]): Point[][] {
+  const remove = new Set(removePoints.map((p) => pointKey(p)));
+
+  const result: Set<Point[]> = new Set();
+  let pointStart = 0;
+
+  for (let i = 0; i < original.length - 1; i++) {
+    const a = original[i];
+
+    if (remove.has(pointKey(a))) {
+      const segment = original.slice(pointStart, i);
+
+      if (segment.length >= 2) {
+        result.add(segment);
+      }
+
+      pointStart = i + 1;
+    }
+  }
+
+  const finalSegment = original.slice(pointStart);
+
+  if (finalSegment.length >= 2) {
+    result.add(finalSegment);
+  }
+
+  return [...result];
 }
 
 // Road edge check
 export type Point = { q: number; r: number };
-function pointKey(point: Point) {
+export function pointKey(point: Point) {
   return `${point.q},${point.r}`;
 }
 
-function edgeKey(a: Point, b: Point) {
+export function edgeKey(a: Point, b: Point) {
   const ak = pointKey(a);
   const bk = pointKey(b);
 
@@ -233,8 +261,8 @@ export function getSharedRoadEdges(a: Point[], b: Point[]) {
 
   return shared;
 }
-
-export function getTrimmedRoadSegments(path: Point[], overlapEdges: Set<string>) {
+// this function SLICES a road based on edges, and returns segments without removing any points
+export function getSlicedRoadSegments(path: Point[], overlapEdges: Set<string>) {
   const result: Point[][] = [];
   let segmentStart = 0;
 

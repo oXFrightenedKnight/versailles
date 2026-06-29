@@ -1,6 +1,7 @@
 import { getDeltaAxial, getHexIdMap } from "#services/map.js";
 import { GameCtx, IntentInput } from "#trpc/index.js";
-import { ArmyTrain, BuildIntent, MoveArmy } from "../types/intent";
+import { generateRoadDs } from "@repo/shared";
+import { ArmyTrain, BuildIntent, BuildRoad, ContractIntent, MoveArmy } from "../types/intent";
 
 export function translateBuilding(buildIntents: BuildIntent[]): IntentInput["newQueuedBuildings"] {
   const translated: IntentInput["newQueuedBuildings"] = [];
@@ -42,6 +43,30 @@ export function translateArmyTrain(armyTrainIntents: ArmyTrain[]): IntentInput["
   for (const intent of armyTrainIntents) {
     translated.push({ barrackId: intent.barrackId, amount: intent.amount });
   }
+
+  return translated;
+}
+
+export function translateRoadBuild(buildRoads: BuildRoad[]) {
+  const translated: IntentInput["buildRoads"] = [];
+
+  for (const intent of buildRoads) {
+    const points: { q: number; r: number; d1: number; d2: number }[] = [];
+    for (const point of intent.path) {
+      const { d1, d2 } = generateRoadDs();
+
+      points.push({ q: point.q, r: point.r, d1, d2 });
+    }
+    translated.push({ id: crypto.randomUUID(), points });
+  }
+
+  return translated;
+}
+
+export function translateCreateContract(
+  createContracts: ContractIntent[]
+): IntentInput["createNewContracts"] {
+  const translated: IntentInput["createNewContracts"] = [];
 
   return translated;
 }

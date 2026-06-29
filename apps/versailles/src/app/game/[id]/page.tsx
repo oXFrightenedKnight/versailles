@@ -6,7 +6,6 @@ import {
   handleRoadDrag,
   stopBarDrag,
 } from "@/canvas/click/handleClick";
-import { d } from "@/canvas/map_data";
 import DragBar from "@/components/GameComponents/DragBar";
 import BuildMenu from "@/components/SideMenus/BuildingMenu/buildButton";
 import DiplomacyMenu from "@/components/SideMenus/DiplomacyMenu/MainMenu";
@@ -309,7 +308,6 @@ export default function Home() {
         setBuildRoads,
         serverContracts,
         serverContractUpdate,
-        d,
         barValue,
         setBarValue,
         serverBuildingsCancel,
@@ -393,7 +391,6 @@ export default function Home() {
         playerNation,
         roads,
         buildRoads,
-        d,
         barDragging,
         setBarDragging,
         draggingRef,
@@ -449,7 +446,6 @@ export default function Home() {
         playerNation,
         roads,
         buildRoads,
-        d,
         barDragging,
         setBarDragging,
         draggingRef,

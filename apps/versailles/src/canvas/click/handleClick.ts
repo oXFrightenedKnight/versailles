@@ -1,33 +1,27 @@
-import { pixelToHex } from "../render";
-import { Dispatch, RefObject } from "react";
-import { randomNumber } from "@/lib/utils";
+import { getBuildingCost, isBuildingCategory } from "@/lib/helpers/buildings";
+import { createNewPopup } from "@/lib/helpers/popups";
 import { SetStateAction } from "@/lib/stores/intentStore";
+import { Popup } from "@/lib/stores/uiStore";
 import { armyIntent, BuildModeType, Contract, newBuilding, roadObject } from "@/lib/types/game";
-import { findHexPathBetween } from "../pathfinding";
-import { getFirstFreeResource, getMergedContracts } from "@/lib/UI/mergeData/uiContract";
 import { cancelArmyMove } from "@/lib/UI/mergeData/uiArmy";
 import { mergeConstructingBuildings } from "@/lib/UI/mergeData/uiBuildings";
+import { getFirstFreeResource, getMergedContracts } from "@/lib/UI/mergeData/uiContract";
 import { calcAvailableArmy } from "@/lib/UI/optimisticCalc/army";
+import { hasEnoughGold } from "@/lib/UI/optimisticCalc/gold";
+import { randomNumber } from "@/lib/utils";
+import { Building, topLevelsByCategory } from "@repo/shared/data/buildings";
+import { ServerContractUpdate, SupplyContract } from "@repo/shared/data/contracts";
 import { Hex, HEX_DIRECTIONS } from "@repo/shared/data/hex_map";
 import { Nation } from "@repo/shared/data/nations";
 import { BASE_ROAD_COST, Road } from "@repo/shared/data/roads";
-import {
-  Building,
-  building_categoires,
-  BUILDINGS,
-  topLevelsByCategory,
-} from "@repo/shared/data/buildings";
-import { ServerContractUpdate, SupplyContract } from "@repo/shared/data/contracts";
-import { findBuildingNameByCategory, getBuilding } from "@repo/shared/helpers/buildings";
-import { startDijkstrasAlgo } from "@repo/shared/helpers/dijkstras";
+import { getBuilding } from "@repo/shared/helpers/buildings";
 import { calculateExportAmount } from "@repo/shared/helpers/contracts";
+import { startDijkstrasAlgo } from "@repo/shared/helpers/dijkstras";
 import { findNeighbors, getHexByAxial } from "@repo/shared/helpers/hex_map";
-import { hasSegment } from "@repo/shared/helpers/roads";
-import { Popup } from "@/lib/stores/uiStore";
-import { PopupText } from "@/lib/data";
-import { createNewPopup } from "@/lib/helpers/popups";
-import { hasEnoughGold } from "@/lib/UI/optimisticCalc/gold";
-import { getBuildingCost, isBuildingCategory } from "@/lib/helpers/buildings";
+import { generateRoadDs, hasSegment } from "@repo/shared/helpers/roads";
+import { Dispatch, RefObject } from "react";
+import { findHexPathBetween } from "../pathfinding";
+import { pixelToHex } from "../render";
 
 export type ClickCtx = {
   mouseDownRef: RefObject<boolean>;
@@ -59,10 +53,6 @@ export type ClickCtx = {
   }[];
   serverContractUpdate: ServerContractUpdate[];
   setBuildRoads: SetStateAction<roadObject[]>;
-  d: {
-    a: number;
-    b: number;
-  };
   barValue: number;
   setBarValue: React.Dispatch<React.SetStateAction<number>>;
   serverBuildingsCancel: number[];
@@ -87,10 +77,6 @@ export type RoadDragCtx = {
   playerNation: Nation | null;
   roads: Road[];
   buildRoads: roadObject[];
-  d: {
-    a: number;
-    b: number;
-  };
   barDragging: boolean;
   setBarDragging: React.Dispatch<React.SetStateAction<boolean>>;
   draggingRef: RefObject<boolean>;
@@ -257,7 +243,6 @@ function handleRoadBuild(hex: Hex, ctx: ClickCtx) {
     randomIdRef,
     tempRoadRef,
     setBuildRoads,
-    d,
     setBuildMode,
     effectiveGold,
     setPopup,
@@ -270,10 +255,12 @@ function handleRoadBuild(hex: Hex, ctx: ClickCtx) {
     roadStartRef.current = hex;
     randomIdRef.current = crypto.randomUUID();
 
+    const d = generateRoadDs();
+
     // push starting roadObject to array
     tempRoadRef.current = {
       id: randomIdRef.current!,
-      points: [{ q: hex.q, r: hex.r, d1: randomNumber(d.a, d.b), d2: randomNumber(d.a, d.b) }],
+      points: [{ q: hex.q, r: hex.r, d1: d.d1, d2: d.d2 }],
     };
   } else {
     // add logic to submit the road from temp to actual array and clean up
@@ -446,7 +433,6 @@ export function handleRoadDrag(event: MouseEvent, ctx: RoadDragCtx) {
     playerNation,
     roads,
     buildRoads,
-    d,
   } = ctx;
 
   if (buildMode === "road" && !mouseDownRef.current && roadStartRef.current) {
@@ -553,21 +539,24 @@ export function handleRoadDrag(event: MouseEvent, ctx: RoadDragCtx) {
         if (!missingHex) return;
         missingHexes.push(missingHex);
 
+        const { d1, d2 } = generateRoadDs();
+
         // add missing hex coordinates to road object
         tempRoadArray.points.push({
           q: missingHex.q,
           r: missingHex.r,
-          d1: randomNumber(d.a, d.b),
-          d2: randomNumber(d.a, d.b),
+          d1,
+          d2,
         });
       });
     }
 
+    const { d1, d2 } = generateRoadDs();
     tempRoadArray.points.push({
       q: hex.q,
       r: hex.r,
-      d1: randomNumber(d.a, d.b),
-      d2: randomNumber(d.a, d.b),
+      d1,
+      d2,
     });
   }
 }

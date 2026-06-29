@@ -13,18 +13,12 @@ export type AIPressure = {
   expansionOpportunity: number; // chance to attack weaker enemies
 };
 
-export type AIBudget = GoldBudget;
-export type BaseBudget = {
-  total: number;
-};
-export type GoldBudget = BaseBudget & {
-  reserve: number;
-  training: number;
-  building: number;
-};
+export type BudgetAction = "build" | "roadBuild" | "train" | "move" | "reserve";
+
+export type AIBudget = Map<BudgetAction, number>;
 
 export type ResourceBudget = {
-  gold: GoldBudget;
+  gold: AIBudget;
 };
 
 export type BudgetMap = Map<typeNationResource, AIBudget>;

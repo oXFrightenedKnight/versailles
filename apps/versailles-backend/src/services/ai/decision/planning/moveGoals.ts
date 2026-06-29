@@ -35,6 +35,7 @@ export function populateArmyGoals(
 
     for (const move of hexMemoMoves) {
       const path = reconstructPath(bfsResult.cameFrom, move.currHexId);
+      if (path === null) continue;
 
       planning.plannedMoves.push({
         id: crypto.randomUUID(),

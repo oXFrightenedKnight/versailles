@@ -23,3 +23,5 @@ export type ArmyMoveGoal = {
   path: number[];
   amount: number;
 };
+
+export type ResourceRecord = Partial<Record<RESOURCES, number>>;

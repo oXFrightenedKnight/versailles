@@ -1,33 +1,29 @@
-import { WorldAnalysis } from "#services/ai/types/analyze.js";
+import { bfs, buildRoadGraph, hasRoadPath, reconstructPath } from "#services/ai/algos/bfs.js";
 import { BuildRoad } from "#services/ai/types/intent.js";
+import { calculateResourceOutput, getNationBuildings } from "#services/buildings.js";
+import { getHexAxialMap, getHexIdMap } from "#services/map.js";
+import {
+  getNationRoads,
+  getSharedRoadEdges,
+  getSlicedRoadSegments,
+  Point,
+} from "#services/road.js";
 import { GameCtx } from "#trpc/index.js";
 import {
   BUILDINGS,
   calculateRoadCost,
   estimateConsumption,
   findBuildingNameByCategory,
-  getHexByAxial,
   Hex,
   Nation,
   RESOURCES,
-  Road,
   SupplyContract,
   typeNationResource,
 } from "@repo/shared";
-import { getHexesBuildings } from "../helpers";
-import { calculateResourceOutput, getNationBuildings } from "#services/buildings.js";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
-import { AIPlanningState } from "../planning/types";
-import { bfs, reconstructPath } from "#services/ai/algos/bfs.js";
-import { getHexAxialMap, getHexIdMap } from "#services/map.js";
-import { BuildingProductionNode } from "./types";
-import {
-  getNationRoads,
-  getSharedRoadEdges,
-  getTrimmedRoadSegments,
-  Point,
-} from "#services/road.js";
 import { subtractBudget } from "../budget/main";
+import { AIPlanningState, ResourceRecord } from "../planning/types";
+import { BuildingConsumptionNode, BuildingProductionNode } from "./types";
 
 // Make sure to add guardrails so ai doesn't build a road if it already exists
 export function generateBuildRoadCandidates(
@@ -37,58 +33,91 @@ export function generateBuildRoadCandidates(
   nation: Nation
 ): BuildRoad[] {
   const buildRoadIntents: BuildRoad[] = [];
+  const submitIntent = (intent: { path: Point[] }) => {
+    // subtract budget
+    const cost = calculateRoadCost(intent.path.length);
+
+    const success = subtractBudget(budget, { gold: cost });
+
+    // push intent
+    if (success.ok) {
+      buildRoadIntents.push({
+        id: crypto.randomUUID(),
+        score: 0,
+        path: intent.path,
+        type: "buildRoad",
+      });
+
+      // update planning
+      planning.buildRoads.add(intent.path);
+    } else return { ok: false };
+  };
 
   const buildingShortage = getBuildingsShortage(ctx, nation);
 
-  // UPDATE TO INCLUDE OCCUPIED RESOURCES BY PLANNING
-  const producingBuildings = getProducingBuildings(ctx, nation);
+  const availableInBuildings = availableResourceBuildings(ctx, planning, nation);
 
   const hexIdMap = getHexIdMap(ctx);
   const axialMap = getHexAxialMap(ctx);
   const allowedHexIds = ctx.mapHexes.filter((h) => h.owner === nation.id).map((h) => h.id);
 
-  const nationRoads = getNationRoads(ctx, nation.id);
-
-  // make sure this is called as a function so contract creation can access it
-  // run bfs from shortaged building hex
+  const nationRoadSegments = getNationRoads(ctx, nation.id);
 
   for (const build of buildingShortage) {
-    const cameFrom = bfs({ ctx, startHexId: build.hexId, hexIdMap, axialMap, allowedHexIds });
-
-    // reconstruct path to all producing buildings for each shortage resource
-    const produceNodeMap = new Map<number, { build: BuildingProductionNode; path: number[] }>();
-
-    for (const producing of producingBuildings) {
-      // skip if this building does not produce any low-supply resource
-      if (
-        !typedEntries(producing.available).some(
-          ([res, _]) => build.shortage[res] && build.shortage[res] > 0
-        )
-      )
-        continue;
-
-      const path = reconstructPath(cameFrom, producing.hexId);
-      produceNodeMap.set(producing.hexId, { build: producing, path });
-    }
-
-    // sort by closest
-    const sortedNodes = [...produceNodeMap].sort((a, b) => a[1].path.length - b[1].path.length);
+    // make path to producing buildings from closest to furthest
+    const producingNodes = producingBuildsPath(
+      ctx,
+      build,
+      availableInBuildings,
+      hexIdMap,
+      axialMap,
+      allowedHexIds
+    );
 
     // get optimistic roads including submited ones
-    const roadPoints = getRoadsPoints(nationRoads, planning);
+    const roadPoints = [...nationRoadSegments, ...planning.buildRoads];
+    const roadGraph = buildRoadGraph(roadPoints); // build from optimistic
 
-    // trim duplicate segments and submit as individual nodes
-    for (const node of sortedNodes) {
-      const newSegments = uniqueRoadSegments(node[1].path, roadPoints, hexIdMap);
+    const available = new Map(
+      producingNodes.map(([_, b]) => [b.build.buildingId, { ...b.build.available }])
+    );
+    const needed = { ...build.shortage };
 
+    // sort by closest
+    const sortedNodes = [...producingNodes].sort((a, b) => a[1].path.length - b[1].path.length);
+
+    for (const [_, node] of sortedNodes) {
+      const startHex = hexIdMap.get(build.hexId);
+      const endHex = hexIdMap.get(node.build.hexId);
+      if (!startHex || !endHex) continue;
+
+      if (hasRoadPath(roadGraph, startHex, endHex)) continue;
+
+      const nodeAvailable = available.get(node.build.buildingId);
+      if (!nodeAvailable) continue;
+
+      // check if at least one produced resource is needed
+      if (!hasShortageResource(needed, nodeAvailable)) continue;
+
+      const newSegments = uniqueRoadSegments(node.path, roadPoints, hexIdMap);
+
+      let ok = true;
       for (const segment of newSegments) {
-        // apply budget and submit (+planning)
-        const cost = calculateRoadCost(segment.length);
+        const success = submitIntent({ path: segment });
+        if (!success || !success.ok) ok = false;
+      }
 
-        const success = subtractBudget(budget, { gold: cost });
+      if (ok) {
+        for (const [res, a] of typedEntries(nodeAvailable)) {
+          const availableAmount = a ?? 0;
+          const neededAmount = needed[res] ?? 0;
 
-        if (success.ok) {
-          buildRoadIntents.push();
+          // estimated amount of contract per turn
+          const estAmount = Math.max(0, Math.min(availableAmount, neededAmount));
+
+          // update available and needed
+          nodeAvailable[res] = availableAmount - estAmount;
+          needed[res] = neededAmount - estAmount;
         }
       }
     }
@@ -204,12 +233,6 @@ export function getProducingBuildings(ctx: GameCtx, nation: Nation) {
   return buildShortage;
 }
 
-export function getRoadsPoints(roads: Road[], planning: AIPlanningState): Point[][] {
-  const roadPoints = roads.map((r) => r.points.flatMap((p) => ({ q: p.q, r: p.r })));
-
-  return [...roadPoints, ...planning.buildRoads];
-}
-
 // returns non-overlapping road segments
 function uniqueRoadSegments(path: number[], roadsPoints: Point[][], hexIdMap: Map<number, Hex>) {
   const pointPath: Point[] = path.flatMap((p) => {
@@ -225,5 +248,82 @@ function uniqueRoadSegments(path: number[], roadsPoints: Point[][], hexIdMap: Ma
     edges.forEach((e) => shared.add(e));
   }
 
-  return getTrimmedRoadSegments(pointPath, shared);
+  return getSlicedRoadSegments(pointPath, shared);
+}
+
+// returns all resources available by producing buildings including planning
+export function availableResourceBuildings(
+  ctx: GameCtx,
+  planning: AIPlanningState,
+  nation: Nation
+) {
+  const producing = getProducingBuildings(ctx, nation);
+
+  const updated: BuildingProductionNode[] = [];
+  for (const building of producing) {
+    const occupied = planning.occupiedResources.get(building.buildingId);
+
+    if (!occupied) {
+      updated.push(building);
+      continue;
+    }
+
+    const resources: ResourceRecord = {};
+
+    typedEntries(building.available).forEach(([res, available]) => {
+      if (!available) return;
+
+      const occupiedRes = occupied[res] ?? 0;
+      const freeRes = Math.max(available - occupiedRes, 0);
+      resources[res] = freeRes;
+    });
+
+    updated.push({ ...building, available: resources });
+  }
+
+  return updated;
+}
+
+// returns path to reachable closest buildings that produce any shortage resource of this build
+export function producingBuildsPath(
+  ctx: GameCtx,
+  building: BuildingConsumptionNode,
+  availableInBuildings: BuildingProductionNode[],
+  hexIdMap: Map<number, Hex>,
+  axialMap: Map<string, Hex>,
+  allowedHexIds: number[]
+) {
+  const cameFrom = bfs({ ctx, startHexId: building.hexId, hexIdMap, axialMap, allowedHexIds });
+
+  // reconstruct path to all producing buildings for each shortage resource
+  const produceNodeMap = new Map<number, { build: BuildingProductionNode; path: number[] }>();
+
+  for (const producing of availableInBuildings) {
+    // skip if this building does not produce any low-supply resource
+    if (
+      !typedEntries(producing.available).some(
+        ([res, _]) => building.shortage[res] && building.shortage[res] > 0
+      )
+    )
+      continue;
+
+    const path = reconstructPath(cameFrom, producing.hexId);
+    if (path === null) continue;
+
+    produceNodeMap.set(producing.hexId, { build: producing, path });
+  }
+
+  return [...produceNodeMap];
+}
+// retruns boolean based on whether producing node has at least one shortage resource available
+export function hasShortageResource(
+  shortage: Partial<Record<RESOURCES, number>>,
+  available: Partial<Record<RESOURCES, number>>
+) {
+  if (
+    typedEntries(available).some(([res, amount]) => (shortage[res] ?? 0) > 0 && (amount ?? 0) > 0)
+  )
+    return true;
+
+  return false;
 }

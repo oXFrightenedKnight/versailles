@@ -2,6 +2,7 @@ import { findNeighbors, Hex } from "@repo/shared";
 import { GameCtx } from "../../../trpc";
 import { getHexAxialMap, getHexIdMap } from "../../map";
 import { WorldAnalysis } from "../types/analyze";
+import { Point, pointKey } from "#services/road.js";
 
 export function bfs({
   ctx,
@@ -44,6 +45,8 @@ export function bfs({
 }
 // returns path from given hexId to destination hex (border hex) as provided in the map
 export function reconstructPath(cameFrom: Map<number, number | null>, targetHexId: number) {
+  if (!cameFrom.has(targetHexId)) return null;
+
   const path: number[] = [];
 
   let current: number | null = targetHexId;
@@ -58,4 +61,53 @@ export function reconstructPath(cameFrom: Map<number, number | null>, targetHexI
 
 export function getBorderBFSMap(analysis: WorldAnalysis) {
   return new Map(analysis.selfData.borderBFS.map((b) => [b.startHexId, b]));
+}
+
+// --- ROAD EDGE SYSTEM ---
+export function buildRoadGraph(roadSegments: Point[][]) {
+  const graph = new Map<string, Set<string>>();
+
+  const addEdge = (a: Point, b: Point) => {
+    const ak = pointKey(a);
+    const bk = pointKey(b);
+
+    if (!graph.has(ak)) graph.set(ak, new Set());
+    if (!graph.has(bk)) graph.set(bk, new Set());
+
+    graph.get(ak)!.add(bk);
+    graph.get(bk)!.add(ak);
+  };
+
+  for (const segment of roadSegments) {
+    for (let i = 0; i < segment.length - 1; i++) {
+      addEdge(segment[i], segment[i + 1]);
+    }
+  }
+
+  return graph;
+}
+
+export function hasRoadPath(graph: Map<string, Set<string>>, start: Point, end: Point) {
+  const startKey = pointKey(start);
+  const endKey = pointKey(end);
+
+  if (startKey === endKey) return true;
+  if (!graph.has(startKey) || !graph.has(endKey)) return false;
+
+  const visited = new Set<string>();
+  const queue = [startKey];
+
+  while (queue.length > 0) {
+    const curr = queue.shift()!;
+    if (curr === endKey) return true;
+    if (visited.has(curr)) continue;
+
+    visited.add(curr);
+
+    for (const next of graph.get(curr) ?? []) {
+      if (!visited.has(next)) queue.push(next);
+    }
+  }
+
+  return false;
 }

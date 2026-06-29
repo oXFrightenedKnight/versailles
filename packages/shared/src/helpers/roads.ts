@@ -20,3 +20,13 @@ export function hasSegment(road: Road, a: { q: number; r: number }, b: { q: numb
 export function calculateRoadCost(roadLength: number) {
   return roadLength * BASE_ROAD_COST;
 }
+
+const d = {
+  a: 0,
+  b: 10,
+};
+export function generateRoadDs() {
+  const d1 = Math.floor(Math.random() * (d.b + 1));
+  const d2 = Math.floor(Math.random() * (d.b + 1));
+  return { d1, d2 };
+}

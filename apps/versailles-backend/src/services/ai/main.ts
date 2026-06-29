@@ -2,7 +2,13 @@ import { GameCtx, IntentInput } from "#trpc/index.js";
 import { Nation } from "@repo/shared";
 import { AIWorldAnalysis } from "./analyze/main";
 import { getCandidates } from "./decision/candidates";
-import { translateArmyMove, translateArmyTrain, translateBuilding } from "./translate/main";
+import {
+  translateArmyMove,
+  translateArmyTrain,
+  translateBuilding,
+  translateCreateContract,
+  translateRoadBuild,
+} from "./translate/main";
 
 export function runAIPipeline(ctx: GameCtx, nation: Nation) {
   const aiIntents: Partial<IntentInput> = {};
@@ -17,14 +23,18 @@ export function runAIPipeline(ctx: GameCtx, nation: Nation) {
   const newQueuedBuildings = translateBuilding(candidates.buildIntents);
   const armyMove = translateArmyMove(ctx, candidates.moveIntents);
   const armyTrain = translateArmyTrain(candidates.trainIntents);
+  const buildRoads = translateRoadBuild(candidates.buildRoads);
+  const createNewContracts = translateCreateContract(candidates.contractIntents);
 
   aiIntents["newQueuedBuildings"] = newQueuedBuildings;
   aiIntents["movePlayerArmy"] = armyMove;
   aiIntents["trainNewArmy"] = armyTrain;
+  aiIntents["buildRoads"] = buildRoads;
+  aiIntents["createNewContracts"] = createNewContracts;
 
-  console.log("buildIntents", newQueuedBuildings);
   console.log("armyMoveIntents", armyMove);
   console.log("trainArmyIntents", armyTrain);
+  console.dir(`buildRoads: ${buildRoads}`, { depth: null });
 
   return aiIntents;
 }

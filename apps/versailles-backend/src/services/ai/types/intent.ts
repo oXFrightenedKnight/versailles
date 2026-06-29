@@ -1,3 +1,4 @@
+import { Point } from "#services/road.js";
 import { Biome, BUILDINGS_CATEGORY, RESOURCES, typeNationResource } from "@repo/shared";
 
 export type AIScoreIntentCategory =
@@ -5,7 +6,7 @@ export type AIScoreIntentCategory =
   | "armyTrain"
   | "moveArmy"
   | "buildRoad"
-  | "createContract"
+  | "contractIntent"
   | "declareWarIntent"
   | "answerMail"
   | "signPeaceReqIntent";
@@ -40,11 +41,10 @@ export type MoveArmy = BaseAIIntent & {
 };
 export type BuildRoad = BaseAIIntent & {
   type: "buildRoad";
-  fromHexId: number;
-  toHexId: number;
+  path: Point[]; // including starting hexId and end hexId
 };
-export type CreateContract = BaseAIIntent & {
-  type: "createContract";
+export type ContractIntent = BaseAIIntent & {
+  type: "contractIntent";
   fromBuildingId: string;
   toBuildingId: string;
   resource: RESOURCES;
@@ -68,7 +68,7 @@ export type AIIntent =
   | ArmyTrain
   | MoveArmy
   | BuildRoad
-  | CreateContract
+  | ContractIntent
   | DeclareWarIntent
   | AnswerMail
   | SignPeaceReqIntent;

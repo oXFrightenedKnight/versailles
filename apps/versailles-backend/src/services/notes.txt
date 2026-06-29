@@ -3,12 +3,8 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
-1. Make sure you include occupied resources from planning when calulating available builidngs and how much they produce
-2. Solve nation road dilemma (getNationRoads): 
-   - Split road with partially occupied segments, then possible race condition when reading split roads and real ctx.roads
-   - If you leave unsplitted, you will for sure have roads with missing edges.
-   - Make special function only available for ai that will give splitted roads, but won't solve the overall "what happens if road is partially captured" problem.
-3. Update BuildRoadIntent to include path.
+1. Make sure server stops execution of contracts if can't find valid path
+3. Don't store path in contract. recalculate every turn
 
 Think how you are going to validate ai memo after simulation runs (maybe return intent results like rejected/accepted)
 9. start working on ai
@@ -42,6 +38,7 @@ them a union of buildings. BuildNationRoads as well
 11. Update analysis to include more relevant data about nation vs neighbors
 12. Skip invalid intents that don't pass domain validation. Aim for architecture to be 
 client data => copy db data => run logic and update data => if error - log and skip, else update db
+13. Update ai road building so it builds towards closest road segment that leads to producing building
 
 --- RULES ---
 1. Delete/Update first, Build/Add second.

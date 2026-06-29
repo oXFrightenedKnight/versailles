@@ -8,18 +8,14 @@ export function mergeRoads(r1: roadObject, r2: roadObject, key: string) {
   const isStart1 = `${r1.points[0].q},${r1.points[0].r}` === key;
   const isStart2 = `${r2.points[0].q},${r2.points[0].r}` === key;
 
-  // Подготавливаем первую дорогу: она должна ЗАКАНЧИВАТЬСЯ в точке стыка (key)
-  // Если она начинается в key — переворачиваем её
   const p1 = isStart1 ? [...r1.points].reverse() : [...r1.points];
 
-  // Подготавливаем вторую дорогу: она должна НАЧИНАТЬСЯ в точке стыка (key)
-  // Если она НЕ начинается в key (значит заканчивается там) — переворачиваем её
   const p2 = !isStart2 ? [...r2.points].reverse() : [...r2.points];
 
   return {
     ...r1,
     id: `${r1.id}_${r2.id}_merged`,
-    points: [...p1, ...p2.slice(1)], // Соединяем, убирая дубликат точки key
+    points: [...p1, ...p2.slice(1)],
   };
 }
 

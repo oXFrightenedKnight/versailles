@@ -6,8 +6,7 @@ export type SupplyContract = {
   buildingId: string;
   amount: number;
   resource: RESOURCES;
-  progress: number; // make progress to depend on biome. starts from 0
-  //  and when it reaches 1 or above add resource to destination
+  progress: number;
   metadata: {
     lastAmountSent: number;
   };

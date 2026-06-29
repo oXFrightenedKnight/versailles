@@ -40,10 +40,8 @@ export function generateBuildCandidates(
   analysis: WorldAnalysis,
   planning: AIPlanningState,
   nation: Nation,
-  budget: BudgetMap
+  buildingBudget: Map<typeNationResource, number>
 ): BuildIntent[] {
-  const buildingBudget = new Map([...budget].map(([res, a]) => [res, a.building]));
-
   const BuildIntents: ScoredIntent[] = [];
   const nationHexes = ctx.mapHexes.filter((h) => h.owner === nation.id);
 

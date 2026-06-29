@@ -10,6 +10,8 @@ import { generateBuildCandidates } from "./building/main";
 import { createNationMemo } from "../memory/main";
 import { AIIntent } from "../types/intent";
 import { updateNationMemo } from "./planning/moveGoals";
+import { generateBuildRoadCandidates } from "./roads/main";
+import { generateContractCandidates } from "./contracts/main";
 
 export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation) {
   const planning = createPlanningState(ctx, nation.id);
@@ -23,7 +25,8 @@ export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nat
 
   // 1. Run building (w Score)
   // store buildings in planning too
-  const buildIntents = generateBuildCandidates(ctx, analysis, planning, nation, budgetMap);
+  const buildBudget = new Map([...budgetMap].map(([res, a]) => [res, a.get("build") ?? 0]));
+  const buildIntents = generateBuildCandidates(ctx, analysis, planning, nation, buildBudget);
   console.log(`${nation.id} build`, buildIntents);
 
   // 2. Run army movement
@@ -31,25 +34,27 @@ export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nat
   console.log(`${nation.id} move`, moveIntents);
 
   // 3. Run army training
+  const trainBudget = new Map([...budgetMap].map(([res, a]) => [res, a.get("train") ?? 0]));
   const trainIntents = generateArmyTrainCandidates(ctx, analysis, planning, budgetMap, nation);
   console.log(`${nation.id} train`, trainIntents);
 
-  console.dir([`${nation.id} planned move goals`, planning.plannedMoves], { depth: null });
-  console.log(`${nation.id} budget`, budget);
+  // 4. Run road building
+  const roadBudget = new Map([...budgetMap].map(([res, a]) => [res, a.get("roadBuild") ?? 0]));
+  const buildRoads = generateBuildRoadCandidates(ctx, planning, roadBudget, nation);
+
+  // 5. Generate new contracts
+  const contractIntents = generateContractCandidates(ctx, nation);
 
   // update ai memo with planning
   updateNationMemo(planning, nationMemo);
 
-  return { buildIntents, moveIntents, trainIntents };
+  console.dir([`${nation.id} planned move goals`, planning.plannedMoves], { depth: null });
+  console.log(`${nation.id} budget`, budget);
+
+  return { buildIntents, moveIntents, trainIntents, buildRoads, contractIntents };
 }
 {
   /*
-
-function generateCreateContractCandidates(
-  ctx: GameCtx,
-  analysis: WorldAnalysis,
-  nation: Nation
-): CreateContract[] {}
 
 function generateDeclareWarCandidates(
   ctx: GameCtx,

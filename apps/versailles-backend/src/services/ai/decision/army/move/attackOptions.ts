@@ -151,6 +151,8 @@ export function calcAIExpansion(
       const availableAmountInHex = getAvailableArmyForPriority(planning, hexId, borderHex.priority);
       if (availableAmountInHex === 0) continue;
       const path = reconstructPath(hexBFS.cameFrom, hexId);
+      if (path === null) continue;
+
       armySupplyDist.push({ hexId, available: availableAmountInHex, path });
     }
   }

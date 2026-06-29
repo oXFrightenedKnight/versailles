@@ -11,6 +11,7 @@ import {
   startDijkstrasAlgo,
 } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
+import { getBuildingsByIdMap } from "./ai/decision/helpers.js";
 
 export type newContract = {
   startBuildingId: string;
@@ -128,18 +129,14 @@ export function executeContracts({ buildings }: GameCtx) {
         if (!destName) continue;
 
         const amount = Math.min(startResourceStore.amount, contract.amount);
-        //console.log("Freaking stupid amount to send initially:", amount);
+
         const endResourceMax = BUILDINGS[destName].storageCap[contract.resource] ?? 0;
-        //console.log("maximum storage:", endResourceMax);
 
         // amount of resource that will be actually sent
         const outForDelivery = Math.min(amount, endResourceMax - endResourceStore.amount);
 
-        //console.log("currently stored (below is amount for this):", startResourceStore.amount);
         startResourceStore.amount -= outForDelivery;
         endResourceStore.amount += outForDelivery;
-
-        //console.log("amount sent", outForDelivery);
 
         contract.progress = 0;
 
@@ -267,4 +264,26 @@ export function deleteContracts(ctx: GameCtx, deleteIds: string[], nation: Natio
       contracts.splice(idx, 1);
     }
   }
+}
+
+export function hasContract(
+  ctx: GameCtx,
+  fromBuildingId: string,
+  toBuildingId: string,
+  resource: RESOURCES
+) {
+  const buildingIdMap = getBuildingsByIdMap(ctx);
+
+  const fromBuilding = buildingIdMap.get(fromBuildingId);
+  const toBuilding = buildingIdMap.get(toBuildingId);
+
+  if (!fromBuilding || !toBuilding) return false;
+
+  if (
+    fromBuilding.contracts &&
+    fromBuilding.contracts.find((c) => c.buildingId === toBuildingId && c.resource === resource)
+  )
+    return true;
+
+  return false;
 }

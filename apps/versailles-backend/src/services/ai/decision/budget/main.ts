@@ -3,17 +3,19 @@ import { WorldAnalysis } from "#services/ai/types/analyze.js";
 import { getNationArmy } from "#services/genNations.js";
 import { GameCtx } from "#trpc/index.js";
 import { Nation, typeNationResource } from "@repo/shared";
-import { AIBudgetCtx, AIPressure, BudgetMap, GoldBudget, ResourceBudget } from "./types";
+import { AIBudgetCtx, AIPressure, ResourceBudget } from "./types";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { getNationBuildingCount } from "#services/buildings.js";
 import { FOUNDATION_MINIMUMS } from "../building/data";
+import { getBuildingsShortage } from "../roads/main";
+import { calculateGoldBudget } from "./gold/main";
 
 export function getAIBudget(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation): ResourceBudget {
   const pressure = getAIPressure(ctx, analysis, nation);
 
   const budgetCtx = { ctx, nationId: nation.id };
 
-  return { gold: calculateGoldBudget(budgetCtx, nation.gold, pressure) };
+  return { gold: calculateGoldBudget(budgetCtx, nation.gold, pressure).goldMap };
 }
 
 // calculates total enemy army
@@ -69,47 +71,6 @@ function getAIPressure(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation): A
   return { enemyStrengthPressure, economyPressure, expansionOpportunity };
 }
 
-// this function is only suitable for calculating gold
-function calculateBudgetWeights(budgetCtx: AIBudgetCtx, pressure: AIPressure) {
-  const barrackLevels =
-    getNationBuildingCount(budgetCtx.ctx, budgetCtx.nationId)["BARRACK"]?.reduce(
-      (acc, counts) => acc + counts.amount * counts.level,
-      0
-    ) ?? 0;
-
-  let training = 0.35 + pressure.enemyStrengthPressure * 1.2 + pressure.expansionOpportunity * 0.3;
-
-  let building = 0.65 + pressure.economyPressure * 0.8 - pressure.enemyStrengthPressure * 0.6;
-
-  let reserve = 0.15;
-
-  // --- CONDITIONS ---
-  training *= barrackLevels > 0 ? 1 : 0;
-  reserve *= hasBuiltFoundation(budgetCtx.ctx, budgetCtx.nationId) ? 1 : 0;
-
-  return {
-    training,
-    building,
-    reserve,
-  };
-}
-function calculateGoldBudget(
-  budgetCtx: AIBudgetCtx,
-  gold: number,
-  pressure: AIPressure
-): GoldBudget {
-  const weights = calculateBudgetWeights(budgetCtx, pressure);
-
-  const totalWeight = weights.training + weights.building + weights.reserve;
-
-  return {
-    total: gold,
-    training: gold * (weights.training / totalWeight),
-    building: gold * (weights.building / totalWeight),
-    reserve: gold * (weights.reserve / totalWeight),
-  };
-}
-
 export function subtractBudget(
   buildingBudget: Map<typeNationResource, number>,
   cost: Partial<Record<"gold" | "manpower", number>>
@@ -134,7 +95,7 @@ export function subtractBudget(
   return { ok: true };
 }
 
-function hasBuiltFoundation(ctx: GameCtx, nationId: string) {
+export function hasBuiltFoundation(ctx: GameCtx, nationId: string) {
   const buildingCount = getNationBuildingCount(ctx, nationId);
 
   return typedEntries(FOUNDATION_MINIMUMS).every(([category, requirement]) => {
