@@ -12,6 +12,8 @@ import {
 } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
 import { getBuildingsByIdMap } from "./ai/decision/helpers.js";
+import { buildRoadGraph, buildRoadPath } from "./ai/algos/bfs.js";
+import { getNationRoads, pointKey } from "./road.js";
 
 export type newContract = {
   startBuildingId: string;
@@ -75,14 +77,10 @@ export function createContracts({
     const prevContracts = startBuilding.contracts ?? [];
     const points = startDijkstrasAlgo({ startingHex: startingHex, endHex, mapHexes, roads });
     if (!points) continue;
-    // turn axial array into hex id array
-    const hexIds = points
-      .map((p) => {
-        const h = getHexByAxial(p.q, p.r, mapHexes);
 
-        return h?.id;
-      })
-      .filter((id) => id !== undefined);
+    if (pointKey(points[0]) !== pointKey({ q: startingHex.q, r: startingHex.r })) continue;
+    const last = points.at(-1);
+    if (last && pointKey(last) !== pointKey({ q: endHex.q, r: endHex.r })) continue;
 
     if (!resources.includes(contract.resource)) continue;
 
@@ -90,7 +88,6 @@ export function createContracts({
       ...prevContracts,
       {
         id: crypto.randomUUID(),
-        hexIds,
         buildingId: endHex.buildingId,
         amount: contract.amount,
         resource: contract.resource,
@@ -103,19 +100,35 @@ export function createContracts({
     ];
   }
 }
-export function executeContracts({ buildings }: GameCtx) {
+
+// double check
+export function executeContracts(ctx: GameCtx) {
   // find all buildings with contracts
-  const contractBuildings = buildings.filter((b) => b.contracts);
+  const contractBuildings = ctx.buildings.filter((b) => b.contracts);
+
+  const buildingHexMap = new Map(ctx.mapHexes.map((h) => [h.buildingId, h]));
 
   for (const startBuilding of contractBuildings) {
+    const hex = buildingHexMap.get(startBuilding.id);
+    if (!hex || !hex.owner) continue;
+
+    const nationRoads = getNationRoads(ctx, hex.owner);
+    const graph = buildRoadGraph(nationRoads);
+
     // add progress to existing contracts
     if (!startBuilding.contracts) continue;
     for (const contract of startBuilding.contracts) {
-      const dist = contract.hexIds.length - 1;
+      const endHex = buildingHexMap.get(contract.buildingId);
+      if (!endHex) continue;
+
+      const path = buildRoadPath(ctx.mapHexes, graph, hex, endHex);
+      if (!path || path.length <= 0) continue;
+
+      const dist = path.length - 1;
       contract.progress += 1 / dist;
 
       if (contract.progress >= 1) {
-        const endBuilding = getBuilding({ buildings, id: contract.buildingId });
+        const endBuilding = getBuilding({ buildings: ctx.buildings, id: contract.buildingId });
         if (!endBuilding) continue;
 
         const startResourceStore = startBuilding.storage?.find((s) => s.type === contract.resource);
@@ -146,62 +159,41 @@ export function executeContracts({ buildings }: GameCtx) {
   }
 }
 
-export function recalculateContractsPaths({ buildings, roads, mapHexes }: GameCtx) {
-  // recalculate every contract to see if shorter path is available
-  const buildingHexMap = new Map(mapHexes.map((h) => [h.buildingId, h]));
-  const pointHexMap = new Map(mapHexes.map((h) => [`${h.q},${h.r}`, h]));
+export function recalculateContractsAmounts(ctx: GameCtx) {
+  const buildingHexMap = new Map(ctx.mapHexes.map((h) => [h.buildingId, h]));
 
-  const contractBuildinds = buildings.filter((b) => b.contracts !== undefined);
+  const contractBuildinds = ctx.buildings.filter((b) => b.contracts !== undefined);
   for (const building of contractBuildinds) {
-    const startingHex = buildingHexMap.get(building.id);
-    if (!startingHex) continue;
-    for (const contract of building.contracts!) {
-      const endHex = buildingHexMap.get(contract.buildingId);
-      if (!endHex) continue;
+    const startHex = buildingHexMap.get(building.id);
+    if (!startHex || !startHex.owner) continue;
 
-      const path = startDijkstrasAlgo({ startingHex, endHex, mapHexes, roads });
-      if (!path) continue;
-      const hexIds: number[] = [];
-      for (const point of path) {
-        const hex = pointHexMap.get(`${point.q},${point.r}`);
-        if (!hex) continue;
-        hexIds.push(hex.id);
-      }
+    const roadSegments = getNationRoads(ctx, startHex.owner);
+    const graph = buildRoadGraph(roadSegments);
 
-      const length = hexIds.length - 1;
-
-      if (length < contract.hexIds.length - 1) {
-        contract.hexIds = hexIds;
-      }
-    }
-  }
-}
-
-export function recalculateContractsAmounts({ buildings, mapHexes }: GameCtx) {
-  const buildingHexMap = new Map(mapHexes.map((h) => [h.buildingId, h]));
-
-  const contractBuildinds = buildings.filter((b) => b.contracts !== undefined);
-  for (const building of contractBuildinds) {
-    const startingHex = buildingHexMap.get(building.id);
-    if (!startingHex) continue;
     for (const contract of building.contracts!) {
       if (!contract.autoAdjust) continue; // only recalculate with auto-adjust
       const endHex = buildingHexMap.get(contract.buildingId);
-      const endBuilding = getBuilding({ buildings, id: contract.buildingId });
+      const endBuilding = getBuilding({ buildings: ctx.buildings, id: contract.buildingId });
       if (!endHex || !endBuilding) continue;
+
+      // RE-CALCULATE amount AND path every time executing contract
+      const startPoint = { q: startHex.q, r: startHex.r };
+      const endPoint = { q: endHex.q, r: endHex.r };
+
+      const path = buildRoadPath(ctx.mapHexes, graph, startPoint, endPoint);
+      if (!path || path.length <= 0) continue;
 
       const amount = calculateExportAmount({
         startBuilding: building,
         endBuilding,
-        length: contract.hexIds.length - 1,
+        length: path.length - 1,
         resource: contract.resource,
-        mapHexes,
-        buildings,
+        mapHexes: ctx.mapHexes,
+        buildings: ctx.buildings,
       });
 
       if (!amount) continue;
 
-      console.log(`amount for ${endHex.id}:`, amount);
       contract.amount = amount;
     }
   }

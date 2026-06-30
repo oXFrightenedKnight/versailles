@@ -5,6 +5,7 @@
 list of changes to make next:
 1. Make sure server stops execution of contracts if can't find valid path
 3. Don't store path in contract. recalculate every turn
+4. Make sure contracts are removed when building is captured
 
 Think how you are going to validate ai memo after simulation runs (maybe return intent results like rejected/accepted)
 9. start working on ai

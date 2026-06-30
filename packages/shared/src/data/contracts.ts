@@ -2,7 +2,6 @@ import { RESOURCES } from "./hex_map";
 
 export type SupplyContract = {
   id: string;
-  hexIds: number[];
   buildingId: string;
   amount: number;
   resource: RESOURCES;

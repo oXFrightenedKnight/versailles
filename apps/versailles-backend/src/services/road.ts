@@ -8,7 +8,6 @@ import {
   Road,
 } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
-import { recalculateContractsPaths } from "./contracts.js";
 import { subtractGold } from "./genNations.js";
 import { getHexAxialMap } from "./map.js";
 
@@ -132,9 +131,6 @@ export function buildNationRoads({
       }
     }
   }
-
-  // recaulculate contracts
-  recalculateContractsPaths(gameCtx);
 }
 
 export function cancelRoadBuild(ctx: GameCtx, cancelIds: string[], nation: Nation) {
@@ -228,6 +224,12 @@ function getTrimmedRoad(original: Point[], removePoints: Point[]): Point[][] {
 export type Point = { q: number; r: number };
 export function pointKey(point: Point) {
   return `${point.q},${point.r}`;
+}
+export function splitKey(key: string) {
+  const coords = key.split(",");
+  if (coords.length !== 2) return null;
+
+  return { q: coords[0], r: coords[1] };
 }
 
 export function edgeKey(a: Point, b: Point) {

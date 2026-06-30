@@ -2,7 +2,7 @@ import { findNeighbors, Hex } from "@repo/shared";
 import { GameCtx } from "../../../trpc";
 import { getHexAxialMap, getHexIdMap } from "../../map";
 import { WorldAnalysis } from "../types/analyze";
-import { Point, pointKey } from "#services/road.js";
+import { Point, pointKey, splitKey } from "#services/road.js";
 
 export function bfs({
   ctx,
@@ -110,4 +110,68 @@ export function hasRoadPath(graph: Map<string, Set<string>>, start: Point, end: 
   }
 
   return false;
+}
+
+// returns shortest road path between two buildings
+export function buildRoadPath(
+  mapHexes: Hex[],
+  graph: Map<string, Set<string>>,
+  start: Point,
+  end: Point
+) {
+  const startKey = pointKey(start);
+  const endKey = pointKey(end);
+
+  if (startKey === endKey) return null;
+  if (!graph.has(startKey) || !graph.has(endKey)) return null;
+
+  const cameFrom = new Map<string, string | null>();
+  cameFrom.set(startKey, null);
+
+  const queue = [startKey];
+
+  while (queue.length > 0) {
+    const curr = queue.shift()!;
+    if (curr === endKey) break;
+
+    for (const next of graph.get(curr) ?? []) {
+      if (!cameFrom.has(next)) {
+        cameFrom.set(next, curr);
+        queue.push(next);
+      }
+    }
+  }
+
+  // reconstruct path
+  const path = reconstructRoadPath(mapHexes, cameFrom, endKey);
+
+  return path;
+}
+
+function reconstructRoadPath(
+  mapHexes: Hex[],
+  cameFrom: Map<string, string | null>,
+  targetKey: string
+) {
+  if (!cameFrom.has(targetKey)) return null;
+
+  const path: string[] = [];
+
+  let current: string | null = targetKey;
+
+  while (current !== null) {
+    path.push(current);
+    current = cameFrom.get(current) ?? null;
+  }
+
+  const pointMap = new Map(mapHexes.map((h) => [pointKey({ q: h.q, r: h.r }), { q: h.q, r: h.r }]));
+
+  const pointPath: Point[] = [];
+  for (const key of path) {
+    const point = pointMap.get(key);
+    if (!point) return null;
+    pointPath.push(point);
+  }
+
+  return pointPath;
 }
