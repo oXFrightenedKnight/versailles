@@ -10,6 +10,7 @@ export type SupplyContract = {
     lastAmountSent: number;
   };
   autoAdjust: boolean;
+  usedPath: number[];
 };
 
 export type ServerContractUpdate = {

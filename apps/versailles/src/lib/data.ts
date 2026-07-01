@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { Dispatch } from "react";
 import { nationText } from "./helpers/mails";
-import { Popup } from "./stores/uiStore";
 export type BuildingNames = keyof typeof BUILDINGS;
 
 export const BuildingIcons: Record<"road" | BUILDINGS_CATEGORY, LucideIcon> = {
@@ -42,6 +41,7 @@ export function getResourceImage(resource: RESOURCES) {
 export const customResourceImages: Record<RESOURCES, string> = {
   wheat: "/icons/resources/wheat.png",
   wood: "/icons/resources/wood.png",
+  gold: "/icons/gold_coin.png",
 };
 export function getBuildingIconImage(name: BuildingNames) {
   return customBuildingIconImages[name] ?? `/icons/urban/${name}.png`;

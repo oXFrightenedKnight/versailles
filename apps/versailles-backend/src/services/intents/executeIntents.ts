@@ -1,10 +1,11 @@
 import { Nation, ServerContractUpdate } from "@repo/shared";
 import { GameCtx, IntentInput } from "../../trpc";
-import { cancelArmyTraining, moveArmy, queueArmyTraining } from "../army";
 import { buildNewIntentBuildings, cancelBuilding, deleteBuilding } from "../buildings";
 import { createContracts, deleteContracts, newContract, updateContracts } from "../contracts";
 import { newBuildings } from "../genNations";
 import { buildNationRoads, cancelRoadBuild } from "../road";
+import { cancelArmyTraining, queueArmyTraining } from "#services/army/training.js";
+import { moveArmy } from "#services/army/units.js";
 
 export function executeIntents(ctx: GameCtx, nation: Nation, intentCtx: IntentInput) {
   if (nation.isDefeated) return;

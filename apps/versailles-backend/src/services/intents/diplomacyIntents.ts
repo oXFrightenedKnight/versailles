@@ -1,7 +1,7 @@
 import { Nation } from "@repo/shared";
 import { GameCtx, IntentInput } from "../../trpc";
 import { addMail, createPeaceOfferMail, executeMailsAnswers } from "../mails";
-import { declareWar } from "../army";
+import { declareWar } from "#services/army/war.js";
 
 export function runNationDiplomacy(ctx: GameCtx, nation: Nation, intent: IntentInput) {
   if (nation.isDefeated) return;

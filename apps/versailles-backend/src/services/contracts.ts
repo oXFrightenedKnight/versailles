@@ -9,11 +9,13 @@ import {
   RESOURCES,
   ServerContractUpdate,
   startDijkstrasAlgo,
+  SupplyContract,
 } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
 import { getBuildingsByIdMap } from "./ai/decision/helpers.js";
 import { buildRoadGraph, buildRoadPath } from "./ai/algos/bfs.js";
-import { getNationRoads, pointKey } from "./road.js";
+import { getNationRoads, pointKey, pointsToHexIds } from "./road.js";
+import { getHexAxialMap } from "./map.js";
 
 export type newContract = {
   startBuildingId: string;
@@ -33,6 +35,8 @@ export function createContracts({
   nation: Nation;
 }) {
   const { mapHexes, buildings, roads } = gameCtx;
+
+  const axialMap = getHexAxialMap(gameCtx);
 
   // check whether starting building is allowed to have contracts
   for (const contract of contracts) {
@@ -96,6 +100,7 @@ export function createContracts({
         metadata: {
           lastAmountSent: 0,
         },
+        usedPath: pointsToHexIds(points, axialMap),
       },
     ];
   }
@@ -107,6 +112,7 @@ export function executeContracts(ctx: GameCtx) {
   const contractBuildings = ctx.buildings.filter((b) => b.contracts);
 
   const buildingHexMap = new Map(ctx.mapHexes.map((h) => [h.buildingId, h]));
+  const axialMap = getHexAxialMap(ctx);
 
   for (const startBuilding of contractBuildings) {
     const hex = buildingHexMap.get(startBuilding.id);
@@ -154,6 +160,9 @@ export function executeContracts(ctx: GameCtx) {
         contract.progress = 0;
 
         contract.metadata.lastAmountSent = outForDelivery;
+
+        // update last used path
+        contract.usedPath = pointsToHexIds(path, axialMap);
       }
     }
   }
@@ -278,4 +287,11 @@ export function hasContract(
     return true;
 
   return false;
+}
+
+export function getContractPerTurn(contract: SupplyContract) {
+  const distance = contract.usedPath.length - 1;
+  if (contract.amount <= 0 || distance <= 0) return 0;
+
+  return contract.amount / distance;
 }

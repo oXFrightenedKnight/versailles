@@ -20,6 +20,7 @@ import {
 import { memoryStore } from "../server/memoryStore.js";
 import { GameCtx } from "../trpc/index.js";
 import { BuildBuilding } from "./buildings.js";
+import { getBuildingsByIdMap } from "./ai/decision/helpers.js";
 
 // DO NOT CHANGE THIS FUNCTION TO ACCEPT GAMECTX
 // generates the mathematical map & coordinates
@@ -321,4 +322,41 @@ export function getDeltaAxial(
   endAxial: { q: number; r: number }
 ) {
   return { dq: endAxial.q - startAxial.q, dr: endAxial.r - startAxial.r };
+}
+
+export function transferHexOwnership(ctx: GameCtx, hexId: number, toNationId: string) {
+  const hexIdMap = getHexIdMap(ctx);
+  const buildingIdMap = getBuildingsByIdMap(ctx);
+
+  const hex = hexIdMap.get(hexId);
+  if (!hex) return { ok: false };
+
+  const currOwner = hex.owner;
+
+  const nation = ctx.nations.find((n) => n.id === toNationId);
+  if (!nation) return { ok: false };
+
+  const building = hex.buildingId ? buildingIdMap.get(hex.buildingId) : undefined;
+  if (hex.buildingId && !building) return { ok: false };
+
+  if (currOwner !== nation.id) {
+    // reset queued buildings
+    hex.build_queue = null;
+
+    // reset contracts if building in hex
+    if (building && building.contracts) {
+      building.contracts = undefined;
+    }
+  }
+
+  // push non-allowed armies to their closest owned land (or delete if no path found)
+  const notAllowed = new Set(ctx.nations.filter((n) => n.id !== nation.id).map((n) => n.id));
+  for (const army of hex.army) {
+    if (notAllowed.has(army.nationId)) {
+      // build path to closest nation owned hex and transfer army
+    }
+  }
+
+  hex.owner = nation.id;
+  return { ok: true };
 }

@@ -68,5 +68,15 @@ export function translateCreateContract(
 ): IntentInput["createNewContracts"] {
   const translated: IntentInput["createNewContracts"] = [];
 
+  for (const intent of createContracts) {
+    translated.push({
+      startBuildingId: intent.fromBuildingId,
+      endBuildingId: intent.toBuildingId,
+      amount: 0,
+      autoAdjust: true,
+      resource: intent.resource,
+    });
+  }
+
   return translated;
 }

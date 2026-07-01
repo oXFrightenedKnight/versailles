@@ -24,6 +24,7 @@ import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { subtractBudget } from "../budget/main";
 import { AIPlanningState, ResourceRecord } from "../planning/types";
 import { BuildingConsumptionNode, BuildingProductionNode } from "./types";
+import { getContractPerTurn } from "#services/contracts.js";
 
 // Make sure to add guardrails so ai doesn't build a road if it already exists
 export function generateBuildRoadCandidates(
@@ -164,7 +165,7 @@ export function getBuildingsShortage(ctx: GameCtx, nation: Nation) {
     const incoming: Partial<Record<RESOURCES, number>> = {};
     for (const c of contracts) {
       const existing = incoming[c.resource] ?? 0;
-      const perTurn = c.amount > 0 ? c.amount / (c.hexIds.length - 1) : 0;
+      const perTurn = getContractPerTurn(c);
 
       incoming[c.resource] = existing + perTurn;
     }
@@ -215,7 +216,7 @@ export function getProducingBuildings(ctx: GameCtx, nation: Nation) {
     const exporting: Partial<Record<RESOURCES, number>> = {};
     for (const c of building.contracts ?? []) {
       const existing = exporting[c.resource] ?? 0;
-      const perTurn = c.amount > 0 ? c.amount / (c.hexIds.length - 1) : 0;
+      const perTurn = getContractPerTurn(c);
 
       exporting[c.resource] = existing + perTurn;
     }

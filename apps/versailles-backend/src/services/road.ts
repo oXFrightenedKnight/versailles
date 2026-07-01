@@ -291,3 +291,12 @@ export function getSlicedRoadSegments(path: Point[], overlapEdges: Set<string>) 
 
   return result;
 }
+
+export function pointsToHexIds(segment: Point[], axialMap: Map<string, Hex>) {
+  return segment.flatMap((p) => {
+    const hex = axialMap.get(pointKey(p));
+    if (!hex) return [];
+
+    return [hex.id];
+  });
+}

@@ -70,7 +70,7 @@ export function calculateExportAmount({
   );
   let totalExportAmount = 0; // export amount per turn
   for (const contract of sameExports) {
-    totalExportAmount += contract.amount / (contract.hexIds.length - 1);
+    totalExportAmount += contract.amount / (contract.usedPath.length - 1);
   }
 
   const neededForExport = consumptionPerTurn[resource]

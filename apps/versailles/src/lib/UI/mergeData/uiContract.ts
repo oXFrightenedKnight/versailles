@@ -46,7 +46,7 @@ export function mergeServerContracts(contractObj: ServerContract) {
     .filter((c) => !deletedCotractsSet.has(c.id))
     .map((contract) => ({
       id: contract.id,
-      hexIds: contract.hexIds,
+      hexIds: contract.usedPath,
       startBuildingId: buildingId,
       endBuildingId: contract.buildingId,
       amount: contract.amount,

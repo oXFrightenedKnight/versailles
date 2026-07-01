@@ -16,11 +16,11 @@ import { nationsUpdateManpower } from "../services/manpower.js";
 import { filterPlayerLogic, updatePlayerUI } from "../services/player.js";
 import { authedProcedure, router } from "./trpc.js";
 import { runIntentForEachNation } from "../services/intents/executeIntents.js";
-import { peaceCountdown } from "../services/army.js";
 import { mailsExpire } from "../services/mails.js";
 import { runAIDiplomacy, runNationDiplomacy } from "../services/intents/diplomacyIntents.js";
 import { MemoryCtx } from "../services/ai/memory/types.js";
 import { runAIPipeline } from "#services/ai/main.js";
+import { peaceCountdown } from "#services/army/war.js";
 
 export type GameCtx = {
   mapHexes: Hex[];

@@ -8,9 +8,9 @@ import {
   NATION_NUMBER,
 } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
-import { addArmy } from "./army.js";
 import { BuildBuilding } from "./buildings.js";
 import { getHexById, randomNationColor } from "./map.js";
+import { addArmy } from "./army/units.js";
 
 export type newBuildings = {
   hexId: number;
