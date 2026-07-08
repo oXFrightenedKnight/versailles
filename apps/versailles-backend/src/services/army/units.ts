@@ -1,6 +1,8 @@
 import { getNationById } from "#services/genNations.js";
 import { getHexById } from "#services/map.js";
 import { GameCtx } from "#trpc/index.js";
+import { Hex } from "@repo/shared";
+import { getNationWarSet, isAtWar } from "./war";
 
 export function moveArmy({
   hexId,
@@ -17,9 +19,10 @@ export function moveArmy({
 }) {
   const { mapHexes } = gameCtx;
 
+  const warSet = getNationWarSet(gameCtx);
+
   const hex = getHexById(hexId, gameCtx);
-  const nationWarList = new Set(getNationById(gameCtx, nationId)?.atWar);
-  const contested = hex?.army.some((obj) => nationWarList.has(obj.nationId)) ?? false;
+  const contested = hex?.army.some((obj) => isAtWar(warSet, nationId, obj.nationId)) ?? false;
   const flooredAmount = Math.floor(amount);
   if (!hex || contested || flooredAmount <= 0) return;
 
@@ -44,9 +47,7 @@ export function moveArmy({
   }
   // check if the hex that army is moving to either belongs to country at war or
   // already belongs to army's country
-  const isAtWarWithOwner =
-    getNationById(gameCtx, hexToMove.owner)?.atWar.includes(nationId) &&
-    hexToMove.owner !== nationId;
+  const isAtWarWithOwner = isAtWar(warSet, hexToMove.owner, nationId);
 
   // move army (only to your own tiles or nations at war)
   if (isAtWarWithOwner || hexToMove.owner === nationId) {
@@ -85,5 +86,33 @@ export function addArmy({
     nationArmyInHex.amount += amount;
   } else {
     hex.army.push({ nationId, amount });
+  }
+}
+
+export function removeArmy(
+  ctx: GameCtx,
+  nationId: string,
+  hexId: number,
+  amount: number,
+  hexIdMap?: Map<number, Hex>
+) {
+  const hex = hexIdMap ? hexIdMap.get(hexId) : getHexById(hexId, ctx);
+
+  if (!hex) return { ok: false };
+  if (amount <= 0) return { ok: false };
+
+  const nationArmy = hex.army.find((a) => a.nationId === nationId);
+  if (!nationArmy) return { ok: false };
+
+  if (nationArmy.amount <= 0) return { ok: false };
+
+  const newArmy = Math.max(0, nationArmy.amount - amount);
+  if (newArmy === 0) {
+    // delete from hex army
+    const idx = hex.army.indexOf(nationArmy);
+    hex.army.splice(idx, 1);
+  } else {
+    // update
+    nationArmy.amount = newArmy;
   }
 }

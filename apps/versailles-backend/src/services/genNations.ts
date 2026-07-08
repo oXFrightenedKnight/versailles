@@ -11,6 +11,7 @@ import { GameCtx } from "../trpc/index.js";
 import { BuildBuilding } from "./buildings.js";
 import { getHexById, randomNationColor } from "./map.js";
 import { addArmy } from "./army/units.js";
+import { isAtWar } from "./army/war.js";
 
 export type newBuildings = {
   hexId: number;
@@ -162,10 +163,6 @@ export function assignNewCapital(ctx: GameCtx, nationId: string) {
   nation.capitalTileIdx = newCapital.id;
 }
 
-export function getPlayerNation(ctx: GameCtx) {
-  return ctx.nations.find((n) => n.isPlayer);
-}
-
 export function getNationArmy(ctx: GameCtx, nationId: string) {
   const nation = ctx.nations.find((n) => n.id === nationId);
   if (!nation) return null;
@@ -173,5 +170,12 @@ export function getNationArmy(ctx: GameCtx, nationId: string) {
   return ctx.mapHexes.reduce((acc, h) => {
     const army = h.army.find((a) => a.nationId === nationId)?.amount ?? 0;
     return acc + army;
+  }, 0);
+}
+
+export function getHostileArmyHex(hex: Hex, enemiesOf: string, warSet: Set<string>) {
+  return hex.army.reduce((acc, a) => {
+    const atWar = isAtWar(warSet, a.nationId, enemiesOf);
+    return atWar ? acc + a.amount : acc;
   }, 0);
 }

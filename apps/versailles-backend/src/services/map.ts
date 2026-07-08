@@ -4,7 +4,6 @@ import {
   BIOME_GROWTH,
   BIOME_MOD,
   BIOMES,
-  Building,
   BUILDINGS,
   CreatedHexes,
   cubeDistance,
@@ -17,10 +16,11 @@ import {
   Nation,
   WOOD_MOD,
 } from "@repo/shared";
-import { memoryStore } from "../server/memoryStore.js";
 import { GameCtx } from "../trpc/index.js";
-import { BuildBuilding } from "./buildings.js";
+import { bfs, reconstructPath } from "./ai/algos/bfs.js";
 import { getBuildingsByIdMap } from "./ai/decision/helpers.js";
+import { addArmy, removeArmy } from "./army/units.js";
+import { BuildBuilding } from "./buildings.js";
 
 // DO NOT CHANGE THIS FUNCTION TO ACCEPT GAMECTX
 // generates the mathematical map & coordinates
@@ -326,6 +326,7 @@ export function getDeltaAxial(
 
 export function transferHexOwnership(ctx: GameCtx, hexId: number, toNationId: string) {
   const hexIdMap = getHexIdMap(ctx);
+  const axialMap = getHexAxialMap(ctx);
   const buildingIdMap = getBuildingsByIdMap(ctx);
 
   const hex = hexIdMap.get(hexId);
@@ -349,11 +350,33 @@ export function transferHexOwnership(ctx: GameCtx, hexId: number, toNationId: st
     }
   }
 
+  const cameFrom = bfs({ ctx, startHexId: hex.id, axialMap, hexIdMap });
+  const pathMap = new Map(
+    ctx.mapHexes.flatMap((h) => {
+      const path = reconstructPath(cameFrom, h.id);
+      return path ? [[h.id, path]] : [];
+    })
+  );
+
   // push non-allowed armies to their closest owned land (or delete if no path found)
   const notAllowed = new Set(ctx.nations.filter((n) => n.id !== nation.id).map((n) => n.id));
   for (const army of hex.army) {
     if (notAllowed.has(army.nationId)) {
-      // build path to closest nation owned hex and transfer army
+      // sort and find closest path to army's owner closest hex
+      const nationHexesPath = [...pathMap].filter(([id, _]) => {
+        const hex = hexIdMap.get(id);
+        return hex && hex.owner === army.nationId;
+      });
+      const sorted = nationHexesPath.sort((a, b) => a[1].length - b[1].length);
+      const closest = sorted[0];
+
+      if (closest) {
+        // add army to closest hex
+        addArmy({ ctx, nationId: army.nationId, hexId: closest[0], amount: army.amount });
+      }
+
+      // remove army from this hex
+      removeArmy(ctx, army.nationId, hex.id, army.amount, hexIdMap);
     }
   }
 

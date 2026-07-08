@@ -7,7 +7,8 @@ import { WorldAnalysis } from "#services/ai/types/analyze.js";
 import { GameCtx } from "#trpc/index.js";
 import { getNationArmyFromHex } from "../../../map";
 import { MoveArmy } from "../../types/intent";
-import { BorderNeed } from "../army/militaryAnalysis/types";
+import { priorityTable } from "../army/militaryAnalysis/data";
+import { BorderNeed, BorderNeedCategory } from "../army/militaryAnalysis/types";
 import { populateBuildSaving } from "./buildSaving";
 import { populateArmyGoals } from "./moveGoals";
 import { AIPlanningState, ArmyMoveGoal } from "./types";
@@ -33,6 +34,7 @@ export function createPlanningState(ctx: GameCtx, nationId: string) {
     buildSaving: new Map(),
     buildRoads: new Set(),
     occupiedResources: new Map(),
+    attackingArmy: new Map(),
   } as AIPlanningState;
 }
 
@@ -112,41 +114,32 @@ export function reserveBorderArmy(borderAnalysis: BorderNeed[], planning: AIPlan
       planning.softReservedArmyByHex.set(border.hexId, [
         {
           amount: border.desiredArmy,
-          priority: border.priority,
+          category: border.category,
           reason: "reserved analyzed border",
         },
       ]);
     } else {
       reserved.push({
         amount: border.desiredArmy,
-        priority: border.priority,
+        category: border.category,
         reason: "reserved analyzed border",
       });
     }
   }
 }
 
-// gets available army of hex for specific request priority
-export function getAvailableArmyForPriority(
+// gets available army of hex for specific request category
+export function getAvailableArmyForCategory(
   planning: AIPlanningState,
   hexId: number,
-  requesterPriority: number
+  requesterCategory: BorderNeedCategory
 ) {
   const army = planning.availableArmyByHex.get(hexId) ?? 0;
   const reservations = planning.softReservedArmyByHex.get(hexId) ?? [];
 
   const blocked = reservations
-    .filter((r) => blocksRequest(r.priority, requesterPriority))
+    .filter((r) => blocksRequest(r.category, requesterCategory))
     .reduce((sum, r) => sum + r.amount, 0);
-
-  return Math.max(0, army - blocked);
-}
-// get available army for expansion
-export function getAvailableArmyForEmptyAttack(planning: AIPlanningState, hexId: number) {
-  const army = planning.availableArmyByHex.get(hexId) ?? 0;
-  const reservations = planning.softReservedArmyByHex.get(hexId) ?? [];
-
-  const blocked = reservations.filter((r) => r.priority > 1).reduce((sum, r) => sum + r.amount, 0);
 
   return Math.max(0, army - blocked);
 }
@@ -155,23 +148,26 @@ export function softReserveArmy(
   planning: AIPlanningState,
   hexId: number,
   amount: number,
-  priority: number,
+  category: BorderNeedCategory,
   reason: string
 ) {
   const reserved = planning.softReservedArmyByHex.get(hexId);
   if (!reserved) {
-    planning.softReservedArmyByHex.set(hexId, [{ amount, priority, reason }]);
+    planning.softReservedArmyByHex.set(hexId, [{ amount, category, reason }]);
   } else {
-    reserved.push({ amount, priority, reason });
+    reserved.push({ amount, category, reason });
   }
 }
 
-function blocksRequest(reservedPriority: number, requesterPriority: number) {
+function blocksRequest(
+  reservedCategory: BorderNeedCategory,
+  requesterCategory: BorderNeedCategory
+) {
   // Same or higher priority reservations always block.
-  if (reservedPriority >= requesterPriority) return true;
+  if (priorityTable[reservedCategory] >= priorityTable[requesterCategory]) return true;
 
   // Active war-border protection should not be stolen even by priority 4.
-  if (reservedPriority >= 3) return true;
+  if (reservedCategory === "war_defense" && requesterCategory === "active_fight") return true;
 
   // Priority 1/2 reserves can be stolen by higher priorities.
   return false;

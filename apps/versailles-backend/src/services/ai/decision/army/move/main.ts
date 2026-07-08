@@ -5,7 +5,12 @@ import { createNationMemo } from "../../../memory/main";
 import { WorldAnalysis } from "../../../types/analyze";
 import { MoveArmy } from "../../../types/intent";
 import { createPlanningState, planArmyMove, reserveBorderArmy } from "../../planning/main";
-import { calcAIExpansion, calcEmptyHexAttack, calcEnemyAttack } from "./attackOptions";
+import {
+  calcAIExpansion,
+  calcEmptyHexAttack,
+  calcImbalanceAttack,
+  getArmyAllocationMap,
+} from "./attackOptions";
 import { calcAIDefenseMove } from "./defenseOptions";
 import { AIPlanningState } from "../../planning/types";
 import {
@@ -18,6 +23,7 @@ import {
 import { analyzeNationBorder, getArmySupply } from "../militaryAnalysis/main";
 import { getBorderBFSMap } from "#services/ai/algos/bfs.js";
 import { sortCandidates } from "../../candidates";
+import { priorityTable } from "../militaryAnalysis/data";
 
 export function generateArmyMoveCandidates(
   ctx: GameCtx,
@@ -54,16 +60,14 @@ export function generateArmyMoveCandidates(
 
   // turn into separate function
   const sortedBorders = borderAnalysis.sort((a, b) => {
-    if (b.priority !== a.priority) {
-      return b.priority - a.priority; // higher priority first
+    if (b.category !== a.category) {
+      return priorityTable[b.category] - priorityTable[a.category]; // higher priority first
     }
 
     return b.deficit - a.deficit; // higher deficit first if priority is equal
   });
 
-  const hexIdMap = getHexIdMap(ctx);
   const axialMap = getHexAxialMap(ctx);
-  const nationIdMap = new Map(ctx.nations.map((n) => [n.id, n]));
   const borderBFSMap = getBorderBFSMap(analysis);
 
   // for each border hex, update all move goals from memo based on its current deficit
@@ -88,10 +92,10 @@ export function generateArmyMoveCandidates(
     }
   }
 
-  // --- ARMY DISTRIBUTION ---
-  // for each border hex with deficit, find closest army supply point and create army move intent
-  // start from highest priority hexes
+  // priority defense
+  // defend priority 3 and 4
   for (const borderHex of sortedBorders) {
+    if (borderHex.category !== "active_fight" && borderHex.category !== "war_defense") continue;
     const intents = calcAIDefenseMove(borderHex, planning, borderBFSMap);
     if (!intents) continue;
 
@@ -105,6 +109,35 @@ export function generateArmyMoveCandidates(
     }
   }
 
+  // --- ATTACKING ---
+  // Score attack for each enemy at border
+  const allocationMap = getArmyAllocationMap(ctx, planning, nation);
+  const intents = calcImbalanceAttack(ctx, planning, nation, allocationMap);
+
+  // create attack intents
+  for (const intent of intents) {
+    addMoveIntent([intent.startId, intent.endId], 0, intent.amount);
+  }
+
+  // --- SECONDARY DEFENSE ---
+  // Priorities 1 and 2
+  for (const borderHex of sortedBorders) {
+    if (borderHex.category !== "neutral_defense" && borderHex.category !== "expansion_reserve")
+      continue;
+    const intents = calcAIDefenseMove(borderHex, planning, borderBFSMap);
+    if (!intents) continue;
+
+    for (const intent of intents) {
+      addMoveIntent(
+        intent.path,
+        0,
+        intent.amount,
+        `Moving from ${intent.path[0]} to ${intent.path[1]} because of deficit`
+      );
+    }
+  }
+
+  // --- EXPANSION ---
   // for each border hex that desires for expansion army, distribute whats left from
   // supply points
   for (const borderHex of sortedBorders) {
@@ -121,28 +154,6 @@ export function generateArmyMoveCandidates(
     }
   }
 
-  // --- ATTACKING ---
-  // Score attack for each enemy at border
-  for (const enemyId of nation.atWar) {
-    const intents = calcEnemyAttack(
-      ctx,
-      analysis,
-      planning,
-      nation,
-      enemyId,
-      nationIdMap,
-      hexIdMap,
-      axialMap
-    );
-    if (!intents) continue;
-
-    // create each intent
-    for (const intent of intents) {
-      addMoveIntent([intent.startId, intent.endId], 0, intent.amount);
-    }
-  }
-
-  // --- EXPANSION ---
   // Score movement to empty hexes
   const emptyBorderHexes = analysis.worldData.borderingHexes.filter((h) => !h.owner);
   for (const hex of emptyBorderHexes) {

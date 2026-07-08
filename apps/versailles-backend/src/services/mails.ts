@@ -7,7 +7,7 @@ import {
   WarEventMail,
 } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
-import { signPeace } from "./army.js";
+import { signPeace } from "./army/war.js";
 
 export function addMail(ctx: GameCtx, mail: Mail) {
   // add any additional mailbox logic here to check before adding mail

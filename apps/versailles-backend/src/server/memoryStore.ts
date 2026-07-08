@@ -1,4 +1,5 @@
-import { generateNations, getPlayerNation } from "../services/genNations.js";
+import { generateNations } from "#services/genNations.js";
+import { getPlayerNation } from "#services/player.js";
 import { generateHexMap } from "../services/map.js";
 import { GameCtx } from "../trpc/index.js";
 

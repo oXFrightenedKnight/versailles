@@ -3,9 +3,10 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
-2. make sure you don't transfer hex ownership if owner isn't at war
-3. Refactor war mechanics and execute them in the pipeline
-4. Make sure contracts are removed when building is captured
+7. Add mechanic of counterattack. AI should split defensive army between all attacking hexes. For example, if it attacks two hexes, it chooses two target hexes,
+if splits across all bordering hexes to attack that hex
+8. Fix stupid ai not attacking empty hexes & not protecting empty hexes that border enemy at war.
+also look at the screenshot where player was fighting ALD and it dedicated 1400 of its gold to road building for no reason (there is)
 
 Think how you are going to validate ai memo after simulation runs (maybe return intent results like rejected/accepted)
 9. start working on ai

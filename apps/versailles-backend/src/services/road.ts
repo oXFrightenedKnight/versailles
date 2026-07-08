@@ -189,6 +189,15 @@ export function getNationRoads(ctx: GameCtx, nationId: string): Point[][] {
 
   return trimmedRoads;
 }
+export function getRoadSegments(ctx: GameCtx) {
+  const segments: Point[][] = [];
+
+  for (const road of ctx.roads) {
+    segments.push(road.points);
+  }
+
+  return segments;
+}
 
 // this function REMOVES specific points of the road and returns new segments
 function getTrimmedRoad(original: Point[], removePoints: Point[]): Point[][] {

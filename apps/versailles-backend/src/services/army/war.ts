@@ -4,14 +4,16 @@ import { getHexById, transferHexOwnership } from "#services/map.js";
 import { GameCtx } from "#trpc/index.js";
 import { Hex, Nation } from "@repo/shared";
 
-export function calculateHexWar(hexId: number, ctx: GameCtx) {
-  const hex = getHexById(hexId, ctx);
-  if (!hex || !hex.owner) return;
+export function calculateHexWar(ctx: GameCtx, hex: Hex) {
+  if (!hex.owner) return;
+
+  const warSet = getNationWarSet(ctx);
+
+  const isOwnerAtWar = ctx.nations.some((n) => isAtWar(warSet, hex.owner!, n.id));
+  if (!isOwnerAtWar) return;
 
   const owner = getNationById(ctx, hex.owner);
   if (!owner) return;
-
-  if (!hasFightingArmies(ctx, hex)) return;
 
   const lossMap = new Map();
   const DEATH_COEFFICIENT = 0.15;
@@ -25,7 +27,7 @@ export function calculateHexWar(hexId: number, ctx: GameCtx) {
 
     for (const other of hex.army) {
       if (other === army) continue; // just in case
-      if (nation.atWar.includes(other.nationId)) {
+      if (isAtWar(warSet, nation.id, other.nationId)) {
         enemyTotal += other.amount;
       }
     }
@@ -38,12 +40,11 @@ export function calculateHexWar(hexId: number, ctx: GameCtx) {
     } else {
       loss = enemyTotal * DEATH_COEFFICIENT;
     }
-    lossMap.set(army, loss);
+    lossMap.set(army, Math.max(1, Math.floor(loss)));
   }
   // substract losses
   for (const [army, loss] of lossMap) {
-    army.amount -= Math.floor(loss);
-
+    army.amount -= loss;
     if (army.amount <= 0) {
       const index = hex.army.indexOf(army);
       if (index !== -1) hex.army.splice(index, 1);
@@ -54,7 +55,9 @@ export function calculateHexWar(hexId: number, ctx: GameCtx) {
   // if owner army does not exist in the tile anymore - transfer to nation with most army
   if (!hex.army.some((a) => a.nationId === owner.id)) {
     // armies that hex owner is fighting with
-    const fighting_armies = hex.army.filter((armyObj) => owner.atWar.includes(armyObj.nationId));
+    const fighting_armies = hex.army.filter((armyObj) =>
+      isAtWar(warSet, owner.id, armyObj.nationId)
+    );
     if (fighting_armies.length === 0) return;
     const strongest = fighting_armies.reduce((max, a) => (a.amount > max.amount ? a : max));
 
@@ -85,6 +88,8 @@ export function checkDefeated(ctx: GameCtx, nationId: string) {
 
 export function declareWar(ctx: GameCtx, declareWar: string[], nation: Nation) {
   const nationIdMap = new Map(ctx.nations.map((n) => [n.id, n]));
+  const warSet = getNationWarSet(ctx);
+
   function atPeace(nation: Nation, enemy: Nation) {
     if (nation.atPeace.find((obj) => obj.nationId === enemy.id && obj.turnsRemaining > 0)) {
       return true;
@@ -99,7 +104,7 @@ export function declareWar(ctx: GameCtx, declareWar: string[], nation: Nation) {
     if (!enemy) continue;
 
     // skip if already at war
-    if (enemy.atWar.includes(nation.id) || nation.atWar.includes(id)) continue;
+    if (isAtWar(warSet, enemy.id, nation.id)) continue;
     // skip if at peace
     if (atPeace(nation, enemy) || atPeace(enemy, nation)) continue;
 
@@ -172,13 +177,9 @@ export function peaceCountdown(ctx: GameCtx) {
   }
 }
 
-function checkAtWar(a: Nation, b: Nation) {
-  if (a.atWar.includes(b.id) && b.atWar.includes(a.id)) return true;
-  return false;
-}
-
 function hasFightingArmies(ctx: GameCtx, hex: Hex) {
   const nationIdMap = new Map(ctx.nations.map((n) => [n.id, n]));
+  const warSet = getNationWarSet(ctx);
 
   let hasFighting = false;
   for (const army of hex.army) {
@@ -191,11 +192,43 @@ function hasFightingArmies(ctx: GameCtx, hex: Hex) {
       const b = nationIdMap.get(opposing.nationId);
       if (!b) continue;
 
-      if (checkAtWar(a, b)) hasFighting = true;
+      if (isAtWar(warSet, a.id, b.id)) hasFighting = true;
     }
   }
 
   return hasFighting;
 }
 
-function getFightingMap() {}
+export function calcWars(ctx: GameCtx) {
+  for (const hex of ctx.mapHexes) {
+    calculateHexWar(ctx, hex);
+  }
+}
+
+export function getNationWarSet(ctx: GameCtx) {
+  const warSet = new Set<string>();
+  for (const nation of ctx.nations) {
+    for (const enemy of nation.atWar) {
+      if (enemy === nation.id) continue;
+      warSet.add(warKey(nation.id, enemy));
+    }
+  }
+
+  return warSet;
+}
+function warKey(a: string, b: string) {
+  return a < b ? `${a},${b}` : `${b},${a}`;
+}
+
+export function isAtWar(warSet: Set<string>, a: string, b: string) {
+  if (warSet.has(warKey(a, b))) return true;
+  return false;
+}
+export function isNationAtWar(warSet: Set<string>, nations: Nation[], nationId: string) {
+  for (const nation of nations) {
+    if (nation.id === nationId) continue;
+    if (warSet.has(warKey(nationId, nation.id))) return true;
+  }
+
+  return false;
+}

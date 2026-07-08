@@ -13,14 +13,14 @@ import { buildingOutput, giveProgressBuilding } from "../services/buildings.js";
 import { executeContracts, recalculateContractsAmounts } from "../services/contracts.js";
 
 import { nationsUpdateManpower } from "../services/manpower.js";
-import { filterPlayerLogic, updatePlayerUI } from "../services/player.js";
+import { filterPlayerLogic, getPlayerNation, updatePlayerUI } from "../services/player.js";
 import { authedProcedure, router } from "./trpc.js";
 import { runIntentForEachNation } from "../services/intents/executeIntents.js";
 import { mailsExpire } from "../services/mails.js";
 import { runAIDiplomacy, runNationDiplomacy } from "../services/intents/diplomacyIntents.js";
 import { MemoryCtx } from "../services/ai/memory/types.js";
 import { runAIPipeline } from "#services/ai/main.js";
-import { peaceCountdown } from "#services/army/war.js";
+import { calcWars, peaceCountdown } from "#services/army/war.js";
 
 export type GameCtx = {
   mapHexes: Hex[];
@@ -157,14 +157,12 @@ export const appRouter = router({
       const gameCtx = populateGameCtx({ userId: ctx.clerkId, gameId });
       if (!gameCtx) throw new TRPCError({ code: "NOT_FOUND" });
 
+      const playerNation = getPlayerNation(gameCtx);
+      if (!playerNation) throw new TRPCError({ code: "NOT_FOUND" });
+
       const playerIntentCtx: IntentInput = {
         ...input.playerIntents,
       };
-
-      const playerNation = gameCtx.nations.find((nation) => nation.isPlayer);
-
-      // checks
-      if (!playerNation) throw new TRPCError({ code: "NOT_FOUND" });
 
       // step 0.5: run player diplomacy first
       runNationDiplomacy(gameCtx, playerNation, playerIntentCtx);
@@ -199,6 +197,7 @@ export const appRouter = router({
       runIntentForEachNation(gameCtx, intents);
 
       // step 3: calculate battle outcomes
+      calcWars(gameCtx);
 
       // step 3.5: give progress to buildings in queue
       giveProgressBuilding(gameCtx);

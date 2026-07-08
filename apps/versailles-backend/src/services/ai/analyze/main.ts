@@ -173,7 +173,7 @@ function getNeighborArmies(ctx: GameCtx, nation: Nation): NeighborArmy[] {
 
 export function getNationNeighbors(ctx: GameCtx, nation: Nation) {
   const borderHexes = getBorderHexes(ctx, nation.id) ?? [];
-  const neighbors = new Set<string>(borderHexes.filter((h) => !h.owner).map((h) => h.owner!));
+  const neighbors = new Set<string>(borderHexes.filter((h) => h.owner).map((h) => h.owner!));
 
   return [...neighbors];
 }
@@ -194,7 +194,7 @@ function getFrontlines(ctx: GameCtx, nation: Nation) {
   }
   return frontlines;
 }
-function getBorderingHexesData(ctx: GameCtx, nation: Nation) {
+export function getBorderingHexesData(ctx: GameCtx, nation: Nation) {
   return getBorderHexes(ctx, nation.id) ?? [];
 }
 

@@ -18,3 +18,7 @@ export function filterPlayerLogic(ctx: GameCtx) {
 export function updatePlayerUI(ctx: GameCtx, intentCtx: IntentInput, playerNation: Nation) {
   markReadMails(ctx, intentCtx.readMails, playerNation);
 }
+
+export function getPlayerNation(ctx: GameCtx) {
+  return ctx.nations.find((nation) => nation.isPlayer);
+}

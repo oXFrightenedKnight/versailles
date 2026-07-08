@@ -13,6 +13,7 @@ import {
 import { AIPlanningState } from "../../planning/types";
 import { getLongOptimisticArmy, getOptimisticArmyAtHex } from "../../planning/main";
 import { ArmyGroup, BorderNeed } from "./types";
+import { getNationWarSet, isAtWar, isNationAtWar } from "#services/army/war.js";
 
 // calculate border needs
 export function analyzeNationBorder(
@@ -25,6 +26,8 @@ export function analyzeNationBorder(
 
   const hexIdMap = getHexIdMap(ctx);
   const axialMap = getHexAxialMap(ctx);
+
+  const warSet = getNationWarSet(ctx);
 
   for (const hexObj of analysis.worldData.currentBorders) {
     const hex = hexIdMap.get(hexObj.hexId);
@@ -45,19 +48,27 @@ export function analyzeNationBorder(
     const enemyNeighbors = neighbors.filter((h) => h.owner && enemySet.has(h.owner));
     const neutralNeighbors = neighbors.filter((h) => h.owner && h.owner !== nation.id);
 
+    // biggest bordering army across all neighboring enemy hexes
+    let biggestBorderingArmy = 0;
+    // total hostile bordering army at enemy hexes
     let totalBorderingEnemyArmy = 0;
     for (const enemyHex of enemyNeighbors) {
       let totalEnemyArmyInHex = 0;
 
       totalEnemyArmyInHex += enemyHex.army
-        .filter((a) => a.nationId !== nation.id)
+        .filter((a) => isAtWar(warSet, nation.id, a.nationId))
         .reduce((acc, a) => {
           return acc + a.amount;
         }, 0);
 
       totalBorderingEnemyArmy += totalEnemyArmyInHex;
+
+      if (totalEnemyArmyInHex > biggestBorderingArmy) {
+        biggestBorderingArmy = totalEnemyArmyInHex;
+      }
     }
 
+    // -- NEUTRAL --
     let totalNeutralBordering = 0;
     for (const nationHex of neutralNeighbors) {
       let totalNeutralArmyInHex = 0;
@@ -73,7 +84,7 @@ export function analyzeNationBorder(
 
     // 1. If fighting hex - 4
     if (enemyArmyInHex) {
-      const armyNeed = Math.round(enemyArmyInHex - currentArmyAtHex * 1.5);
+      const armyNeed = Math.max(0, Math.round(enemyArmyInHex - currentArmyAtHex * 1.5));
 
       borderHexesNeed.push({
         hexId: hex.id,
@@ -81,15 +92,16 @@ export function analyzeNationBorder(
         desiredArmy: armyNeed + currentArmyAtHex,
         expansionArmy: armyNeed + currentArmyAtHex,
         deficit: Math.max(armyNeed, 0),
-        priority: 4,
+        category: "active_fight",
       });
       continue;
     }
 
     // 2. If borders nation at war - 3
     if (enemyNeighbors.length > 0) {
-      const avgEnemyArmyPerHex = totalBorderingEnemyArmy / Math.max(1, enemyNeighbors.length);
-      const armyNeed = Math.round(avgEnemyArmyPerHex - currentArmyAtHex * 1.25);
+      const avgEnemyArmyPerHex = avgEnemyArmyInHexes(ctx, enemyNeighbors, nation.id);
+
+      const armyNeed = getPriority3Need(avgEnemyArmyPerHex, currentArmyAtHex);
 
       borderHexesNeed.push({
         hexId: hex.id,
@@ -97,48 +109,73 @@ export function analyzeNationBorder(
         desiredArmy: armyNeed + currentArmyAtHex,
         expansionArmy: (armyNeed + currentArmyAtHex) * 1.5, // reserve more army for attack when possible
         deficit: Math.max(0, armyNeed),
-        priority: 3,
+        category: "war_defense",
       });
       continue;
     }
 
-    // 3. Neutral borders deficit
-    // ADD A BASE MODIFIER HERE SO AI PUSHES SOME ARMY TO EMPTY HEXES
-    if (neutralNeighbors.length > 0) {
-      const avgNeutralArmyPerHex = totalNeutralBordering / Math.max(1, neutralNeighbors.length);
+    // 3. Neutral borders deficit (only calculate when nation not at war) - 2
+    if (!isNationAtWar(warSet, ctx.nations, nation.id)) {
+      if (neutralNeighbors.length > 0) {
+        const avgNeutralArmyPerHex = Math.max(
+          0,
+          totalNeutralBordering / Math.max(1, neutralNeighbors.length)
+        );
 
-      const desiredArmy = avgNeutralArmyPerHex * 1.1;
-      const armyNeed = Math.round(Math.max(desiredArmy - currentArmyAtHex, 0));
+        const desiredArmy = Math.max(1, avgNeutralArmyPerHex * 1.1);
+        const armyNeed = Math.max(0, Math.round(desiredArmy - currentArmyAtHex));
 
-      borderHexesNeed.push({
-        hexId: hex.id,
-        currentArmy: currentArmyAtHex,
-        desiredArmy,
-        expansionArmy: desiredArmy,
-        deficit: armyNeed,
-        priority: 2,
-      });
-      continue;
+        borderHexesNeed.push({
+          hexId: hex.id,
+          currentArmy: currentArmyAtHex,
+          desiredArmy,
+          expansionArmy: desiredArmy,
+          deficit: armyNeed,
+          category: "neutral_defense",
+        });
+        continue;
+      }
     }
 
-    // 4. Hexes that border empty hexes
-    if (neighbors.some((n) => !n.owner)) {
-      const desiredArmy = 10;
-      const armyNeed = Math.max(0, Math.round(desiredArmy - currentArmyAtHex));
+    // 4. Hexes that border empty hexes - 1
+    if (!isNationAtWar(warSet, ctx.nations, nation.id)) {
+      if (neighbors.some((n) => !n.owner)) {
+        const desiredArmy = 10;
+        const armyNeed = Math.max(0, Math.round(desiredArmy - currentArmyAtHex));
 
-      borderHexesNeed.push({
-        hexId: hex.id,
-        currentArmy: currentArmyAtHex,
-        desiredArmy,
-        expansionArmy: armyNeed + currentArmyAtHex,
-        deficit: armyNeed,
-        priority: 1,
-      });
-      continue;
+        borderHexesNeed.push({
+          hexId: hex.id,
+          currentArmy: currentArmyAtHex,
+          desiredArmy,
+          expansionArmy: armyNeed + currentArmyAtHex,
+          deficit: armyNeed,
+          category: "expansion_reserve",
+        });
+        continue;
+      }
     }
   }
 
   return borderHexesNeed;
+}
+
+export function avgEnemyArmyInHexes(ctx: GameCtx, hexes: Hex[], defendingNationId: string) {
+  if (hexes.length <= 0) return 0;
+
+  const warSet = getNationWarSet(ctx);
+
+  let totalEnemyArmy = 0;
+  for (const hex of hexes) {
+    const hostileHexArmy = hex.army.reduce((acc, a) => {
+      return isAtWar(warSet, a.nationId, defendingNationId) ? acc + a.amount : acc;
+    }, 0);
+    totalEnemyArmy += hostileHexArmy;
+  }
+
+  return totalEnemyArmy / hexes.length;
+}
+export function getPriority3Need(avgEnemyArmyInHex: number, currentArmyInHex: number) {
+  return Math.max(5, Math.round(avgEnemyArmyInHex - currentArmyInHex * 1.25)); // minimum need 5
 }
 
 // uses to sort hexes by priority when deciding what hex needs army most

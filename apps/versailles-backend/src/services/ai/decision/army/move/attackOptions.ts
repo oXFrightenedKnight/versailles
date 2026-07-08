@@ -1,115 +1,145 @@
-import { findNeighbors, Hex, Nation } from "@repo/shared";
-import { GameCtx } from "#trpc/index.js";
-import { getNationArmy } from "../../../../genNations";
-import { BFSResult, WorldAnalysis } from "../../../types/analyze";
-import { AIPlanningState } from "../../planning/types";
-import { getEnemyBorderScore } from "../militaryAnalysis/main";
-import { createMoveGoal } from "../../planning/moveGoals";
-import {
-  getAvailableArmyForEmptyAttack,
-  getAvailableArmyForPriority,
-  getLongOptimisticArmy,
-} from "../../planning/main";
 import { reconstructPath } from "#services/ai/algos/bfs.js";
+import { getBorderingHexesData } from "#services/ai/analyze/main.js";
+import { getNationWarSet, isAtWar } from "#services/army/war.js";
+import { getHexAxialMap, getHexIdMap } from "#services/map.js";
+import { GameCtx } from "#trpc/index.js";
+import { findNeighbors, Hex, Nation } from "@repo/shared";
+import { getHostileArmyHex, getNationArmy } from "../../../../genNations";
+import { BFSResult, WorldAnalysis } from "../../../types/analyze";
+import { getAvailableArmyForCategory, getLongOptimisticArmy } from "../../planning/main";
+import { AIPlanningState } from "../../planning/types";
+import {
+  avgEnemyArmyInHexes,
+  getEnemyBorderScore,
+  getPriority3Need,
+} from "../militaryAnalysis/main";
 import { BorderNeed } from "../militaryAnalysis/types";
 
-export function calcEnemyAttack(
+// ATTACK:
+// AI should analyze imbalances in power where enemy's hex army is much lower than one of the armies in another hex.
+// after that it should split defense army based on how many hexes it wants to attack from this hex and how many hexes it wants to defend from
+
+// split hex army based on how many enemy hexes it borders. create a map of how much army each defending hex can allocate to attacking enemy hex. if that number is higher than
+// total enemy army in hex - let ai attack. Also don't forget to cap how much hex can send based on desired and current army ratio
+
+// army attacking can access highest filling priority, but can't move goal armies and armies that are already moved by defense AI
+
+// make sure that ai does not include attacking hex in reserving army when calculating army allocation
+
+// First you calculate how much army you need to reserve for the remaining enemy hexes (excluding currently looped one)
+// and then you apply planning to know how much army this hex has already sent to attack in other hexes, after that you
+// write down the amount this hex can allocate to attacking this enemy hex. map over nation neighbors when mapping over enemy hexes to attack
+
+type AllocateMap = Map<number, { hexId: number; amount: number }[]>;
+
+export function getArmyAllocationMap(ctx: GameCtx, planning: AIPlanningState, nation: Nation) {
+  const borderingHexes = getBorderingHexesData(ctx, nation);
+  const warSet = getNationWarSet(ctx);
+  const axialMap = getHexAxialMap(ctx);
+
+  // a map that holds enemy's border hex as key, and array of bordering nation hexes with amount they can allocate as a value
+  const allocationMap: AllocateMap = new Map();
+
+  // map over all border enemy hexes
+  for (const hex of borderingHexes) {
+    // skip non-war hexes
+    if (!hex.owner || !isAtWar(warSet, nation.id, hex.owner)) continue;
+
+    const neighbors = findNeighbors(hex, ctx.mapHexes, axialMap);
+    if (!neighbors) continue;
+
+    const nationNeighbors = neighbors.filter((n) => n.owner === nation.id);
+    if (nationNeighbors.length <= 0) continue;
+
+    for (const nationHex of nationNeighbors) {
+      // get enemy neighbors that this nation hex borders
+      const enemyNeighbors = findNeighbors(nationHex, ctx.mapHexes, axialMap).filter(
+        (h) => h.owner === hex.owner
+      );
+      if (enemyNeighbors.length <= 0) continue;
+
+      // calculate how much this nation hex should allocate for defense excluding current enemy hex
+      const rawAvailable = getAvailableArmyForCategory(planning, nationHex.id, "war_attack");
+
+      const filtered = enemyNeighbors.filter((h) => h.id !== hex.id); // exclude current enemy hex for attacking
+      const avgEnemyArmy = avgEnemyArmyInHexes(ctx, filtered, nation.id);
+      const reserved = filtered.length > 0 ? getPriority3Need(avgEnemyArmy, rawAvailable) : 0;
+
+      const available = Math.max(0, rawAvailable - reserved);
+
+      // update map
+      const prev = allocationMap.get(hex.id) ?? [];
+      allocationMap.set(hex.id, [...prev, { hexId: nationHex.id, amount: available }]);
+    }
+  }
+
+  return allocationMap;
+}
+
+export function calcImbalanceAttack(
   ctx: GameCtx,
-  analysis: WorldAnalysis,
   planning: AIPlanningState,
   nation: Nation,
-  enemyId: string,
-  nationIdMap: Map<string, Nation>,
-  hexIdMap: Map<number, Hex>,
-  axialMap: Map<string, Hex>
+  allocationMap: AllocateMap
 ) {
   const attackIntent: { startId: number; endId: number; amount: number }[] = [];
 
-  const enemy = nationIdMap.get(enemyId);
-  if (!enemy) return;
+  const hexIdMap = getHexIdMap(ctx);
+  const warSet = getNationWarSet(ctx);
 
-  const neighbors = analysis.worldData.neighbors;
-  if (!neighbors.includes(enemyId)) return; // skip if doesn't border
+  const createIntent = (startId: number, endId: number, amount: number) => {
+    if (amount <= 0) return { ok: false };
 
-  let budgetArmy = aiAttackBudget(ctx, analysis, nation, enemy);
-  const scoredEnemyHexes = getEnemyBorderScore(ctx, planning, nation, enemy);
-  const sorted = [...scoredEnemyHexes.entries()].sort((a, b) => b[1].score - a[1].score);
+    attackIntent.push({ startId, endId, amount });
 
-  while (budgetArmy > 0) {
-    const borderObj = sorted.shift();
-    if (!borderObj) break;
+    const attacked = planning.attackingArmy.get(startId) ?? [];
+    planning.attackingArmy.set(startId, [...attacked, { enemyHexId: endId, amount }]);
 
-    // find neighbors of this enemy hex that belong to nation
-    const hex = hexIdMap.get(borderObj[0]);
-    if (!hex || !hex.owner) continue;
+    return { ok: true };
+  };
 
-    const neighbors = findNeighbors(hex, ctx.mapHexes, axialMap);
+  // Map and compare armies and create attack intents
+  for (const [enemyHexId, allocated] of [...allocationMap]) {
+    const enemyHex = hexIdMap.get(enemyHexId);
+    if (!enemyHex) continue;
 
-    // total hexes to loop over
-    const nationNeighbors = neighbors.filter((h) => h.owner === nation.id);
+    // allocated army left in each attacking hex
+    const leftAllocated = allocated.map(({ hexId, amount }) => ({
+      hexId,
+      amount: Math.max(0, amount - totalHexAttacking(planning, hexId)),
+    }));
 
-    const totalArmyNeeded = borderObj[1].army * 1.4;
+    const totalEnemyArmy = getHostileArmyHex(enemyHex, nation.id, warSet);
+    const maxAllocated = leftAllocated.reduce((acc, { amount }) => acc + amount, 0);
 
-    // shows total army this hex has sent
-    const armySentMap = new Map<number, { amount: number }>(); // <hexId, amount>
-    let totalMoved = 0;
+    // NO HARD-CODE - create separate data values file/folder
+    const neededForAttack = Math.max(1, Math.ceil(totalEnemyArmy * 1.5));
 
-    // loop over all nation hexes until enough army is sent or no more army can be sent
-    let safety = 0;
-    while (
-      totalMoved < totalArmyNeeded &&
-      nationNeighbors.length !== 0 &&
-      budgetArmy > 0 &&
-      safety < 720
-    ) {
-      safety++;
+    if (maxAllocated >= neededForAttack) {
+      const proportion = neededForAttack / maxAllocated;
 
-      const neighbor = nationNeighbors.shift();
-      if (!neighbor) continue;
+      let totalSent = 0;
+      for (const { hexId, amount } of leftAllocated) {
+        if (totalSent >= neededForAttack) continue;
 
-      const army = planning.availableArmyByHex.get(neighbor.id) ?? 0;
-      const armySent = armySentMap.get(neighbor.id)?.amount ?? 0;
+        const needed = Math.max(0, Math.ceil(neededForAttack - totalSent));
 
-      const needToSend = (totalArmyNeeded - totalMoved) / nationNeighbors.length;
+        const send = Math.min(needed, amount, Math.ceil(proportion * amount));
+        if (send < 1) continue;
 
-      // don't let ai send more than 50% current hex army
-      const send = Math.min(budgetArmy, army * 0.5, army - needToSend);
-
-      armySentMap.set(neighbor.id, { amount: armySent + send });
-      totalMoved += send;
-      budgetArmy -= send;
-
-      // stop counting hex if already half its army sent
-      if (send + armySent >= army * 0.5) continue;
-
-      nationNeighbors.push(neighbor);
-    }
-
-    // create move intents
-    // add move intents to map
-    for (const sentObj of armySentMap) {
-      attackIntent.push({ startId: sentObj[0], endId: hex.id, amount: sentObj[1].amount });
+        createIntent(hexId, enemyHexId, send);
+        totalSent += send;
+      }
     }
   }
 
   return attackIntent;
 }
 
-function aiAttackBudget(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation, enemy: Nation) {
-  let budgetArmy = 0;
-
-  // 1. Add based on enemy strength ratio
-  const enemyArmy = getNationArmy(ctx, enemy.id) ?? 0;
-  const ownArmy = analysis.selfData.totalArmy;
-
-  const strengthRatio = ownArmy / Math.max(1, enemyArmy);
-
-  if (strengthRatio < 0.7) return 0;
-
-  const addStrengthBudget = ownArmy * (Math.pow(strengthRatio, 4) / 10);
-  budgetArmy += addStrengthBudget;
-
-  return budgetArmy;
+export function totalHexAttacking(planning: AIPlanningState, hexId: number) {
+  const attacks = planning.attackingArmy.get(hexId);
+  if (!attacks) return 0;
+  return attacks.reduce((acc, obj) => acc + obj.amount, 0);
 }
 
 // calculate attack on empty hexes
@@ -124,7 +154,7 @@ export function calcEmptyHexAttack(
   // find first neighbor hex that has available army and move
   const neighbors = findNeighbors(hex, ctx.mapHexes, axialMap);
   for (const neighbor of neighbors) {
-    const army = getAvailableArmyForEmptyAttack(planning, neighbor.id);
+    const army = getAvailableArmyForCategory(planning, neighbor.id, "expansion_move");
     if (army >= 0) attackIntent.push({ startId: neighbor.id, endId: hex.id, amount: army });
   }
 
@@ -148,7 +178,7 @@ export function calcAIExpansion(
   if (neededForExpansion > 0) {
     // use dynamic planning to map over hexes with available army
     for (const [hexId, _] of planning.availableArmyByHex) {
-      const availableAmountInHex = getAvailableArmyForPriority(planning, hexId, borderHex.priority);
+      const availableAmountInHex = getAvailableArmyForCategory(planning, hexId, borderHex.category);
       if (availableAmountInHex === 0) continue;
       const path = reconstructPath(hexBFS.cameFrom, hexId);
       if (path === null) continue;

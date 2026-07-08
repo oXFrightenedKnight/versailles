@@ -1,6 +1,6 @@
 import { reconstructPath } from "../../../algos/bfs";
 import { BFSResult } from "../../../types/analyze";
-import { getAvailableArmyForPriority, getLongOptimisticArmy } from "../../planning/main";
+import { getAvailableArmyForCategory, getLongOptimisticArmy } from "../../planning/main";
 import { createMoveGoal } from "../../planning/moveGoals";
 import { AIPlanningState } from "../../planning/types";
 import { ArmyGroup, BorderNeed } from "../militaryAnalysis/types";
@@ -19,7 +19,7 @@ export function calcAIDefenseMove(
   if (borderHex.deficit > 0) {
     // use dynamic planning to map over hexes with available army
     for (const [hexId, _] of planning.availableArmyByHex) {
-      const availableArmyInHex = getAvailableArmyForPriority(planning, hexId, borderHex.priority);
+      const availableArmyInHex = getAvailableArmyForCategory(planning, hexId, borderHex.category);
       if (availableArmyInHex === 0) continue;
       const path = reconstructPath(hexBFS.cameFrom, hexId);
       if (path === null) continue;
