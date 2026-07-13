@@ -35,6 +35,7 @@ export function createPlanningState(ctx: GameCtx, nationId: string) {
     buildRoads: new Set(),
     occupiedResources: new Map(),
     attackingArmy: new Map(),
+    attackTargets: new Set(),
   } as AIPlanningState;
 }
 

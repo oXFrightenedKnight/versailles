@@ -20,6 +20,8 @@ export type AIPlanningState = {
   outgoingArmyByHex: Map<number, number>; // army that will leave next turn
   plannedMoves: ArmyMoveGoal[]; // army that may take several turns to get there
   attackingArmy: Map<number, { enemyHexId: number; amount: number }[]>;
+  // war
+  attackTargets: Set<string>; // set of nation ids that this nation targets
 };
 
 // planned moves over long distances

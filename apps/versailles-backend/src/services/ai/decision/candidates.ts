@@ -56,12 +56,6 @@ export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nat
 {
   /*
 
-function generateDeclareWarCandidates(
-  ctx: GameCtx,
-  analysis: WorldAnalysis,
-  nation: Nation
-): DeclareWarIntent[] {}
-
 function generateAnswerMailCandidates(
   ctx: GameCtx,
   analysis: WorldAnalysis,
