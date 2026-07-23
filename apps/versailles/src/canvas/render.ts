@@ -1,12 +1,12 @@
-import { Biome, BIOME_COLOR, HEX_SIZE } from "./map_data";
-import { armyIntent, roadObject } from "@/lib/types/game";
-import { drawAllRoads } from "./roads/roads";
-import { RenderRoad, RoadConstructionVM } from "@/lib/UI/mergeData/uiRoads";
+import { RenderRoad } from "@/lib/UI/mergeData/uiRoads";
 import { getFlagImage } from "@/lib/helpers/flags";
+import { armyIntent, roadObject } from "@/lib/types/game";
 import { numberConverter } from "@/lib/utils";
-import { Nation } from "@repo/shared/data/nations";
 import { Hex } from "@repo/shared/data/hex_map";
+import { Nation } from "@repo/shared/data/nations";
 import { findNeighbors } from "@repo/shared/helpers/hex_map";
+import { Biome, BIOME_COLOR, HEX_SIZE } from "./map_data";
+import { drawAllRoads } from "./roads/roads";
 
 const biomePatterns: Partial<Record<Biome, CanvasPattern>> = {};
 const texturePatterns: Partial<Record<string, CanvasPattern>> = {};

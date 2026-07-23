@@ -9,8 +9,10 @@ import { numberConverter } from "@/lib/utils";
 export default function BarrackBlock({ building }: { building: Building }) {
   // name
   const name =
-    findBuildingNameByCategory({ buildingCategory: building.category, level: building.level }) ??
-    "nomadic_camp";
+    BUILDINGS[
+      findBuildingNameByCategory({ buildingCategory: building.category, level: building.level }) ??
+        "nomadic_camp"
+    ].name;
 
   // level
   const level = building.level;

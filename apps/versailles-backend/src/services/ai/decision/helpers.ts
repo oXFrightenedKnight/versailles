@@ -1,13 +1,15 @@
 import {
   axialToCube,
+  BASE_RESOURCE,
   Building,
   BUILDINGS,
   cubeDistance,
   estimateConsumption,
   findBuildingNameByCategory,
   Hex,
+  isNationResource,
   Nation,
-  RESOURCES,
+  PRODUCIBLE_RESOURCE,
 } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { GameCtx } from "../../../trpc";
@@ -32,16 +34,13 @@ export function getBuildingsByIdMap(ctx: GameCtx) {
 }
 
 // returns all buildings in given list of hexes
-export function getHexesBuildings(
-  hexes: Hex[],
-  buildingsById: Map<string, Building>,
-  planning?: AIPlanningState
-) {
+export function getHexesBuildings(hexes: Hex[], buildingsById: Map<string, Building>) {
   return hexes
     .map((h) => (h.buildingId ? buildingsById.get(h.buildingId) : undefined))
     .filter((b): b is Building => b !== undefined);
 }
 
+// returns estimated producible resource production and consumption
 export function getResourcePrediction(
   ctx: GameCtx,
   analysis: WorldAnalysis,
@@ -52,8 +51,8 @@ export function getResourcePrediction(
 
   const constructingLevels = new Map(analysis.selfData.constructing.map((c) => [c.hexId, c]));
 
-  const totalResourceConsumed: Partial<Record<RESOURCES, number>> = {};
-  const totalResourceProduced: Partial<Record<RESOURCES, number>> = {};
+  const totalResourceConsumed: Partial<Record<BASE_RESOURCE, number>> = {};
+  const totalResourceProduced: Partial<Record<PRODUCIBLE_RESOURCE, number>> = {};
 
   for (const hex of ctx.mapHexes) {
     if (hex.owner !== nation.id) continue;
@@ -112,13 +111,13 @@ export function getResourcePrediction(
 }
 
 export function getResourceShortage(prediction: {
-  totalResourceConsumed: Partial<Record<RESOURCES, number>>;
-  totalResourceProduced: Partial<Record<RESOURCES, number>>;
+  totalResourceConsumed: Partial<Record<BASE_RESOURCE, number>>;
+  totalResourceProduced: Partial<Record<PRODUCIBLE_RESOURCE, number>>;
 }) {
-  const shortage: Partial<Record<RESOURCES, number>> = {};
+  const shortage: Partial<Record<BASE_RESOURCE, number>> = {};
   for (const [resource, amount] of typedEntries(prediction.totalResourceConsumed)) {
     if (amount === undefined) continue;
-    const diff = prediction.totalResourceProduced[resource] ?? 0 - amount;
+    const diff = (prediction.totalResourceProduced[resource] ?? 0) - amount;
     shortage[resource] = shortage[resource] ?? 0 + diff;
   }
 

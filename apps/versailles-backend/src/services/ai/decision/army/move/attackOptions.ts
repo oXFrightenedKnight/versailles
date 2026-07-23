@@ -1,19 +1,13 @@
-import { reconstructPath } from "#services/ai/algos/bfs.js";
 import { getBorderingHexesData } from "#services/ai/analyze/main.js";
 import { getNationWarSet, isAtWar } from "#services/army/war.js";
 import { getHexAxialMap, getHexIdMap } from "#services/map.js";
 import { GameCtx } from "#trpc/index.js";
 import { findNeighbors, Hex, Nation } from "@repo/shared";
-import { getHostileArmyHex, getNationArmy } from "../../../../genNations";
-import { BFSResult, WorldAnalysis } from "../../../types/analyze";
-import { getAvailableArmyForCategory, getLongOptimisticArmy } from "../../planning/main";
+import { getHostileArmyHex } from "../../../../genNations";
+import { getAvailableArmyForCategory } from "../../planning/main";
 import { AIPlanningState } from "../../planning/types";
-import {
-  avgEnemyArmyInHexes,
-  getEnemyBorderScore,
-  getPriority3Need,
-} from "../militaryAnalysis/main";
-import { BorderNeed } from "../militaryAnalysis/types";
+import { avgEnemyArmyInHexes, getWarDefenseTarget } from "../militaryAnalysis/main";
+import { ProposalArmyMove } from "./main";
 
 // ATTACK:
 // AI should analyze imbalances in power where enemy's hex army is much lower than one of the armies in another hex.
@@ -63,9 +57,9 @@ export function getArmyAllocationMap(ctx: GameCtx, planning: AIPlanningState, na
 
       const filtered = enemyNeighbors.filter((h) => h.id !== hex.id); // exclude current enemy hex for attacking
       const avgEnemyArmy = avgEnemyArmyInHexes(ctx, filtered, nation.id);
-      const reserved = filtered.length > 0 ? getPriority3Need(avgEnemyArmy, rawAvailable) : 0;
+      const reservedForDefense = filtered.length > 0 ? getWarDefenseTarget(avgEnemyArmy) : 0;
 
-      const available = Math.max(0, rawAvailable - reserved);
+      const available = Math.max(0, rawAvailable - reservedForDefense);
 
       // update map
       const prev = allocationMap.get(hex.id) ?? [];
@@ -161,46 +155,46 @@ export function calcEmptyHexAttack(
   return attackIntent;
 }
 
-// calculate move intents to border hexes to prepare for expansion
-export function calcAIExpansion(
-  borderHex: BorderNeed,
-  planning: AIPlanningState,
-  borderBFSMap: Map<number, BFSResult>
-) {
-  const expansionIntent: { path: number[]; amount: number }[] = [];
+export function getExpansionProposals(ctx: GameCtx, planning: AIPlanningState, nation: Nation) {
+  const proposals: ProposalArmyMove[] = [];
 
-  const hexBFS = borderBFSMap.get(borderHex.hexId);
-  if (!hexBFS) return;
+  const emptyHexes = getBorderingHexesData(ctx, nation).filter((h) => !h.owner);
 
-  const neededForExpansion = borderHex.expansionArmy - borderHex.desiredArmy;
+  const axialMap = getHexAxialMap(ctx);
 
-  const armySupplyDist: { hexId: number; available: number; path: number[] }[] = [];
-  if (neededForExpansion > 0) {
-    // use dynamic planning to map over hexes with available army
-    for (const [hexId, _] of planning.availableArmyByHex) {
-      const availableAmountInHex = getAvailableArmyForCategory(planning, hexId, borderHex.category);
-      if (availableAmountInHex === 0) continue;
-      const path = reconstructPath(hexBFS.cameFrom, hexId);
-      if (path === null) continue;
+  // map over all bordering empty hexes
+  for (const hex of emptyHexes) {
+    const intents = calcEmptyHexAttack(ctx, planning, hex, axialMap);
 
-      armySupplyDist.push({ hexId, available: availableAmountInHex, path });
+    for (const expansionIntent of intents) {
+      const intent: ProposalArmyMove = {
+        path: [expansionIntent.startId, expansionIntent.endId],
+        amount: expansionIntent.amount,
+        category: "expansion_move",
+      };
+
+      proposals.push(intent);
     }
   }
-  // start assigning available army from closest supply
-  const orderedSupply = armySupplyDist.sort((a, b) => a.path.length - b.path.length);
-  for (const supply of orderedSupply) {
-    const available = supply.available;
 
-    const optimisticBorderArmy = getLongOptimisticArmy(planning, borderHex.hexId);
+  return proposals;
+}
 
-    const remainingNeeded = Math.max(0, borderHex.expansionArmy - optimisticBorderArmy);
+export function getAttackProposals(ctx: GameCtx, planning: AIPlanningState, nation: Nation) {
+  const proposals: ProposalArmyMove[] = [];
 
-    const send = Math.min(available, remainingNeeded);
+  const allocationMap = getArmyAllocationMap(ctx, planning, nation);
+  const intents = calcImbalanceAttack(ctx, planning, nation, allocationMap);
 
-    if (supply.path.length <= 1) continue;
-
-    expansionIntent.push({ path: supply.path, amount: send });
+  // create attack intents
+  for (const intent of intents) {
+    const path = [intent.startId, intent.endId];
+    proposals.push({
+      path,
+      amount: intent.amount,
+      category: "war_attack",
+    });
   }
 
-  return expansionIntent;
+  return proposals;
 }

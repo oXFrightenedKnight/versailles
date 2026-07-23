@@ -1,15 +1,15 @@
 import { Point } from "#services/road.js";
-import { BUILDINGS_CATEGORY, RESOURCES } from "@repo/shared";
+import { BASE_RESOURCE, BUILDINGS_CATEGORY } from "@repo/shared";
 import { BorderNeedCategory } from "../army/militaryAnalysis/types";
 
 export type AIPlanningState = {
   // building
   intendedBuildings: Map<number, { category: BUILDINGS_CATEGORY; levels: number }>;
-  buildSaving: Map<number, { category: BUILDINGS_CATEGORY; targetLevel: number }>;
+  buildSaving: BuildSavePlanning;
   // roads
   buildRoads: Set<Point[]>; // array of axial points for new road
   // contracts
-  occupiedResources: Map<string, Partial<Record<RESOURCES, number>>>; // buildingId: { resource: occupied }
+  occupiedResources: Map<string, Partial<Record<BASE_RESOURCE, number>>>; // buildingId: { resource: occupied }
   // army
   availableArmyByHex: Map<number, number>;
   softReservedArmyByHex: Map<
@@ -18,11 +18,13 @@ export type AIPlanningState = {
   >;
   incomingArmyByHex: Map<number, number>; // army that will be in this hex NEXT TURN
   outgoingArmyByHex: Map<number, number>; // army that will leave next turn
-  plannedMoves: ArmyMoveGoal[]; // army that may take several turns to get there
+  plannedMoves: ArmyMoveGoal[]; // army that may take several turns to travel
   attackingArmy: Map<number, { enemyHexId: number; amount: number }[]>;
   // war
-  attackTargets: Set<string>; // set of nation ids that this nation targets
+  attackTargets: AttackTargetPlanning; // set of nation ids that this nation targets
 };
+
+export type BuildSavePlanning = Map<number, { category: BUILDINGS_CATEGORY; targetLevel: number }>;
 
 // planned moves over long distances
 export type ArmyMoveGoal = {
@@ -31,4 +33,4 @@ export type ArmyMoveGoal = {
   amount: number;
 };
 
-export type ResourceRecord = Partial<Record<RESOURCES, number>>;
+export type AttackTargetPlanning = Set<string>;

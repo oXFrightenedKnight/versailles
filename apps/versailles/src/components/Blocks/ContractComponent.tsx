@@ -32,6 +32,7 @@ import { MergedContractChanges } from "@repo/shared/data/contracts";
 import { calculateExportAmount } from "@repo/shared/helpers/contracts";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import Image from "next/image";
+import { isBaseResource } from "@repo/shared";
 
 export default function ContractComponent({
   contract,
@@ -75,13 +76,18 @@ export default function ContractComponent({
   const StartIcon = BuildingIcons[startBuilding?.category ?? "CIVILIAN"];
   const EndIcon = BuildingIcons[endBuilding?.category ?? "CIVILIAN"];
 
-  const allAvailableResources = startName ? BUILDINGS[startName].producing : undefined; // all resources currently produced by this starting building
   const sameBuildingContracts = allContracts.filter(
     (c) => c.startBuildingId === startBuilding?.id && c.endBuildingId === endBuilding?.id
   ); // contracts that have the same starting id and end id
+
+  const allAvailableResources = startName ? BUILDINGS[startName].producing : undefined; // all resources currently produced by this starting building
+  const baseAvailableResources = allAvailableResources
+    ? allAvailableResources.filter((r) => isBaseResource(r))
+    : undefined;
+
   const allowedResources =
-    allAvailableResources && endName
-      ? allAvailableResources.filter(
+    baseAvailableResources && endName
+      ? baseAvailableResources.filter(
           (r) =>
             Object.keys(BUILDINGS[endName].storageCap).includes(r) &&
             (sameBuildingContracts.every((c) => c.resource !== r) || r === contract.resource)

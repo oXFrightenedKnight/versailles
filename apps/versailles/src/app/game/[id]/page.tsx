@@ -15,6 +15,7 @@ import ProvinceInfoSidebar from "@/components/SideMenus/ProvinceMenu/ProvinceInf
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCameraController } from "@/hooks/useCameraController";
+import { useEffectiveGold } from "@/hooks/useEffectiveGold";
 import { Descriptions, OpenMenus } from "@/lib/data";
 import { getNationName } from "@/lib/helpers/nations";
 import { useGameStore } from "@/lib/stores/gameStore";
@@ -24,7 +25,6 @@ import { BuildModeType, roadObject } from "@/lib/types/game";
 import { getUIBuildings } from "@/lib/UI/mergeData/uiBuildings";
 import { getServerContractsFromBuildings } from "@/lib/UI/mergeData/uiContract";
 import { getRenderRoads } from "@/lib/UI/mergeData/uiRoads";
-import { calculateOptimisticGold } from "@/lib/UI/optimisticCalc/gold";
 import { calculateOptimisticManpower } from "@/lib/UI/optimisticCalc/manpower";
 import { numberConverter } from "@/lib/utils";
 import { Hex } from "@repo/shared/data/hex_map";
@@ -36,7 +36,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { initBiomePatterns, initTextures, renderMap } from "../../../canvas/render";
 import { GameData, trpc } from "../../_trpc/client";
 import SettingDialog from "./settingDialog";
-import { useEffectiveGold } from "@/hooks/useEffectiveGold";
 
 export default function Home() {
   const router = useRouter();

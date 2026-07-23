@@ -2,12 +2,17 @@ import { Trash2 } from "lucide-react";
 import InfoComponent, { Info } from "./InfoComponent";
 import { deleteBuilding } from "@/lib/UI/mergeData/uiBuildings";
 import { useGameStore } from "@/lib/stores/gameStore";
-import { Building } from "@repo/shared/data/buildings";
+import { Building, BUILDINGS } from "@repo/shared/data/buildings";
+import { findBuildingNameByCategory } from "@repo/shared";
 
 export default function InfoBlock({ info, building }: { info: Info; building: Building }) {
   const mapHexes = useGameStore((s) => s.mapHexes);
   const playerNation = useGameStore((s) => s.playerNation);
-  const type = info.find((obj) => obj.key === "Type")?.value;
+  const name =
+    BUILDINGS[
+      findBuildingNameByCategory({ buildingCategory: building.category, level: building.level }) ??
+        "nomadic_camp"
+    ].name;
 
   const hex = mapHexes.find((h) => h.buildingId === building.id);
 
@@ -17,7 +22,7 @@ export default function InfoBlock({ info, building }: { info: Info; building: Bu
   return (
     <div className="w-full bg-gray-800 rounded-xl">
       <div className="flex w-full justify-between items-center bg-gray-700 p-2 rounded-t-xl">
-        <p>{type} Info</p>
+        <p>{name} Info</p>
 
         {!isCapital && isOwnerOfHex && (
           <div

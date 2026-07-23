@@ -1,31 +1,15 @@
 // This file holds all logic for ai tracking and planning on what army it
 // already sent or will send, etc.
 
-import { getBorderBFSMap } from "#services/ai/algos/bfs.js";
-import { AIMemory } from "#services/ai/memory/types.js";
-import { WorldAnalysis } from "#services/ai/types/analyze.js";
-import { GameCtx } from "#trpc/index.js";
-import { getNationArmyFromHex } from "../../../map";
 import { MoveArmy } from "../../types/intent";
-import { priorityTable } from "../army/militaryAnalysis/data";
+import { reservationAccessLevel } from "../army/militaryAnalysis/data";
 import { BorderNeed, BorderNeedCategory } from "../army/militaryAnalysis/types";
-import { populateBuildSaving } from "./buildSaving";
-import { populateArmyGoals } from "./moveGoals";
 import { AIPlanningState, ArmyMoveGoal } from "./types";
 
-export function createPlanningState(ctx: GameCtx, nationId: string) {
-  const availableArmyByHex = new Map<number, number>();
-
-  for (const hex of ctx.mapHexes) {
-    if (hex.owner !== nationId) continue;
-
-    const army = getNationArmyFromHex(hex, nationId);
-    availableArmyByHex.set(hex.id, army);
-  }
-
+export function initPlanningState() {
   return {
     intendedBuildings: new Map(),
-    availableArmyByHex,
+    availableArmyByHex: new Map(),
     softReservedArmyByHex: new Map(),
     incomingArmyByHex: new Map(),
     outgoingArmyByHex: new Map(),
@@ -37,17 +21,6 @@ export function createPlanningState(ctx: GameCtx, nationId: string) {
     attackingArmy: new Map(),
     attackTargets: new Set(),
   } as AIPlanningState;
-}
-
-// this function updates nation planning with nation long term memory
-export function setNationMemoPlanning(
-  analysis: WorldAnalysis,
-  planning: AIPlanningState,
-  nationMemo: AIMemory
-) {
-  const bfsMap = getBorderBFSMap(analysis);
-  populateArmyGoals(planning, nationMemo, bfsMap);
-  populateBuildSaving(planning, nationMemo);
 }
 
 // use this function to update ai move that is 1 hex long
@@ -111,20 +84,16 @@ export function getLongOptimisticArmy(planning: AIPlanningState, hexId: number) 
 export function reserveBorderArmy(borderAnalysis: BorderNeed[], planning: AIPlanningState) {
   for (const border of borderAnalysis) {
     const reserved = planning.softReservedArmyByHex.get(border.hexId);
+
+    const object = {
+      amount: border.desiredArmy,
+      category: border.category,
+      reason: "reserved analyzed border",
+    };
     if (!reserved) {
-      planning.softReservedArmyByHex.set(border.hexId, [
-        {
-          amount: border.desiredArmy,
-          category: border.category,
-          reason: "reserved analyzed border",
-        },
-      ]);
+      planning.softReservedArmyByHex.set(border.hexId, [object]);
     } else {
-      reserved.push({
-        amount: border.desiredArmy,
-        category: border.category,
-        reason: "reserved analyzed border",
-      });
+      reserved.push(object);
     }
   }
 }
@@ -165,7 +134,8 @@ function blocksRequest(
   requesterCategory: BorderNeedCategory
 ) {
   // Same or higher priority reservations always block.
-  if (priorityTable[reservedCategory] >= priorityTable[requesterCategory]) return true;
+  if (reservationAccessLevel[reservedCategory] >= reservationAccessLevel[requesterCategory])
+    return true;
 
   // Active war-border protection should not be stolen even by priority 4.
   if (reservedCategory === "war_defense" && requesterCategory === "active_fight") return true;

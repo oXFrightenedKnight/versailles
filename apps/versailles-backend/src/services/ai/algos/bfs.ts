@@ -1,7 +1,7 @@
 import { findNeighbors, Hex } from "@repo/shared";
 import { GameCtx } from "../../../trpc";
 import { getHexAxialMap, getHexIdMap } from "../../map";
-import { WorldAnalysis } from "../types/analyze";
+import { BFSResult, WorldAnalysis } from "../types/analyze";
 import { Point, pointKey, splitKey } from "#services/road.js";
 
 export function bfs({
@@ -59,8 +59,8 @@ export function reconstructPath(cameFrom: Map<number, number | null>, targetHexI
   return path;
 }
 
-export function getBorderBFSMap(analysis: WorldAnalysis) {
-  return new Map(analysis.selfData.borderBFS.map((b) => [b.startHexId, b]));
+export function getBorderBFSMap(bfs: BFSResult[]) {
+  return new Map(bfs.map((b) => [b.startHexId, b]));
 }
 
 // --- ROAD EDGE SYSTEM ---

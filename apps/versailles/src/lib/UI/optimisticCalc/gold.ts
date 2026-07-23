@@ -1,5 +1,5 @@
 import { ArmyTraining, newBuilding, roadObject } from "@/lib/types/game";
-import { BASE_ROAD_COST, getArmyTrainCost, Road, TRAIN_COST } from "@repo/shared";
+import { BASE_ROAD_COST, getArmyTrainCost, Road } from "@repo/shared";
 import { Building, BUILDINGS } from "@repo/shared/data/buildings";
 import { Hex } from "@repo/shared/data/hex_map";
 import { Nation } from "@repo/shared/data/nations";

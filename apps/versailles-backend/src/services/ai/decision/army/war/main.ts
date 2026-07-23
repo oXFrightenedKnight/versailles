@@ -4,8 +4,9 @@ import { GameCtx } from "#trpc/index.js";
 import { findNeighbors, Nation } from "@repo/shared";
 import { AIPlanningState } from "../../planning/types";
 import { createTargets, updateTargets } from "./selectTargets";
+import { RATIO_THRESHOLD } from "./data";
 
-function generateDeclareWarCandidates(
+export function generateDeclareWarCandidates(
   ctx: GameCtx,
   planning: AIPlanningState,
   nation: Nation
@@ -21,14 +22,15 @@ function generateDeclareWarCandidates(
 
   const hexIdMap = getHexIdMap(ctx);
 
-  const canceledTargets = updateTargets(ctx, planning, nation);
-  const newTargets = createTargets(ctx, planning, nation);
+  updateTargets(ctx, planning, nation);
+  createTargets(ctx, planning, nation);
 
   for (const target of planning.attackTargets) {
     // check if ALL border army hexes meet specific ratio to avg enemy army they border
     const borderHexes = getNationBorderHexes(ctx, nation.id);
 
     let isReady = true;
+    // make sure every hex is properly defended
     for (const borderHex of borderHexes) {
       if (!borderHex.neighborIds.includes(target)) continue;
 

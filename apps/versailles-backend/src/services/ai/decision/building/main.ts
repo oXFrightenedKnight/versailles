@@ -1,5 +1,6 @@
 import { WorldAnalysis } from "#services/ai/types/analyze.js";
 import { AIScoreReasons, BuildIntent } from "#services/ai/types/intent.js";
+import { getOptimisticBuildInHex } from "#services/buildings.js";
 import { getHexAxialMap, getHexIdMap } from "#services/map.js";
 import { GameCtx } from "#trpc/index.js";
 import {
@@ -8,12 +9,11 @@ import {
   findBuildingDataByCategory,
   findNeighbors,
   getTopCategoryLevel,
+  isBaseResource,
   Nation,
-  topLevelsByCategory,
-  typeNationResource,
+  NATION_RESOURCE,
 } from "@repo/shared";
-import { typedEntries } from "@repo/shared/helpers/tsHelpers";
-import { BudgetMap } from "../budget/types";
+import { hasBuiltFoundation, subtractBudget } from "../budget/main";
 import {
   getBuildingsByIdMap,
   getHexesBuildings,
@@ -21,26 +21,30 @@ import {
   getResourcePrediction,
   getResourceShortage,
 } from "../helpers";
-import { AIPlanningState } from "../planning/types";
-import { getOptimisticCategoryLevels, getOptimisticTotalLevels } from "./optimistic";
-import { ScoredIntent } from "./types";
-import { getOptimisticBuildInHex } from "#services/buildings.js";
 import { checkBuildSaving, createBuildSaving, reserveSavingBudget } from "../planning/buildSaving";
-import { subtractBudget } from "../budget/main";
+import { AIPlanningState } from "../planning/types";
 import {
   BIOME_SCORE_MULT,
   BUILDING_COMPOSITION,
   BuildingScoreTable,
   FOUNDATION_MINIMUMS,
+  MAX_SAVING_TURNS,
   WAR_DEBUFF_CATEGORIES,
 } from "./data";
+import {
+  getNationResourcePrediction,
+  getOptimisticCategoryLevels,
+  getOptimisticTotalLevels,
+} from "./optimistic";
+import { ScoredIntent } from "./types";
+import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 
 export function generateBuildCandidates(
   ctx: GameCtx,
   analysis: WorldAnalysis,
   planning: AIPlanningState,
   nation: Nation,
-  buildingBudget: Map<typeNationResource, number>
+  buildingBudget: Map<NATION_RESOURCE, number>
 ): BuildIntent[] {
   const BuildIntents: ScoredIntent[] = [];
   const nationHexes = ctx.mapHexes.filter((h) => h.owner === nation.id);
@@ -49,7 +53,7 @@ export function generateBuildCandidates(
     category: BUILDINGS_CATEGORY,
     hexId: number,
     score: number,
-    cost: Partial<Record<typeNationResource, number>>,
+    cost: Partial<Record<NATION_RESOURCE, number>>,
     targetLevel: number,
     reasons?: AIScoreReasons[]
   ) => {
@@ -76,9 +80,7 @@ export function generateBuildCandidates(
   // step 1: score each category in each buildable hex
   for (const hex of nationHexes) {
     const neighbors = findNeighbors(hex, ctx.mapHexes, hexAxialMap);
-    const neighborCategories = getHexesBuildings(neighbors, buildingsById, planning).map(
-      (b) => b.category
-    );
+    const neighborCategories = getHexesBuildings(neighbors, buildingsById).map((b) => b.category);
 
     const expectedBuilding = getOptimisticBuildInHex(ctx, hex.id, hexIdMap, buildingsById);
 
@@ -152,7 +154,7 @@ export function generateBuildCandidates(
       // 7. Buff if this building produces shortaged resource
       if (
         buildingData?.producing &&
-        buildingData.producing.some((res) => (shortage[res] ?? 0) < 0)
+        buildingData.producing.some((res) => isBaseResource(res) && (shortage[res] ?? 0) < 0)
       ) {
         add("shortage_resource", BuildingScoreTable["shortage_resource"]);
       }
@@ -234,10 +236,19 @@ export function generateBuildCandidates(
     if (!res?.ok) {
       // create saving goal if top 10 and no other goals are there (max 1)
       // and don't make goals if there is less than 1 intent
+
+      // check if every resource this building costs won't take more than 20 turns to accumulate with
+      // current active production
+      const nationResPrediction = getNationResourcePrediction(ctx, analysis, planning, nation);
+      const isWorthSaving = typedEntries(intent.cost).every(
+        ([r, amount]) =>
+          (nation[r] ?? 0) + (nationResPrediction.get(r) ?? 0) * MAX_SAVING_TURNS <= (amount ?? 0)
+      );
       if (
         [...planning.buildSaving].length === 0 &&
         isTopIntent(IntentMap, 0, 10, intent) &&
-        sortedIntents.length > 1
+        sortedIntents.length > 1 &&
+        (isWorthSaving || !hasBuiltFoundation(ctx, nation.id))
       ) {
         const created = createBuildSaving(
           planning,

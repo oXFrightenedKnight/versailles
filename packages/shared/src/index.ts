@@ -12,3 +12,5 @@ export * from "./helpers/dijkstras";
 export * from "./helpers/hex_map";
 export * from "./helpers/roads";
 export * from "./helpers/training";
+export * from "./data/resources";
+export * from "./helpers/resources";

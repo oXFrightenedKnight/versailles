@@ -5,7 +5,7 @@ import {
   getArmyTrainCost,
   Hex,
   Nation,
-  typeNationResource,
+  NATION_RESOURCE,
 } from "@repo/shared";
 import { WorldAnalysis } from "../../../types/analyze";
 import { ArmyTrain } from "../../../types/intent";
@@ -17,12 +17,13 @@ import { BorderNeed } from "../militaryAnalysis/types";
 import { BudgetMap } from "../../budget/types";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { sortCandidates } from "../../candidates";
+import { proposalPriority } from "../militaryAnalysis/data";
 
 export function generateArmyTrainCandidates(
   ctx: GameCtx,
   analysis: WorldAnalysis,
   planning: AIPlanningState,
-  budget: BudgetMap,
+  budget: Map<NATION_RESOURCE, number>,
   nation: Nation
 ): ArmyTrain[] {
   const budgetUsed = new Map(Object.keys(budget).map((key) => [key, 0]));
@@ -32,12 +33,12 @@ export function generateArmyTrainCandidates(
     barrackId: string,
     amount: number,
     score: number,
-    cost: Partial<Record<typeNationResource, number>>
+    cost: Partial<Record<NATION_RESOURCE, number>>
   ) => {
     for (const [resource, amount] of typedEntries(cost)) {
       if (amount === undefined) return null;
 
-      const resBudget = budget.get(resource)?.building;
+      const resBudget = budget.get(resource) ?? 0;
       if (!resBudget) return null;
 
       const prevUsed = budgetUsed.get(resource) ?? 0;
@@ -51,7 +52,7 @@ export function generateArmyTrainCandidates(
     armyTrainIntents.push({ id: crypto.randomUUID(), amount, score, type: "armyTrain", barrackId });
   };
 
-  const borderAnalysis = analyzeNationBorder(ctx, analysis, nation, planning);
+  const borderAnalysis = analyzeNationBorder(ctx, analysis, planning, nation);
 
   // remember to include manpower as a limit
   const deficitTrainIntents = calcArmyTrain(ctx, analysis, planning, borderAnalysis);
@@ -121,7 +122,11 @@ function calcArmyTrain(
       const amount = Math.min(max, deficit);
       trained += amount;
 
-      trainIntents.push({ barrackId: hex.buildingId, score: border.priority, amount: amount });
+      trainIntents.push({
+        barrackId: hex.buildingId,
+        score: proposalPriority[border.category],
+        amount: amount,
+      });
     }
   }
 

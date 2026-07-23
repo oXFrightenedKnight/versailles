@@ -1,12 +1,12 @@
 import {
+  BASE_RESOURCE,
+  baseResources,
   BUILDINGS,
   calculateExportAmount,
   findBuildingNameByCategory,
   getBuilding,
   getHexByAxial,
   Nation,
-  resources,
-  RESOURCES,
   ServerContractUpdate,
   startDijkstrasAlgo,
   SupplyContract,
@@ -21,7 +21,7 @@ export type newContract = {
   startBuildingId: string;
   endBuildingId: string;
   amount: number;
-  resource: RESOURCES;
+  resource: BASE_RESOURCE;
   autoAdjust: boolean;
 };
 
@@ -40,7 +40,7 @@ export function createContracts({
 
   // check whether starting building is allowed to have contracts
   for (const contract of contracts) {
-    if (!resources.includes(contract.resource)) continue;
+    if (!baseResources.includes(contract.resource)) continue;
 
     const startBuilding = getBuilding({ buildings, id: contract.startBuildingId });
     const startingHex = mapHexes.find((h) => h.buildingId === contract.startBuildingId);
@@ -86,7 +86,7 @@ export function createContracts({
     const last = points.at(-1);
     if (last && pointKey(last) !== pointKey({ q: endHex.q, r: endHex.r })) continue;
 
-    if (!resources.includes(contract.resource)) continue;
+    if (!baseResources.includes(contract.resource)) continue;
 
     startBuilding.contracts = [
       ...prevContracts,
@@ -222,7 +222,7 @@ export function updateContracts(
   ); // contractId: { building, contract }
 
   for (const contractUpdate of updateIntent) {
-    if (contractUpdate.changes.resource && !resources.includes(contractUpdate.changes.resource))
+    if (contractUpdate.changes.resource && !baseResources.includes(contractUpdate.changes.resource))
       continue;
     const contractObj = contractMap.get(contractUpdate.contractId);
 
@@ -271,7 +271,7 @@ export function hasContract(
   ctx: GameCtx,
   fromBuildingId: string,
   toBuildingId: string,
-  resource: RESOURCES
+  resource: BASE_RESOURCE
 ) {
   const buildingIdMap = getBuildingsByIdMap(ctx);
 

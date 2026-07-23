@@ -1,26 +1,27 @@
 // This file is used to let ai know whats happening at the border.
 // AI decides which hexes have highest priority to get army first from supply.
 
-import { findNeighbors, Hex, Nation } from "@repo/shared";
-import { WorldAnalysis } from "../../../types/analyze";
-import { GameCtx } from "#trpc/index.js";
+import { getNationWarSet, isAtWar, isNationAtWar } from "#services/army/war.js";
 import {
   getHexAxialMap,
   getHexIdMap,
   getNationArmyFromHex,
   getNationBorderHexes,
 } from "#services/map.js";
+import { GameCtx } from "#trpc/index.js";
+import { findNeighbors, Hex, Nation } from "@repo/shared";
+import { WorldAnalysis } from "../../../types/analyze";
+import { getOptimisticArmyAtHex } from "../../planning/main";
 import { AIPlanningState } from "../../planning/types";
-import { getLongOptimisticArmy, getOptimisticArmyAtHex } from "../../planning/main";
+import { MIN_EXPANSION_RESERVE, MINIMUM_WAR_BORDER_ARMY, proposalPriority } from "./data";
 import { ArmyGroup, BorderNeed } from "./types";
-import { getNationWarSet, isAtWar, isNationAtWar } from "#services/army/war.js";
 
 // calculate border needs
 export function analyzeNationBorder(
   ctx: GameCtx,
   analysis: WorldAnalysis,
-  nation: Nation,
-  planning: AIPlanningState
+  planning: AIPlanningState,
+  nation: Nation
 ): BorderNeed[] {
   const borderHexesNeed: BorderNeed[] = [];
 
@@ -47,6 +48,10 @@ export function analyzeNationBorder(
     const neighbors = findNeighbors(hex, ctx.mapHexes, axialMap);
     const enemyNeighbors = neighbors.filter((h) => h.owner && enemySet.has(h.owner));
     const neutralNeighbors = neighbors.filter((h) => h.owner && h.owner !== nation.id);
+
+    const targetBorderHexes = neighbors.filter(
+      (n) => n.owner && planning.attackTargets.has(n.owner)
+    );
 
     // biggest bordering army across all neighboring enemy hexes
     let biggestBorderingArmy = 0;
@@ -82,39 +87,60 @@ export function analyzeNationBorder(
       totalNeutralBordering += totalNeutralArmyInHex;
     }
 
-    // 1. If fighting hex - 4
+    // 1. Active fighting hexes
     if (enemyArmyInHex) {
-      const armyNeed = Math.max(0, Math.round(enemyArmyInHex - currentArmyAtHex * 1.5));
+      const desiredArmy = getReinforcementAmount(enemyArmyInHex, 1.5);
 
       borderHexesNeed.push({
         hexId: hex.id,
         currentArmy: currentArmyAtHex,
-        desiredArmy: armyNeed + currentArmyAtHex,
-        expansionArmy: armyNeed + currentArmyAtHex,
-        deficit: Math.max(armyNeed, 0),
+        desiredArmy,
+        expansionArmy: desiredArmy,
+        deficit: Math.max(desiredArmy - currentArmyAtHex, 0),
         category: "active_fight",
       });
       continue;
     }
 
-    // 2. If borders nation at war - 3
+    // 2. Enemy frontlines
     if (enemyNeighbors.length > 0) {
       const avgEnemyArmyPerHex = avgEnemyArmyInHexes(ctx, enemyNeighbors, nation.id);
 
-      const armyNeed = getPriority3Need(avgEnemyArmyPerHex, currentArmyAtHex);
+      const desiredArmy = getWarDefenseTarget(avgEnemyArmyPerHex);
 
       borderHexesNeed.push({
         hexId: hex.id,
         currentArmy: currentArmyAtHex,
-        desiredArmy: armyNeed + currentArmyAtHex,
-        expansionArmy: (armyNeed + currentArmyAtHex) * 1.5, // reserve more army for attack when possible
-        deficit: Math.max(0, armyNeed),
+        desiredArmy,
+        expansionArmy: desiredArmy,
+        deficit: Math.max(0, desiredArmy - currentArmyAtHex),
         category: "war_defense",
       });
       continue;
     }
 
-    // 3. Neutral borders deficit (only calculate when nation not at war) - 2
+    // 3. Attack target buildup
+    if (targetBorderHexes.length > 0) {
+      const borderTargetArmy = targetBorderHexes.reduce(
+        (amount, h) => amount + getNationArmyFromHex(h, h.owner!),
+        0
+      );
+      const avgTargetArmy = borderTargetArmy / Math.max(1, targetBorderHexes.length);
+
+      const desiredArmy = getReinforcementAmount(avgTargetArmy, 1.5);
+
+      borderHexesNeed.push({
+        hexId: hex.id,
+        currentArmy: currentArmyAtHex,
+        desiredArmy,
+        expansionArmy: desiredArmy,
+        deficit: Math.max(0, desiredArmy - currentArmyAtHex),
+        category: "target_buildup",
+      });
+      continue;
+    }
+
+    // 4. Neutral borders protection
     if (!isNationAtWar(warSet, ctx.nations, nation.id)) {
       if (neutralNeighbors.length > 0) {
         const avgNeutralArmyPerHex = Math.max(
@@ -122,7 +148,7 @@ export function analyzeNationBorder(
           totalNeutralBordering / Math.max(1, neutralNeighbors.length)
         );
 
-        const desiredArmy = Math.max(1, avgNeutralArmyPerHex * 1.1);
+        const desiredArmy = getReinforcementAmount(avgNeutralArmyPerHex, 1.1);
         const armyNeed = Math.max(0, Math.round(desiredArmy - currentArmyAtHex));
 
         borderHexesNeed.push({
@@ -137,10 +163,10 @@ export function analyzeNationBorder(
       }
     }
 
-    // 4. Hexes that border empty hexes - 1
+    // 5. Expansion reserve
     if (!isNationAtWar(warSet, ctx.nations, nation.id)) {
       if (neighbors.some((n) => !n.owner)) {
-        const desiredArmy = 10;
+        const desiredArmy = MIN_EXPANSION_RESERVE;
         const armyNeed = Math.max(0, Math.round(desiredArmy - currentArmyAtHex));
 
         borderHexesNeed.push({
@@ -174,8 +200,14 @@ export function avgEnemyArmyInHexes(ctx: GameCtx, hexes: Hex[], defendingNationI
 
   return totalEnemyArmy / hexes.length;
 }
-export function getPriority3Need(avgEnemyArmyInHex: number, currentArmyInHex: number) {
-  return Math.max(5, Math.round(avgEnemyArmyInHex - currentArmyInHex * 1.25)); // minimum need 5
+
+// return minimum desired army for hex reinforcement (default formula)
+export function getReinforcementAmount(army: number, coeff: number) {
+  return Math.max(MINIMUM_WAR_BORDER_ARMY, Math.ceil(army * coeff));
+}
+// wrapper for war border defense calculations. Add custom logic later.
+export function getWarDefenseTarget(avgEnemyArmy: number) {
+  return getReinforcementAmount(avgEnemyArmy, 1.25);
 }
 
 // uses to sort hexes by priority when deciding what hex needs army most

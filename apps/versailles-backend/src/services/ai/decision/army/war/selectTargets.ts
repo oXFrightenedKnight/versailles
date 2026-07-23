@@ -3,6 +3,7 @@ import { GameCtx } from "#trpc/index.js";
 import { Nation } from "@repo/shared";
 import { AIPlanningState } from "../../planning/types";
 import { getNationArmy } from "#services/genNations.js";
+import { CANCEL_RATIO, RATIO_THRESHOLD } from "./data";
 
 export function createTargets(ctx: GameCtx, planning: AIPlanningState, nation: Nation) {
   const nationIdMap = new Map(ctx.nations.map((n) => [n.id, n]));

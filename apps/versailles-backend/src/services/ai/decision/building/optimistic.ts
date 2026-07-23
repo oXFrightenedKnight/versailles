@@ -1,6 +1,17 @@
 import { WorldAnalysis } from "#services/ai/types/analyze.js";
-import { BUILDINGS_CATEGORY } from "@repo/shared";
+import {
+  BASE_RESOURCE,
+  BUILDINGS_CATEGORY,
+  isBaseResource,
+  isNationResource,
+  isResource,
+  Nation,
+  NATION_RESOURCE,
+} from "@repo/shared";
 import { AIPlanningState } from "../planning/types";
+import { getResourcePrediction } from "../helpers";
+import { GameCtx } from "#trpc/index.js";
+import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 
 export function getOptimisticCategoryLevels(
   analysis: WorldAnalysis,
@@ -35,4 +46,22 @@ export function getOptimisticTotalLevels(analysis: WorldAnalysis, planning: AIPl
   const plannedLevels = plannedCategory.reduce((acc, p) => acc + p.levels, 0);
 
   return currentLevels + queuedCategoryLevels + plannedLevels;
+}
+
+export function getNationResourcePrediction(
+  ctx: GameCtx,
+  analysis: WorldAnalysis,
+  planning: AIPlanningState,
+  nation: Nation
+) {
+  const prediction = getResourcePrediction(ctx, analysis, planning, nation);
+
+  const nationResMap = new Map<NATION_RESOURCE, number>();
+  for (const [r, amount] of typedEntries(prediction.totalResourceProduced)) {
+    if (isResource(r) && isNationResource(r) && amount && amount > 0) {
+      nationResMap.set(r, amount);
+    }
+  }
+
+  return nationResMap;
 }

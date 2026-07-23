@@ -28,14 +28,15 @@ function calcGoldWeights(budgetCtx: AIBudgetCtx, pressure: AIPressure): ActionWe
 
   let train = 0.35 + pressure.enemyStrengthPressure * 1.2 + pressure.expansionOpportunity * 0.3;
 
-  let build = 0.65 + pressure.economyPressure * 0.8 - pressure.enemyStrengthPressure * 0.6;
+  let build = 0.65 + pressure.economyPressure * 0.5 - pressure.enemyStrengthPressure * 0.6;
 
   let roadBuild = 0.2;
   let reserve = 0.15;
 
   // conditions
   train *= barrackLevels > 0 ? 1 : 0;
-  reserve *= hasBuiltFoundation(budgetCtx.ctx, budgetCtx.nationId) ? 1 : 0;
+  reserve *= hasBuiltFoundation(budgetCtx.ctx, budgetCtx.nationId) ? 1 : 0.25;
+  build *= hasBuiltFoundation(budgetCtx.ctx, budgetCtx.nationId) ? 1.5 : 1;
 
   return [
     { action: "train", weight: train },

@@ -1,7 +1,14 @@
 import { getDeltaAxial, getHexIdMap } from "#services/map.js";
 import { GameCtx, IntentInput } from "#trpc/index.js";
 import { generateRoadDs } from "@repo/shared";
-import { ArmyTrain, BuildIntent, BuildRoad, ContractIntent, MoveArmy } from "../types/intent";
+import {
+  ArmyTrain,
+  BuildIntent,
+  BuildRoad,
+  ContractIntent,
+  DeclareWarIntent,
+  MoveArmy,
+} from "../types/intent";
 
 export function translateBuilding(buildIntents: BuildIntent[]): IntentInput["newQueuedBuildings"] {
   const translated: IntentInput["newQueuedBuildings"] = [];
@@ -76,6 +83,16 @@ export function translateCreateContract(
       autoAdjust: true,
       resource: intent.resource,
     });
+  }
+
+  return translated;
+}
+
+export function translateDeclareWar(warIntents: DeclareWarIntent[]): IntentInput["declareWar"] {
+  const translated: IntentInput["declareWar"] = [];
+
+  for (const intent of warIntents) {
+    translated.push(intent.toNationId);
   }
 
   return translated;

@@ -27,5 +27,5 @@ export type Nation = {
 
 export const NATION_NUMBER = 6;
 
-export const nationResources = ["gold", "manpower"] as const;
-export type typeNationResource = (typeof nationResources)[number];
+// starting gold
+export const BASE_NATION_GOLD = 1000;

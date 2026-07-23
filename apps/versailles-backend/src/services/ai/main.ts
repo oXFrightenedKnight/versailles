@@ -7,6 +7,7 @@ import {
   translateArmyTrain,
   translateBuilding,
   translateCreateContract,
+  translateDeclareWar,
   translateRoadBuild,
 } from "./translate/main";
 
@@ -25,12 +26,14 @@ export function runAIPipeline(ctx: GameCtx, nation: Nation) {
   const armyTrain = translateArmyTrain(candidates.trainIntents);
   const buildRoads = translateRoadBuild(candidates.buildRoads);
   const createNewContracts = translateCreateContract(candidates.contractIntents);
+  const declareWar = translateDeclareWar(candidates.attackIntents);
 
   aiIntents["newQueuedBuildings"] = newQueuedBuildings;
   aiIntents["movePlayerArmy"] = armyMove;
   aiIntents["trainNewArmy"] = armyTrain;
   aiIntents["buildRoads"] = buildRoads;
   aiIntents["createNewContracts"] = createNewContracts;
+  aiIntents["declareWar"] = declareWar;
 
   console.log("armyMoveIntents", armyMove);
   console.log("trainArmyIntents", armyTrain);

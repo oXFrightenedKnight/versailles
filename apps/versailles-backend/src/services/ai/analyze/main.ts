@@ -276,7 +276,7 @@ function getConstructing(ctx: GameCtx, nation: Nation): Constructing[] {
       progress: h.build_queue!.progress,
     }));
 }
-function getBorderBFS(ctx: GameCtx, nation: Nation): BFSResult[] {
+export function getBorderBFS(ctx: GameCtx, nation: Nation): BFSResult[] {
   const borderHexes = getNationBorderHexes(ctx, nation.id);
   if (!borderHexes) return [];
 

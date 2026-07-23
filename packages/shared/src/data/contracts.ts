@@ -1,10 +1,10 @@
-import { RESOURCES } from "./hex_map";
+import { BASE_RESOURCE } from "./resources";
 
 export type SupplyContract = {
   id: string;
   buildingId: string;
   amount: number;
-  resource: RESOURCES;
+  resource: BASE_RESOURCE;
   progress: number;
   metadata: {
     lastAmountSent: number;
@@ -22,6 +22,6 @@ export type ServerContractUpdate = {
 export type MergedContractChanges = Partial<{
   // contract id
   amount: number;
-  resource: RESOURCES;
+  resource: BASE_RESOURCE;
   autoAdjust: boolean;
 }>;

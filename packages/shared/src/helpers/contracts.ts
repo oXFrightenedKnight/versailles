@@ -1,6 +1,7 @@
 import { baseConsumeRate, Building, BUILDINGS } from "#data/buildings";
 import { SupplyContract } from "#data/contracts";
-import { Hex, RESOURCES } from "#data/hex_map";
+import { Hex } from "#data/hex_map";
+import { BASE_RESOURCE } from "#data/resources";
 import { findBuildingNameByCategory } from "./buildings";
 import { typedEntries } from "./tsHelpers";
 
@@ -24,7 +25,7 @@ export function estimateConsumption({
   const consumedResources = BUILDINGS[name].consumptionMod;
   if (!consumedResources) return;
 
-  const estConsumption = new Map<RESOURCES, number>();
+  const estConsumption = new Map<BASE_RESOURCE, number>();
   for (const [resource, modifier] of typedEntries(consumedResources)) {
     if (modifier === undefined) continue;
     const consumptionAmount = Math.round(hex.population * modifier * baseConsumeRate);
@@ -32,7 +33,7 @@ export function estimateConsumption({
     estConsumption.set(resource, consumptionAmount);
   }
 
-  return Object.fromEntries(estConsumption) as Partial<Record<RESOURCES, number>>;
+  return Object.fromEntries(estConsumption) as Partial<Record<BASE_RESOURCE, number>>;
 }
 
 // calculates how much a building should export based on road length, amount, etc.
@@ -47,7 +48,7 @@ export function calculateExportAmount({
   startBuilding: Building;
   endBuilding: Building;
   length: number;
-  resource: RESOURCES;
+  resource: BASE_RESOURCE;
   mapHexes: Hex[];
   buildings: Building[];
 }) {

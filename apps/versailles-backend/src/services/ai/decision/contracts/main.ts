@@ -1,7 +1,7 @@
 import { ContractIntent } from "#services/ai/types/intent.js";
 import { getHexAxialMap, getHexIdMap } from "#services/map.js";
 import { GameCtx } from "#trpc/index.js";
-import { Nation, RESOURCES } from "@repo/shared";
+import { BASE_RESOURCE, Nation } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { getBuildingsShortage, getProducingBuildings, producingBuildsPath } from "../roads/main";
 import { getNationRoads } from "#services/road.js";
@@ -10,7 +10,7 @@ import { hasContract } from "#services/contracts.js";
 
 export function generateContractCandidates(ctx: GameCtx, nation: Nation): ContractIntent[] {
   const contractIntents: ContractIntent[] = [];
-  const submitIntent = (fromBuildingId: string, toBuildingId: string, resource: RESOURCES) => {
+  const submitIntent = (fromBuildingId: string, toBuildingId: string, resource: BASE_RESOURCE) => {
     // push intent
     contractIntents.push({
       type: "contractIntent",
@@ -51,7 +51,7 @@ export function generateContractCandidates(ctx: GameCtx, nation: Nation): Contra
     const available = new Map(
       producingNodes.map(([_, b]) => [b.build.buildingId, { ...b.build.available }])
     );
-    const fulfilled = new Map<RESOURCES, number>();
+    const fulfilled = new Map<BASE_RESOURCE, number>();
 
     const sortedNodes = producingNodes.sort((a, b) => a[1].path.length - b[1].path.length);
 

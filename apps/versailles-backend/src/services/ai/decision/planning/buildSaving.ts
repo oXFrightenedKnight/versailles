@@ -1,25 +1,9 @@
-import { AIMemory } from "#services/ai/memory/types.js";
-import {
-  BUILDINGS_CATEGORY,
-  findBuildingDataByCategory,
-  topLevelsByCategory,
-  typeNationResource,
-} from "@repo/shared";
-import { ScoredIntent } from "../building/types";
-import { AIPlanningState } from "./types";
-import { BudgetMap } from "../budget/types";
+import { BUILDINGS_CATEGORY, NATION_RESOURCE, topLevelsByCategory } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { isTopIntent } from "../building/main";
-import { updateNationMemo } from "./moveGoals";
-
-export function populateBuildSaving(planning: AIPlanningState, nationMemo: AIMemory) {
-  for (const saving of nationMemo.buildSaving) {
-    planning.buildSaving.set(saving.hexId, {
-      category: saving.category,
-      targetLevel: saving.targetLevel,
-    });
-  }
-}
+import { ScoredIntent } from "../building/types";
+import { AIPlanningState } from "./types";
+import { getResourcePrediction } from "../helpers";
 
 // function to check whether this build saving is still valid to be built/queued
 export function checkBuildSaving(
@@ -89,10 +73,10 @@ export function createBuildSaving(
 
 // function to reserve budget for a saved building
 export function reserveSavingBudget(
-  buildingbudget: Map<typeNationResource, number>,
+  buildingbudget: Map<NATION_RESOURCE, number>,
   planning: AIPlanningState,
   hexId: number,
-  cost: Partial<Record<typeNationResource, number>>
+  cost: Partial<Record<NATION_RESOURCE, number>>
 ) {
   const saved = planning.buildSaving.get(hexId);
   if (!saved) return { ok: false };
@@ -106,4 +90,41 @@ export function reserveSavingBudget(
   }
 
   return { ok: true };
+}
+
+{
+  /* export function esitmateSavingTurns(
+  cost: Partial<Record<typeNationResource, number>>,
+  availableBudget: Map<typeNationResource, number>,
+  prediction: ReturnType<typeof getResourcePrediction>
+): number | null {
+  let estimatedTurns = 0;
+
+  for (const [resource, rawCost] of typedEntries(cost)) {
+    const required = rawCost ?? 0;
+    if (required <= 0) continue;
+
+    const available = availableBudget.get(resource) ?? 0;
+    const missing = Math.max(0, required - available);
+
+    if (missing === 0) continue;
+
+    const produced = prediction.totalResourceProduced[resource] ?? 0;
+
+    const consumed = prediction.totalResourceConsumed[resource] ?? 0;
+
+    const netProduction = produced - consumed;
+
+    // Missing resource cannot currently be accumulated.
+    if (netProduction <= 0) {
+      return null;
+    }
+
+    const resourceTurns = missing / netProduction;
+    estimatedTurns = Math.max(estimatedTurns, resourceTurns);
+  }
+
+  return Math.ceil(estimatedTurns);
+}
+ */
 }

@@ -1,5 +1,5 @@
 import { Point } from "#services/road.js";
-import { Biome, BUILDINGS_CATEGORY, RESOURCES, typeNationResource } from "@repo/shared";
+import { BASE_RESOURCE, Biome, BUILDINGS_CATEGORY } from "@repo/shared";
 
 export type AIScoreIntentCategory =
   | "buildIntent"
@@ -47,7 +47,7 @@ export type ContractIntent = BaseAIIntent & {
   type: "contractIntent";
   fromBuildingId: string;
   toBuildingId: string;
-  resource: RESOURCES;
+  resource: BASE_RESOURCE;
 };
 export type DeclareWarIntent = BaseAIIntent & {
   type: "declareWarIntent";

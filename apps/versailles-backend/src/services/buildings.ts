@@ -1,6 +1,7 @@
 import {
   BASE_CAPITAL_WHEAT,
   BASE_HEX_POPULATION,
+  BASE_RESOURCE,
   baseTrainingProgress,
   Building,
   building_categoires,
@@ -11,8 +12,8 @@ import {
   getBuilding,
   Hex,
   Nation,
+  PRODUCIBLE_RESOURCE,
   ResourceRates,
-  RESOURCES,
   topLevelsByCategory,
 } from "@repo/shared";
 import { roundToNearestDecimal } from "../lib/helpers.js";
@@ -225,7 +226,7 @@ export function BuildBuilding({
 
   // add dynamic storage
   for (const type of Object.keys(BUILDINGS[nextBuilding].storageCap)) {
-    buildingStorage.push({ type: type as RESOURCES, amount: 0 });
+    buildingStorage.push({ type: type as BASE_RESOURCE, amount: 0 });
   }
 
   if (existing) {
@@ -425,7 +426,7 @@ export function calculateConsumption({
     level: building.level,
   });
 
-  const consuming = Object.keys(BUILDINGS[name].consumptionMod) as RESOURCES[];
+  const consuming = Object.keys(BUILDINGS[name].consumptionMod) as BASE_RESOURCE[];
   const estConsumption = estimateConsumption({ building, mapHexes });
   if (!estConsumption || !name || !storage) {
     return {};
@@ -550,7 +551,7 @@ function calculateCapitalWheat(ctx: GameCtx, building: Building) {
   storage.amount += BASE_CAPITAL_WHEAT;
 }
 
-function addConsumptionStat(building: Building, resource: RESOURCES, amount: number) {
+function addConsumptionStat(building: Building, resource: PRODUCIBLE_RESOURCE, amount: number) {
   const consumedMap = new Map(building.statistics.consumed.map((c) => [c.resource, c]));
 
   const objRef = consumedMap.get(resource);
@@ -561,7 +562,7 @@ function addConsumptionStat(building: Building, resource: RESOURCES, amount: num
   }
 }
 
-function addProductionStat(building: Building, resource: RESOURCES, amount: number) {
+function addProductionStat(building: Building, resource: PRODUCIBLE_RESOURCE, amount: number) {
   const producedMap = new Map(building.statistics.produced.map((p) => [p.resource, p]));
 
   const objRef = producedMap.get(resource);
@@ -574,14 +575,14 @@ function addProductionStat(building: Building, resource: RESOURCES, amount: numb
 
 export function calculateResourceOutput(
   hex: Hex,
-  resource: RESOURCES,
+  resource: PRODUCIBLE_RESOURCE,
   averageConsumption?: number
 ) {
   if (hex.population === null) return 0;
   const baseResourceRate = ResourceRates[resource];
-  return Math.round(hex.population * baseResourceRate * (averageConsumption ?? 1));
+  return Math.round(hex.population * (baseResourceRate ?? 0) * (averageConsumption ?? 1));
 }
-function addResourceToStorage(building: Building, resource: RESOURCES, amount: number) {
+function addResourceToStorage(building: Building, resource: BASE_RESOURCE, amount: number) {
   const name = findBuildingNameByCategory({
     buildingCategory: building.category,
     level: building.level,

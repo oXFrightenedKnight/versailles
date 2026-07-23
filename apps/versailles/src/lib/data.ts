@@ -4,7 +4,7 @@ import FarmBlock from "@/components/buildingConfig/farmBlock";
 import WatchtowerBlock from "@/components/buildingConfig/watchtowerBlock";
 import WoodcampBlock from "@/components/buildingConfig/woodcampBlock";
 import { Building, BUILDINGS, BUILDINGS_CATEGORY } from "@repo/shared/data/buildings";
-import { RESOURCES } from "@repo/shared/data/hex_map";
+import {} from "@repo/shared/data/hex_map";
 import { PeaceOfferMail, PeaceSignedMail, WarEventMail } from "@repo/shared/data/mail";
 import {
   Axe,
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Dispatch } from "react";
 import { nationText } from "./helpers/mails";
+import { PRODUCIBLE_RESOURCE } from "@repo/shared";
 export type BuildingNames = keyof typeof BUILDINGS;
 
 export const BuildingIcons: Record<"road" | BUILDINGS_CATEGORY, LucideIcon> = {
@@ -35,10 +36,10 @@ export const BuildingDescriptions: Record<"road" | BUILDINGS_CATEGORY, string> =
   road: "Construct road path",
   WOODCAMP: "Construct a woodcamp",
 };
-export function getResourceImage(resource: RESOURCES) {
+export function getResourceImage(resource: PRODUCIBLE_RESOURCE) {
   return customResourceImages[resource] ?? `/icons/resources/${resource}.png`;
 }
-export const customResourceImages: Record<RESOURCES, string> = {
+export const customResourceImages: Partial<Record<PRODUCIBLE_RESOURCE, string>> = {
   wheat: "/icons/resources/wheat.png",
   wood: "/icons/resources/wood.png",
   gold: "/icons/gold_coin.png",

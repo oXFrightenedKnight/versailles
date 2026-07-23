@@ -1,6 +1,7 @@
 import { bfs, buildRoadGraph, hasRoadPath, reconstructPath } from "#services/ai/algos/bfs.js";
 import { BuildRoad } from "#services/ai/types/intent.js";
 import { calculateResourceOutput, getNationBuildings } from "#services/buildings.js";
+import { getContractPerTurn } from "#services/contracts.js";
 import { getHexAxialMap, getHexIdMap } from "#services/map.js";
 import {
   getNationRoads,
@@ -10,27 +11,27 @@ import {
 } from "#services/road.js";
 import { GameCtx } from "#trpc/index.js";
 import {
+  BASE_RESOURCE,
   BUILDINGS,
   calculateRoadCost,
   estimateConsumption,
   findBuildingNameByCategory,
   Hex,
+  isNationResource,
   Nation,
-  RESOURCES,
+  NATION_RESOURCE,
   SupplyContract,
-  typeNationResource,
 } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { subtractBudget } from "../budget/main";
-import { AIPlanningState, ResourceRecord } from "../planning/types";
+import { AIPlanningState } from "../planning/types";
 import { BuildingConsumptionNode, BuildingProductionNode } from "./types";
-import { getContractPerTurn } from "#services/contracts.js";
 
 // Make sure to add guardrails so ai doesn't build a road if it already exists
 export function generateBuildRoadCandidates(
   ctx: GameCtx,
   planning: AIPlanningState,
-  budget: Map<typeNationResource, number>,
+  budget: Map<NATION_RESOURCE, number>,
   nation: Nation
 ): BuildRoad[] {
   const buildRoadIntents: BuildRoad[] = [];
@@ -132,7 +133,7 @@ export function getBuildingsShortage(ctx: GameCtx, nation: Nation) {
   const buildShortage: {
     hexId: number;
     buildingId: string;
-    shortage: Partial<Record<RESOURCES, number>>;
+    shortage: Partial<Record<BASE_RESOURCE, number>>;
   }[] = [];
 
   const hexBuildingMap = new Map(
@@ -162,7 +163,7 @@ export function getBuildingsShortage(ctx: GameCtx, nation: Nation) {
     const contracts = contractMap.get(building.id) ?? [];
 
     // incoming per turn
-    const incoming: Partial<Record<RESOURCES, number>> = {};
+    const incoming: Partial<Record<BASE_RESOURCE, number>> = {};
     for (const c of contracts) {
       const existing = incoming[c.resource] ?? 0;
       const perTurn = getContractPerTurn(c);
@@ -170,7 +171,7 @@ export function getBuildingsShortage(ctx: GameCtx, nation: Nation) {
       incoming[c.resource] = existing + perTurn;
     }
 
-    const shortage: Partial<Record<RESOURCES, number>> = {};
+    const shortage: Partial<Record<BASE_RESOURCE, number>> = {};
     for (const [resource, amount] of typedEntries(required)) {
       const incomingResource = incoming[resource] ?? 0;
       const requiredResource = amount ?? 0;
@@ -183,12 +184,12 @@ export function getBuildingsShortage(ctx: GameCtx, nation: Nation) {
   return buildShortage;
 }
 
-// returns available resource in producing buildings
+// returns available building-owned resource in producing buildings
 export function getProducingBuildings(ctx: GameCtx, nation: Nation) {
   const buildShortage: {
     hexId: number;
     buildingId: string;
-    available: Partial<Record<RESOURCES, number>>;
+    available: Partial<Record<BASE_RESOURCE, number>>;
   }[] = [];
 
   const hexBuildingMap = new Map(
@@ -206,14 +207,16 @@ export function getProducingBuildings(ctx: GameCtx, nation: Nation) {
       level: building.level,
     });
 
-    const producing: Partial<Record<RESOURCES, number>> = {};
+    const producing: Partial<Record<BASE_RESOURCE, number>> = {};
 
     for (const resource of BUILDINGS[name].producing ?? []) {
+      // only count building-owned resources
+      if (isNationResource(resource)) continue;
       producing[resource] = calculateResourceOutput(hex, resource);
     }
 
     // exporting
-    const exporting: Partial<Record<RESOURCES, number>> = {};
+    const exporting: Partial<Record<BASE_RESOURCE, number>> = {};
     for (const c of building.contracts ?? []) {
       const existing = exporting[c.resource] ?? 0;
       const perTurn = getContractPerTurn(c);
@@ -221,7 +224,7 @@ export function getProducingBuildings(ctx: GameCtx, nation: Nation) {
       exporting[c.resource] = existing + perTurn;
     }
 
-    const available: Partial<Record<RESOURCES, number>> = {};
+    const available: Partial<Record<BASE_RESOURCE, number>> = {};
     for (const [resource, amount] of typedEntries(producing)) {
       const sent = exporting[resource] ?? 0;
       const produced = amount ?? 0;
@@ -269,7 +272,7 @@ export function availableResourceBuildings(
       continue;
     }
 
-    const resources: ResourceRecord = {};
+    const resources: Partial<Record<BASE_RESOURCE, number>> = {};
 
     typedEntries(building.available).forEach(([res, available]) => {
       if (!available) return;
@@ -318,8 +321,8 @@ export function producingBuildsPath(
 }
 // retruns boolean based on whether producing node has at least one shortage resource available
 export function hasShortageResource(
-  shortage: Partial<Record<RESOURCES, number>>,
-  available: Partial<Record<RESOURCES, number>>
+  shortage: Partial<Record<BASE_RESOURCE, number>>,
+  available: Partial<Record<BASE_RESOURCE, number>>
 ) {
   if (
     typedEntries(available).some(([res, amount]) => (shortage[res] ?? 0) > 0 && (amount ?? 0) > 0)

@@ -1,9 +1,10 @@
 import Image from "next/image";
 import { numberConverter } from "@/lib/utils";
-import { RESOURCES } from "@repo/shared/data/hex_map";
+import {} from "@repo/shared/data/hex_map";
 import { Building, BUILDINGS } from "@repo/shared/data/buildings";
 import { findBuildingNameByCategory } from "@repo/shared/helpers/buildings";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { BASE_RESOURCE } from "@repo/shared";
 
 export default function StorageComponent({
   amount,
@@ -11,7 +12,7 @@ export default function StorageComponent({
   building,
 }: {
   amount: number;
-  type: RESOURCES;
+  type: BASE_RESOURCE;
   building: Building;
 }) {
   const buildingName = findBuildingNameByCategory({

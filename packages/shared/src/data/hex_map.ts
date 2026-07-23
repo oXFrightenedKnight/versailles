@@ -80,5 +80,3 @@ export const WOOD_MOD = {
   plains: 0.5,
   forest: 1,
 };
-export const resources = ["wheat", "wood", "gold"] as const;
-export type RESOURCES = (typeof resources)[number];

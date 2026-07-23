@@ -1,7 +1,7 @@
 import { roadObject } from "@/lib/types/game";
 import { hexToPixel } from "../render";
 
-import { RenderRoad, RoadConstructionVM } from "@/lib/UI/mergeData/uiRoads";
+import { RenderRoad } from "@/lib/UI/mergeData/uiRoads";
 import { Hex } from "@repo/shared/data/hex_map";
 
 export function mergeRoads(r1: roadObject, r2: roadObject, key: string) {

@@ -3,7 +3,7 @@ import { useIntentStore } from "../../stores/intentStore";
 import { Contract, MergedContract, ServerContract } from "../../types/game";
 import { Building, BUILDINGS } from "@repo/shared/data/buildings";
 import { findBuildingNameByCategory } from "@repo/shared/helpers/buildings";
-import { RESOURCES } from "@repo/shared/data/hex_map";
+import { BASE_RESOURCE, isBaseResource } from "@repo/shared";
 
 // function that automatically updates contractUpdateIntent in intentStore
 export function updateServerContractIntent(contractId: string, newChanges: MergedContractChanges) {
@@ -129,7 +129,7 @@ export function getFirstFreeResource({
   });
   if (!startName) return;
 
-  const takenResources = new Set<RESOURCES>(
+  const takenResources = new Set<BASE_RESOURCE>(
     allContracts
       .filter((c) => c.startBuildingId === startBuilding.id && c.endBuildingId === endBuilding.id)
       .map((c) => c.resource)
@@ -138,8 +138,8 @@ export function getFirstFreeResource({
   // get first available
   const producing = BUILDINGS[startName].producing;
   if (!producing) return;
-  const availableResource = producing.find((r) => !takenResources.has(r));
-  if (!availableResource) return;
+  const availableResource = producing.find((r) => isBaseResource(r) && !takenResources.has(r));
+  if (!availableResource || !isBaseResource(availableResource)) return;
   return availableResource;
 }
 

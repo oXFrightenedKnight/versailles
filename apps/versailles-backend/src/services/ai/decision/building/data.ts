@@ -47,3 +47,5 @@ export const BUILDING_COMPOSITION: Partial<Record<BUILDINGS_CATEGORY, number>> =
   BARRACK: 0.2,
   WATCHTOWER: 0.1,
 };
+
+export const MAX_SAVING_TURNS = 20;

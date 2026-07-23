@@ -1,14 +1,13 @@
 import { clamp } from "#lib/helpers.js";
 import { WorldAnalysis } from "#services/ai/types/analyze.js";
+import { getNationBuildingCount } from "#services/buildings.js";
 import { getNationArmy } from "#services/genNations.js";
 import { GameCtx } from "#trpc/index.js";
-import { Nation, typeNationResource } from "@repo/shared";
-import { AIBudgetCtx, AIPressure, ResourceBudget } from "./types";
+import { Nation, NATION_RESOURCE } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
-import { getNationBuildingCount } from "#services/buildings.js";
 import { FOUNDATION_MINIMUMS } from "../building/data";
-import { getBuildingsShortage } from "../roads/main";
 import { calculateGoldBudget } from "./gold/main";
+import { AIPressure, ResourceBudget } from "./types";
 
 export function getAIBudget(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation): ResourceBudget {
   const pressure = getAIPressure(ctx, analysis, nation);
@@ -72,10 +71,10 @@ function getAIPressure(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation): A
 }
 
 export function subtractBudget(
-  buildingBudget: Map<typeNationResource, number>,
-  cost: Partial<Record<"gold" | "manpower", number>>
+  buildingBudget: Map<NATION_RESOURCE, number>,
+  cost: Partial<Record<NATION_RESOURCE, number>>
 ) {
-  const setResources: { resource: typeNationResource; total: number }[] = [];
+  const setResources: { resource: NATION_RESOURCE; total: number }[] = [];
   for (const [resource, amount] of typedEntries(cost)) {
     if (amount === undefined) return { ok: false };
 

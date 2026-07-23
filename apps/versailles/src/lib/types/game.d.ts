@@ -1,6 +1,7 @@
+import { BASE_RESOURCE } from "@repo/shared";
 import { Building, BUILDINGS_CATEGORY } from "@repo/shared/data/buildings";
 import { SupplyContract } from "@repo/shared/data/contracts";
-import { Hex, RESOURCES } from "@repo/shared/data/hex_map";
+import { Hex } from "@repo/shared/data/hex_map";
 import { Mail } from "@repo/shared/data/mail";
 import { Nation } from "@repo/shared/data/nations";
 import { Road } from "@repo/shared/data/roads";
@@ -28,7 +29,7 @@ export type Contract = {
   startBuildingId: string;
   endBuildingId: string;
   amount: number;
-  resource: RESOURCES;
+  resource: BASE_RESOURCE;
   progress: number;
   autoAdjust: boolean;
   lastSentAmount: number;
