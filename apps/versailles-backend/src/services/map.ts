@@ -17,10 +17,10 @@ import {
   WOOD_MOD,
 } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
-import { bfs, reconstructPath } from "./ai/algos/bfs.js";
-import { getBuildingsByIdMap } from "./ai/decision/helpers.js";
 import { addArmy, removeArmy } from "./army/units.js";
 import { BuildBuilding } from "./buildings.js";
+import { getBuildingsByIdMap } from "./ai/world/buildings.js";
+import { bfs, reconstructPath } from "./ai/algorithms/bfs.js";
 
 // DO NOT CHANGE THIS FUNCTION TO ACCEPT GAMECTX
 // generates the mathematical map & coordinates
@@ -221,7 +221,7 @@ function randomLengthArray(array: Hex[], min: number, max: number) {
 // returns enemy hexes that border with nation
 export function getBorderHexes(ctx: GameCtx, nationId: string) {
   const nation = ctx.nations.find((n) => nationId === n.id);
-  if (!nation) return null;
+  if (!nation) return [];
 
   const hexAxialMap = new Map(ctx.mapHexes.map((h) => [`${h.q},${h.r}`, h]));
   const hexIdMap = new Map(ctx.mapHexes.map((h) => [h.id, h]));
@@ -327,7 +327,7 @@ export function getDeltaAxial(
 export function transferHexOwnership(ctx: GameCtx, hexId: number, toNationId: string) {
   const hexIdMap = getHexIdMap(ctx);
   const axialMap = getHexAxialMap(ctx);
-  const buildingIdMap = getBuildingsByIdMap(ctx);
+  const buildingIdMap = getBuildingsByIdMap(ctx.buildings);
 
   const hex = hexIdMap.get(hexId);
   if (!hex) return { ok: false };

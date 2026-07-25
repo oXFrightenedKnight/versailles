@@ -10,8 +10,9 @@ export type BaseMail = {
   createdAt: number; // turn
   read: boolean;
   requireAnswer?: boolean;
-  expire?: number; // number if turns before expiry
+  expire?: number; // number of turns before expires
 };
+// war declaration notification
 export type WarEventMail = BaseMail & {
   type: "WAR";
 
@@ -20,6 +21,7 @@ export type WarEventMail = BaseMail & {
     defenderNation: string;
   };
 };
+// peace request mail
 export type PeaceOfferMail = BaseMail & {
   type: "PEACE_OFFER";
 
@@ -30,6 +32,7 @@ export type PeaceOfferMail = BaseMail & {
     toNation: string;
   };
 };
+// read-only peace signed notification
 export type PeaceSignedMail = BaseMail & {
   type: "PEACE_SIGNED";
 

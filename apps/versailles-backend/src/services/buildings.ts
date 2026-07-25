@@ -20,9 +20,9 @@ import { roundToNearestDecimal } from "../lib/helpers.js";
 import { GameCtx } from "../trpc/index.js";
 import { calculatePopulationChange, getHexById, getHexIdMap } from "./map.js";
 import { newBuildings, subtractGold } from "./genNations.js";
-import { BuildingsByCategoryAndLevel } from "./ai/types/analyze.js";
 import { ValidationResult, ValidBuildIntentData } from "./types.js";
-import { getBuildingsByIdMap } from "./ai/decision/helpers.js";
+import { getBuildingsByIdMap } from "./ai/world/buildings.js";
+import { BuildingsByCategoryAndLevel } from "./ai/analysis/types.js";
 
 export function buildingOutput(gameCtx: GameCtx) {
   const { buildings } = gameCtx;
@@ -637,7 +637,7 @@ export function getOptimisticBuildInHex(
   buildingIdMapProp?: Map<string, Building>
 ) {
   const hexIdMap = hexIdMapProp ?? getHexIdMap(ctx);
-  const buildingIdMap = buildingIdMapProp ?? getBuildingsByIdMap(ctx);
+  const buildingIdMap = buildingIdMapProp ?? getBuildingsByIdMap(ctx.buildings);
 
   const hex = hexIdMap.get(hexId);
   const queued = hex?.build_queue ?? null;

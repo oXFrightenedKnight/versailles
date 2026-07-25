@@ -1,15 +1,15 @@
 import { GameCtx, IntentInput } from "#trpc/index.js";
 import { Nation } from "@repo/shared";
-import { AIWorldAnalysis } from "./analyze/main";
-import { getCandidates } from "./decision/candidates";
+import { AIWorldAnalysis } from "./analysis/analyzeWorld";
+import { getCandidates } from "./generateCandidates";
 import {
+  translateBuilding,
   translateArmyMove,
   translateArmyTrain,
-  translateBuilding,
+  translateRoadBuild,
   translateCreateContract,
   translateDeclareWar,
-  translateRoadBuild,
-} from "./translate/main";
+} from "./intents/translate";
 
 export function runAIPipeline(ctx: GameCtx, nation: Nation) {
   const aiIntents: Partial<IntentInput> = {};

@@ -3,8 +3,10 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
+7. fix left missing imports in new structure.
+Move algorithms out of ai folder as they are used by map.ts too. Also check other imports from /ai inside map.ts and fix them too
 8. look at the screenshot where player was fighting ALD and it dedicated 1400 of its gold to road building
-9. take planning memo updates outside of candidate generation
+9. Make sure you only update planning inside planning/mutations. move all other planning updates there.
 
 Think how you are going to validate ai memo after simulation runs (maybe return intent results like rejected/accepted)
 9. start working on ai
@@ -43,6 +45,8 @@ client data => copy db data => run logic and update data => if error - log and s
 The flow should be: analyze nation border, score attacks, attack immediately if enough army, else create staging request
 and pull army from other hexes to create enough army for attack.
 15. Make each building have its own production rates instead of relying on fixed rates for each resource
+16. Deprecate world analysis object. Instead invoke every non-expensive selector manually, and keep only expensive
+calculcations.
 
 --- RULES ---
 1. Delete/Update first, Build/Add second.
