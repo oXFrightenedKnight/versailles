@@ -11,3 +11,7 @@ export const GOLD_PRESSURE_MULTIPLIERS = {
   economyPressureToBuilding: 0.5,
   expansionToTraining: 0.3,
 } as const;
+
+export const GOLD_ALLOCATION_PRIORITY = {
+  roadBuild: 50,
+};

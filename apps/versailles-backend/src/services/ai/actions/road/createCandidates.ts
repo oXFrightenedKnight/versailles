@@ -1,16 +1,17 @@
-import { buildRoadGraph, hasRoadPath } from "#services/ai/algorithms/bfs.js";
 import { getBuildingsShortage } from "#services/ai/analysis/resources.js";
+import { trySpendBudget } from "#services/ai/budget/ledger.js";
 import { BuildRoad } from "#services/ai/intents/types.js";
+import { createPlanningRoadIntent } from "#services/ai/planning/mutations/roads.js";
+import { availableResourcesInBuildings } from "#services/ai/planning/queries/resources.js";
 import { AIPlanningState } from "#services/ai/planning/types.js";
-import { getHexIdMap, getHexAxialMap } from "#services/map.js";
+import { uniqueRoadSegments } from "#services/ai/world/roads.js";
+import { buildRoadGraph, hasRoadPath } from "#services/algorithms/bfs.js";
+import { getHexAxialMap, getHexIdMap } from "#services/map.js";
 import { Point, getNationRoads } from "#services/road.js";
 import { GameCtx } from "#trpc/index.js";
 import { NATION_RESOURCE, Nation, calculateRoadCost } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
-import { producingBuildsPath, hasShortageResource } from "./supplyRoute";
-import { trySpendBudget } from "#services/ai/budget/ledger.js";
-import { availableResourcesInBuildings } from "#services/ai/planning/queries/resources.js";
-import { uniqueRoadSegments } from "#services/ai/world/roads.js";
+import { hasShortageResource, producingBuildsPath } from "./supplyRoute";
 
 // Make sure to add guardrails so ai doesn't build a road if it already exists
 export function generateBuildRoadCandidates(
@@ -36,13 +37,15 @@ export function generateBuildRoadCandidates(
       });
 
       // update planning
-      planning.buildRoads.add(intent.path);
+      createPlanningRoadIntent(planning, intent.path);
+      return { ok: true };
     } else return { ok: false };
   };
 
   const buildingShortage = getBuildingsShortage(ctx, nation);
 
   const availableInBuildings = availableResourcesInBuildings(ctx, planning, nation);
+  console.log(`available in buildings:`, availableInBuildings);
 
   const hexIdMap = getHexIdMap(ctx);
   const axialMap = getHexAxialMap(ctx);
@@ -69,9 +72,15 @@ export function generateBuildRoadCandidates(
       producingNodes.map(([_, b]) => [b.build.buildingId, { ...b.build.available }])
     );
     const needed = { ...build.shortage };
+    console.log(`${nation.id} needed for ${build.hexId}:`, needed);
 
     // sort by closest
     const sortedNodes = [...producingNodes].sort((a, b) => a[1].path.length - b[1].path.length);
+    console.log(
+      `${nation.id} sorted nodes:`,
+      sortedNodes,
+      sortedNodes.map((s) => s[1].path)
+    );
 
     for (const [_, node] of sortedNodes) {
       const startHex = hexIdMap.get(build.hexId);
@@ -83,14 +92,19 @@ export function generateBuildRoadCandidates(
       const nodeAvailable = available.get(node.build.buildingId);
       if (!nodeAvailable) continue;
 
+      console.log(`node available at ${node.build.hexId}`, nodeAvailable.wheat, nodeAvailable.wood);
       // check if at least one produced resource is needed
       if (!hasShortageResource(needed, nodeAvailable)) continue;
 
+      console.log("passed has shortage resource check");
+
       const newSegments = uniqueRoadSegments(node.path, roadPoints, hexIdMap);
+      console.log(`${nation.id} new segments:`, newSegments);
 
       let ok = true;
       for (const segment of newSegments) {
         const success = submitIntent({ path: segment });
+        console.log(`${nation.id} road segment submission successful:`, segment, success.ok);
         if (!success || !success.ok) ok = false;
       }
 

@@ -1,4 +1,4 @@
-import { getNationBuildings } from "#services/buildings.js";
+import { getNationBuildings } from "#services/buildings/queries.js";
 import { getContractPerTurn } from "#services/contracts.js";
 import { GameCtx } from "#trpc/index.js";
 import { Nation, BASE_RESOURCE, SupplyContract, estimateConsumption } from "@repo/shared";

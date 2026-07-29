@@ -1,8 +1,6 @@
 import { GameCtx } from "../../../trpc";
-import { getNationBuildingCount } from "../../buildings";
 import { getNationArmy } from "../../genNations";
 import { getBorderHexes, getNationBorderHexes } from "../../map";
-import { getBorderBFS } from "../algorithms/bfs";
 import { SelfData, WorldAnalysis, WorldData } from "./types";
 import {
   getNationHexCount,
@@ -14,6 +12,8 @@ import { getNationArmyInHexes, getNeighborArmies, getTrainingNationArmy } from "
 import { getFrontlines } from "../world/map";
 import { getConstructing } from "../world/buildings";
 import { getNeighborEconomyRatio } from "./economy";
+import { getBorderBFS } from "#services/algorithms/bfs.js";
+import { getNationBuildingCount } from "#services/buildings/queries.js";
 
 export function AIWorldAnalysis({
   ctx,

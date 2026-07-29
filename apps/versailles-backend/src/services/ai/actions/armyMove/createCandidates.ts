@@ -1,4 +1,3 @@
-import { getBorderBFSMap } from "#services/ai/algorithms/bfs.js";
 import { analyzeNationBorder } from "#services/ai/analysis/military/analyzeBorders.js";
 import { WorldAnalysis } from "#services/ai/analysis/types.js";
 import { sortCandidates } from "#services/ai/generateCandidates.js";
@@ -19,6 +18,7 @@ import { proposalPriority } from "./policy";
 import { getReinforcementProposals } from "./reinforcement";
 import { ProposalArmyMove } from "./types";
 import { executeMoveGoal, revalidateMoveGoalDeficit } from "./goals";
+import { getBorderBFSMap } from "#services/algorithms/bfs.js";
 
 export function generateArmyMoveCandidates(
   ctx: GameCtx,

@@ -1,7 +1,18 @@
-import { subtractGold } from "#services/genNations.js";
+import { getBuildingsByIdMap } from "#services/buildings/queries.js";
+import { getHexIdMap } from "#services/map.js";
 import { addModifier } from "#services/modifiers.js";
+import { subtractGold } from "#services/resources/gold.js";
 import { GameCtx } from "#trpc/index.js";
-import { Building, getArmyTrainCost, Hex, Nation } from "@repo/shared";
+import {
+  baseTrainingProgress,
+  Building,
+  BUILDINGS,
+  BUILDINGS_CATEGORY,
+  getArmyTrainCost,
+  getBuildingName,
+  Hex,
+  Nation,
+} from "@repo/shared";
 
 // create army training object in a barrack
 export function queueArmyTraining({
@@ -82,4 +93,57 @@ export function cancelArmyTraining(ctx: GameCtx, cancelIds: string[], nation: Na
       troops.splice(idx, 1);
     }
   }
+}
+
+// gives training progress and deploys ready armies
+export function trainArmyProgress(
+  ctx: GameCtx,
+  buildingId: string,
+  hexId: number,
+  efficiency: number
+) {
+  const buildingIdMap = getBuildingsByIdMap(ctx.buildings);
+  const building = buildingIdMap.get(buildingId);
+
+  const hexIdMap = getHexIdMap(ctx);
+  const hex = hexIdMap.get(hexId);
+
+  if (!building || !hex) return { ok: false };
+
+  const name = getBuildingName(building.category, building.level);
+  if (!name) return { ok: false };
+
+  const training = building.trainingTroops;
+  const maxTraining = BUILDINGS[name].maxTraining ?? 0;
+  let trainingCap = 0; // add progress to every training contract until reached cap
+  const idxsToDelete: number[] = [];
+  if (training && training.length > 0) {
+    for (const [i, army] of training.entries()) {
+      if (trainingCap >= maxTraining) break;
+
+      const amountTrained = Math.min(army.amount, maxTraining - trainingCap);
+      const progress = Math.round(baseTrainingProgress * amountTrained * efficiency);
+
+      army.progress += progress;
+      trainingCap += amountTrained;
+
+      // if progress is full, deploy army
+      if (army.progress >= army.amount) {
+        const ownerArmyInHex = hex.army.find((a) => a.nationId === army.nationId);
+        if (!ownerArmyInHex) {
+          hex.army.push({ amount: army.amount, nationId: army.nationId });
+        } else {
+          ownerArmyInHex.amount += army.amount;
+        }
+
+        // add index to delete after loop
+        idxsToDelete.push(i);
+      }
+    }
+
+    // delete armies that finished training and deployed
+    building.trainingTroops = training.filter((_, i) => !idxsToDelete.includes(i));
+  }
+
+  return { ok: true };
 }

@@ -47,7 +47,6 @@ export default function NationInfo({
 
   const atWar = nation?.atWar ?? [];
   const atPeace = nation?.atPeace ?? [];
-  const fakePeace = [{ nationId: "ALD", turnsRemaining: 30 }];
 
   return (
     <div className="w-full h-full yellow-500 flex justify-center items-start rounded-xl">
@@ -106,7 +105,7 @@ export default function NationInfo({
               <div className="w-full h-full flex flex-col gap-2 p-2 overflow-y-auto no-scrollbar">
                 {/* Nations at war */}
                 <NationsAtWar atWar={atWar} nations={nations}></NationsAtWar>
-                <NationsAtPeace atPeace={fakePeace} nations={nations}></NationsAtPeace>
+                <NationsAtPeace atPeace={atPeace} nations={nations}></NationsAtPeace>
                 <NumberOfTiles numberOfTiles={nationHexes.length}></NumberOfTiles>
                 <TotalArmy totalArmy={totalArmy}></TotalArmy>
                 <GoldAmount gold={gold}></GoldAmount>

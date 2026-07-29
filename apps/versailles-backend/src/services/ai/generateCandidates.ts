@@ -1,3 +1,4 @@
+import { getBorderBFSMap } from "#services/algorithms/bfs.js";
 import { GameCtx } from "#trpc/index.js";
 import { Nation } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
@@ -6,15 +7,16 @@ import { generateArmyTrainCandidates } from "./actions/armyTrain/createCandidate
 import { generateBuildCandidates } from "./actions/building/createCandidates";
 import { generateContractCandidates } from "./actions/contract/createCandidates";
 import { generateDeclareWarCandidates } from "./actions/declareWar/createCandidates";
+import { generateAnswerPeaceReqCandidates } from "./actions/mails/answerMail";
+import { generatePeaceReqCandidates } from "./actions/peaceRequest/createCandidates";
 import { generateBuildRoadCandidates } from "./actions/road/createCandidates";
-import { getBorderBFSMap } from "./algorithms/bfs";
 import { WorldAnalysis } from "./analysis/types";
+import { createAIBudget } from "./budget/createBudget";
 import { AIIntent } from "./intents/types";
 import { createNationMemo } from "./memory/createMemory";
 import { initPlanningState } from "./planning/createPlanning";
 import { hydratePlanning } from "./planning/hydratePlanning";
 import { createMemoFromPlanning } from "./planning/serializePlanning";
-import { createAIBudget } from "./budget/createBudget";
 
 export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation) {
   const planning = initPlanningState();
@@ -25,8 +27,10 @@ export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nat
 
   hydratePlanning(ctx, nationMemo, nation.id, planning, bfsMap);
 
-  const budget = createAIBudget(ctx, analysis, nation);
+  const budget = createAIBudget(ctx, analysis, planning, nation);
   const budgetMap = new Map(typedEntries(budget));
+
+  console.log(`${nation.id} budget:`, budget);
 
   // 1. Run building (w Score)
   // store buildings in planning too
@@ -36,7 +40,6 @@ export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nat
 
   // 2. Run army movement
   const moveIntents = generateArmyMoveCandidates(ctx, analysis, nation, planning);
-  console.log(`${nation.id} move`, moveIntents);
 
   // 3. Run army training
   const trainBudget = new Map([...budgetMap].map(([res, a]) => [res, a.get("train") ?? 0]));
@@ -46,6 +49,7 @@ export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nat
   // 4. Run road building
   const roadBudget = new Map([...budgetMap].map(([res, a]) => [res, a.get("roadBuild") ?? 0]));
   const buildRoads = generateBuildRoadCandidates(ctx, planning, roadBudget, nation);
+  console.log(`${nation.id} road build intents:`, buildRoads);
 
   // 5. Generate new contracts
   const contractIntents = generateContractCandidates(ctx, nation);
@@ -53,11 +57,26 @@ export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nat
   // 6. Generate attack intents
   const attackIntents = generateDeclareWarCandidates(ctx, planning, nation);
 
+  // 7. Generate peace requests
+  const peaceIntents = generatePeaceReqCandidates(ctx, nation);
+
+  // 8. Generate peace request answers
+  const peaceAnswerIntents = generateAnswerPeaceReqCandidates(ctx, nation);
+
   // update ai memo with planning
   const newMemo = createMemoFromPlanning(planning, nationMemo);
   ctx.aiMemory[nation.id] = newMemo;
 
-  return { buildIntents, moveIntents, trainIntents, buildRoads, contractIntents, attackIntents };
+  return {
+    buildIntents,
+    moveIntents,
+    trainIntents,
+    buildRoads,
+    contractIntents,
+    attackIntents,
+    peaceIntents,
+    peaceAnswerIntents,
+  };
 }
 
 export function sortCandidates<T>(intents: AIIntent[]) {

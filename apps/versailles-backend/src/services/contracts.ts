@@ -5,17 +5,16 @@ import {
   calculateExportAmount,
   findBuildingNameByCategory,
   getBuilding,
-  getHexByAxial,
   Nation,
   ServerContractUpdate,
   startDijkstrasAlgo,
   SupplyContract,
 } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
-import { getBuildingsByIdMap } from "./ai/decision/helpers.js";
-import { buildRoadGraph, buildRoadPath } from "./ai/algos/bfs.js";
-import { getNationRoads, pointKey, pointsToHexIds } from "./road.js";
+import { buildRoadGraph, buildRoadPath } from "./algorithms/bfs.js";
+import { getBuildingsByIdMap } from "./buildings/queries.js";
 import { getHexAxialMap } from "./map.js";
+import { getNationRoads, pointKey, pointsToHexIds } from "./road.js";
 
 export type newContract = {
   startBuildingId: string;
@@ -273,7 +272,7 @@ export function hasContract(
   toBuildingId: string,
   resource: BASE_RESOURCE
 ) {
-  const buildingIdMap = getBuildingsByIdMap(ctx);
+  const buildingIdMap = getBuildingsByIdMap(ctx.buildings);
 
   const fromBuilding = buildingIdMap.get(fromBuildingId);
   const toBuilding = buildingIdMap.get(toBuildingId);

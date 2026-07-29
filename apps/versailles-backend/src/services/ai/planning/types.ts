@@ -24,7 +24,13 @@ export type AIPlanningState = {
   attackTargets: AttackTargetPlanning; // set of nation ids that this nation targets
 };
 
-export type BuildSavePlanning = Map<number, { category: BUILDINGS_CATEGORY; targetLevel: number }>;
+export type BuildSavePlanning = Map<number, PlanningBuildSavingGoal>;
+export type PlanningBuildSavingGoal = {
+  category: BUILDINGS_CATEGORY;
+  targetLevel: number;
+  type: BuildSavingGoalType;
+};
+export type BuildSavingGoalType = "regular" | "opening";
 
 // planned moves over long distances
 export type ArmyMoveGoal = {

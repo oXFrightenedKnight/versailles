@@ -4,6 +4,8 @@ import { NATION_RESOURCE } from "@repo/shared";
 export type AIBudgetCtx = {
   ctx: GameCtx;
   nationId: string;
+  foundationComplete: boolean;
+  barrackLevels: number;
 };
 
 export type BudgetAction = "build" | "roadBuild" | "train" | "move" | "reserve";
@@ -17,3 +19,10 @@ export type ResourceBudget = {
 export type BudgetMap = Map<NATION_RESOURCE, AIBudget>;
 
 export type ActionWeight = { action: BudgetAction; weight: number };
+
+export type BudgetAllocationRequest = {
+  action: BudgetAction;
+  amount: number;
+  priority: number;
+  mode: "exact" | "minimum";
+};

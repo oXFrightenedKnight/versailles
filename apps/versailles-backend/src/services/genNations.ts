@@ -1,5 +1,6 @@
 import {
   AVAILABLE_TILES,
+  BASE_GOLD_INCOME,
   BASE_NATION_GOLD,
   BUILDINGS_CATEGORY,
   Hex,
@@ -8,10 +9,11 @@ import {
   NATION_NUMBER,
 } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
-import { BuildBuilding } from "./buildings.js";
 import { getHexById, randomNationColor } from "./map.js";
 import { addArmy } from "./army/units.js";
-import { isAtWar } from "./army/war.js";
+import { getNationWarSet, isAtWar, warKey } from "./army/war.js";
+import { BuildBuilding } from "./buildings/construction.js";
+import { addGold } from "./resources/gold.js";
 
 export type newBuildings = {
   hexId: number;
@@ -92,7 +94,7 @@ export function createNewNation({
   ctx.nations.push({
     id: nationId,
     capitalTileIdx: capitalId,
-    color: randomNationColor(),
+    color: randomNationColor(ctx.nations),
     aggression: agression,
     expansionBias: expansionBias,
     isPlayer: isPlayer ? isPlayer : false,
@@ -132,22 +134,37 @@ export function addPopulation({
   hex.population += amount;
 }
 
-export function setDefeated(nation: Nation) {
-  // place player logic here later (eg. set playerMode)
-  nation.capitalTileIdx = null;
-  nation.isDefeated = true;
+export function setDefeated(ctx: GameCtx, defeatedNation: Nation) {
+  defeatedNation.capitalTileIdx = null;
+  defeatedNation.isDefeated = true;
+
+  const warSet = getNationWarSet(ctx);
+  const peaceSet = getPeaceSet(ctx);
+
+  // remove war and peace with every nation
+  for (const nation of ctx.nations) {
+    if (nation.id === defeatedNation.id) continue;
+
+    if (isAtWar(warSet, nation.id, defeatedNation.id)) {
+      removeWar(ctx, nation.id, defeatedNation.id);
+    }
+
+    if (isAtPeace(peaceSet, nation.id, defeatedNation.id)) {
+      removePeace(ctx, nation.id, defeatedNation.id);
+    }
+  }
 }
 
-export function subtractGold(ctx: GameCtx, nationId: string, amount: number) {
-  const nation = ctx.nations.find((n) => n.id === nationId);
-  if (!nation) return false;
+export function removeWar(ctx: GameCtx, nationId1: string, nationId2: string) {
+  const nationIdMap = getNationIdMap(ctx);
 
-  if (nation.gold >= amount && !(nation.gold < 0)) {
-    nation.gold -= amount;
-    return true;
-  } else {
-    return false;
-  }
+  const nation1 = nationIdMap.get(nationId1);
+  const nation2 = nationIdMap.get(nationId2);
+
+  if (!nation1 || !nation2) return;
+
+  nation1.atWar = nation1.atWar.filter((id) => id !== nation2.id);
+  nation2.atWar = nation2.atWar.filter((id) => id !== nation1.id);
 }
 
 // assigns hex with highest population of owner to be new capital
@@ -160,7 +177,7 @@ export function assignNewCapital(ctx: GameCtx, nationId: string) {
     return (h.population ?? 0) > (acc.population ?? 0) ? h : acc;
   }, ownerHexes[0]);
 
-  nation.capitalTileIdx = newCapital.id;
+  nation.capitalTileIdx = newCapital ? newCapital.id : null;
 }
 
 export function getNationArmy(ctx: GameCtx, nationId: string) {
@@ -178,4 +195,50 @@ export function getHostileArmyHex(hex: Hex, enemiesOf: string, warSet: Set<strin
     const atWar = isAtWar(warSet, a.nationId, enemiesOf);
     return atWar ? acc + a.amount : acc;
   }, 0);
+}
+
+export function getNationHexes(hexes: Hex[], nationId: string) {
+  return hexes.filter((h) => h.owner && h.owner === nationId);
+}
+
+// adds base gold to every nation each turn to allow for self sustain
+export function addBaseNationGold(ctx: GameCtx) {
+  for (const nation of ctx.nations) {
+    if (nation.isDefeated) continue;
+
+    addGold(nation, BASE_GOLD_INCOME);
+  }
+}
+
+export function getNationIdMap({ nations }: { nations: Nation[] }) {
+  return new Map(nations.map((n) => [n.id, n]));
+}
+
+export function getPeaceSet(ctx: GameCtx) {
+  const peaceSet = new Set<string>();
+  for (const nation of ctx.nations) {
+    for (const { nationId: enemy } of nation.atPeace) {
+      if (enemy === nation.id) continue;
+      peaceSet.add(warKey(nation.id, enemy));
+    }
+  }
+
+  return peaceSet;
+}
+
+export function isAtPeace(peaceSet: Set<string>, a: string, b: string) {
+  if (peaceSet.has(warKey(a, b))) return true;
+  return false;
+}
+
+export function removePeace(ctx: GameCtx, nationId1: string, nationId2: string) {
+  const nationIdMap = getNationIdMap(ctx);
+
+  const nation1 = nationIdMap.get(nationId1);
+  const nation2 = nationIdMap.get(nationId2);
+
+  if (!nation1 || !nation2) return;
+
+  nation1.atPeace = nation1.atPeace.filter(({ nationId }) => nationId !== nation2.id);
+  nation2.atPeace = nation2.atPeace.filter(({ nationId }) => nationId !== nation1.id);
 }

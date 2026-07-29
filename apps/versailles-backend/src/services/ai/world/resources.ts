@@ -1,5 +1,6 @@
-import { getNationBuildings, calculateResourceOutput } from "#services/buildings.js";
+import { getNationBuildings } from "#services/buildings/queries.js";
 import { getContractPerTurn } from "#services/contracts.js";
+import { calculateResourceOutput } from "#services/resources/production.js";
 import { GameCtx } from "#trpc/index.js";
 import {
   Nation,
@@ -40,6 +41,7 @@ export function getProducingBuildings(ctx: GameCtx, nation: Nation) {
       if (isNationResource(resource)) continue;
       producing[resource] = calculateResourceOutput(hex, resource);
     }
+    console.log(`producing at ${hex.id}`, producing);
 
     // exporting
     const exporting: Partial<Record<BASE_RESOURCE, number>> = {};
@@ -49,6 +51,7 @@ export function getProducingBuildings(ctx: GameCtx, nation: Nation) {
 
       exporting[c.resource] = existing + perTurn;
     }
+    console.log(`exporting at ${hex.id}`, exporting);
 
     const available: Partial<Record<BASE_RESOURCE, number>> = {};
     for (const [resource, amount] of typedEntries(producing)) {
@@ -56,6 +59,7 @@ export function getProducingBuildings(ctx: GameCtx, nation: Nation) {
       const produced = amount ?? 0;
       available[resource] = Math.max(0, produced - sent);
     }
+    console.log(`final available in ${hex.id}:`, available);
 
     buildShortage.push({ hexId: hex.id, buildingId: building.id, available });
   }

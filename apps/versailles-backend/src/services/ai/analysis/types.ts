@@ -1,4 +1,5 @@
-import { BUILDINGS_CATEGORY, Hex } from "@repo/shared";
+import { BFSResult } from "#services/algorithms/types.js";
+import { BUILDINGS_CATEGORY, BuildingsByCategoryAndLevel, Hex } from "@repo/shared";
 
 export type WorldAnalysis = {
   // world data
@@ -56,32 +57,10 @@ export type Constructing = {
   levels: number;
   progress: number;
 };
-export type BFSResult = {
-  startHexId: number;
-  cameFrom: Map<number, number | null>;
-};
-
-export type BuildingsByCategoryAndLevel = Partial<
-  Record<BUILDINGS_CATEGORY, { level: number; amount: number }[]>
->;
 
 // values from 0 to 1 (0 - whatever, 1 - i really need to do this intent)
 export type AIPressure = {
   enemyStrengthPressure: number; // how much stronger enemies are
   economyPressure: number; // need for more buildings/economy
   expansionOpportunity: number; // chance to attack weaker enemies
-};
-
-// ---------
-export const ARMY_WEIGHT = 1;
-export const BORDER_ARMY_WEIGHT = 1.25;
-export const GOLD_WEIGHT = 0.1;
-export const BUILDING_WEIGHT = 0.25;
-
-export const BUILDING_PRIORITY: Record<BUILDINGS_CATEGORY, number> = {
-  CIVILIAN: 1,
-  FARM: 0.8,
-  WOODCAMP: 0.8,
-  BARRACK: 0.9,
-  WATCHTOWER: 0.2,
 };

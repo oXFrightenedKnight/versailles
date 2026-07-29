@@ -9,3 +9,8 @@ export type ScoredIntent = {
   targetLevel: number;
   reason?: AIScoreReasons[];
 };
+
+export type OpeningTarget = {
+  category: BUILDINGS_CATEGORY;
+  level: number;
+};

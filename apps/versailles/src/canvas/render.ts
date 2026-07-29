@@ -97,10 +97,10 @@ function drawPolygon({
 }) {
   ctx.save();
 
-  // 1️⃣ переносим (0,0) в центр хекса
+  // move to hex center
   ctx.translate(centerX, centerY);
 
-  // 2️⃣ рисуем хекс ВОКРУГ (0,0)
+  // draw hex around (0,0)
   ctx.beginPath();
 
   for (let i = 0; i < 6; i++) {

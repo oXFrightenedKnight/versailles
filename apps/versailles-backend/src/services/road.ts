@@ -8,8 +8,8 @@ import {
   Road,
 } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
-import { subtractGold } from "./genNations.js";
 import { getHexAxialMap } from "./map.js";
+import { subtractGold } from "./resources/gold.js";
 
 export function buildNationRoads({
   gameCtx,

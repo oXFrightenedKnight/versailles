@@ -1,6 +1,6 @@
 import { BUILDINGS_CATEGORY, NATION_RESOURCE } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
-import { AIPlanningState } from "../types";
+import { AIPlanningState, BuildSavingGoalType } from "../types";
 
 export function deleteBuildSaving(planning: AIPlanningState, hexId: number) {
   planning.buildSaving.delete(hexId);
@@ -10,12 +10,13 @@ export function createBuildSaving(
   planning: AIPlanningState,
   hexId: number,
   category: BUILDINGS_CATEGORY,
-  targetLevel: number
+  targetLevel: number,
+  type: BuildSavingGoalType
 ) {
   if (planning.buildSaving.has(hexId)) {
     return { ok: false };
   }
-  planning.buildSaving.set(hexId, { category, targetLevel });
+  planning.buildSaving.set(hexId, { category, targetLevel, type });
   return { ok: true };
 }
 

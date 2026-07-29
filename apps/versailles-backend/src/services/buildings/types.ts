@@ -1,5 +1,4 @@
-import { Building, BUILDINGS, Hex } from "@repo/shared";
-import { BuildingsByCategoryAndLevel } from "./ai/types/analyze";
+import { Building, Hex } from "@repo/shared";
 
 export type ValidationResult<T> = { ok: true; data: T } | { ok: false; issue: string };
 

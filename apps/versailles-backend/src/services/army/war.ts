@@ -79,7 +79,7 @@ export function checkDefeated(ctx: GameCtx, nationId: string) {
 
   const leftHexes = ctx.mapHexes.filter((h) => h.owner === nationId);
   if (leftHexes.length <= 0) {
-    setDefeated(nation);
+    setDefeated(ctx, nation);
     return { defeated: true };
   }
 
@@ -216,7 +216,7 @@ export function getNationWarSet(ctx: GameCtx) {
 
   return warSet;
 }
-function warKey(a: string, b: string) {
+export function warKey(a: string, b: string) {
   return a < b ? `${a},${b}` : `${b},${a}`;
 }
 

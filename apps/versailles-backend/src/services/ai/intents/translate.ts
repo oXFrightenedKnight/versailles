@@ -8,6 +8,8 @@ import {
   BuildRoad,
   ContractIntent,
   DeclareWarIntent,
+  SignPeaceReqIntent,
+  AnswerMail,
 } from "./types";
 
 export function translateBuilding(buildIntents: BuildIntent[]): IntentInput["newQueuedBuildings"] {
@@ -93,6 +95,33 @@ export function translateDeclareWar(warIntents: DeclareWarIntent[]): IntentInput
 
   for (const intent of warIntents) {
     translated.push(intent.toNationId);
+  }
+
+  return translated;
+}
+
+export function translateSignPeaceReq(
+  peaceIntents: SignPeaceReqIntent[]
+): IntentInput["signPeaceReq"] {
+  const translated: IntentInput["signPeaceReq"] = [];
+
+  for (const intent of peaceIntents) {
+    translated.push(intent.nationId);
+  }
+
+  return translated;
+}
+
+export function translatePeaceMailAnswers(
+  answeredMails: AnswerMail[]
+): IntentInput["answeredMails"] {
+  const translated: IntentInput["answeredMails"] = [];
+
+  for (const intent of answeredMails) {
+    translated.push({
+      id: intent.mailId,
+      answer: intent.answer,
+    });
   }
 
   return translated;

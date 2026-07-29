@@ -1,6 +1,6 @@
+import { reconstructPath } from "#services/algorithms/bfs.js";
+import { BFSResult } from "#services/algorithms/types.js";
 import { GameCtx } from "#trpc/index.js";
-import { reconstructPath } from "../algorithms/bfs";
-import { BFSResult } from "../analysis/types";
 import { AIMemory } from "../memory/types";
 import { getAvailableArmy } from "../world/armies";
 import { AIPlanningState, ArmyMoveGoal, AttackTargetPlanning, BuildSavePlanning } from "./types";
@@ -34,6 +34,7 @@ function getBuildSavingMemo(nationMemo: AIMemory) {
     memo.set(saving.hexId, {
       category: saving.category,
       targetLevel: saving.targetLevel,
+      type: saving.type,
     });
   }
 

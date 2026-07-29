@@ -132,3 +132,16 @@ export function mailsExpire(ctx: GameCtx) {
     }
   }
 }
+
+export function hasExistingPeaceRequest(mails: Mail[], fromNation: string, toNation: string) {
+  return (
+    mails.find(
+      (m) =>
+        m.type === "PEACE_OFFER" &&
+        m.metadata.fromNation === fromNation &&
+        m.metadata.toNation === toNation &&
+        m.expire &&
+        m.expire > 0
+    ) !== undefined
+  );
+}

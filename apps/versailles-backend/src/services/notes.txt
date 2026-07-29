@@ -3,16 +3,10 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
-7. fix left missing imports in new structure.
-Move algorithms out of ai folder as they are used by map.ts too. Also check other imports from /ai inside map.ts and fix them too
-8. look at the screenshot where player was fighting ALD and it dedicated 1400 of its gold to road building
-9. Make sure you only update planning inside planning/mutations. move all other planning updates there.
-
-Think how you are going to validate ai memo after simulation runs (maybe return intent results like rejected/accepted)
-9. start working on ai
-9,5. remember that when ai attacks, it first declares war, and next turn it checks
-if its at war and moves its troops
-9,9. Fix client at-peace ui
+fix fractional numbers in contracts and exports
+possible reason why small armies don't train: something rounds the values which prevents small armies from training. 
+consider rewriting contracts. instead of storing resources, make them always available (like lumina points)
+only allocate road building if you are sure there is available producing building of that resource
 10. setup a database to store game state in ( or redis )
 12. bug fixes + ui polishment + refactor clicking handler on client, clean up architecture
 13. Music, sound effects, reusable components
@@ -47,6 +41,7 @@ and pull army from other hexes to create enough army for attack.
 15. Make each building have its own production rates instead of relying on fixed rates for each resource
 16. Deprecate world analysis object. Instead invoke every non-expensive selector manually, and keep only expensive
 calculcations.
+17. Think how AI intents validate after simulation runs.
 
 --- RULES ---
 1. Delete/Update first, Build/Add second.

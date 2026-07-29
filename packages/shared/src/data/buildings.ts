@@ -12,19 +12,6 @@ export type Building = {
     consumed: { resource: PRODUCIBLE_RESOURCE; amount: number }[];
     produced: { resource: PRODUCIBLE_RESOURCE; amount: number }[];
   };
-
-  // dynamic
-  // civilian
-
-  // farm
-
-  // barrack
-  trainingTroops?: ArmyTrainingObject[];
-  // woodcamp
-
-  // common properties
-  contracts?: SupplyContract[];
-  storage?: { type: BASE_RESOURCE; amount: number }[];
 };
 
 export const building_categoires = [
@@ -43,11 +30,15 @@ export type BuildingConfig = {
   popCap: number;
   buildTime: number;
   buildCost: number;
-  storageCap: Partial<Record<BASE_RESOURCE, number>>;
-  consumptionMod: Partial<Record<BASE_RESOURCE, number>>;
   maxTraining?: number;
-  producing?: PRODUCIBLE_RESOURCE[];
+  producing?: Partial<Record<PRODUCIBLE_RESOURCE, number>>; // controls how much of each resource building produces at 100% efficiency
+  consuming?: Partial<Record<BASE_RESOURCE, ConsumedResource>>;
 };
+export type ConsumedResource = {
+  weight: number;
+  amount: number;
+};
+
 // building data
 export const BUILDINGS: Record<string, BuildingConfig> = {
   nomadic_camp: {
@@ -57,9 +48,7 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     popCap: 10,
     buildTime: 3,
     buildCost: 50,
-    storageCap: {},
-    consumptionMod: { wheat: 1 },
-    producing: ["gold"],
+    producing: {},
   },
   village: {
     name: "Village",
@@ -225,3 +214,7 @@ export type BuildingType = keyof typeof BUILDINGS;
 
 // Base wheat that capitals get per turn to allow early self-sustainment
 export const BASE_CAPITAL_WHEAT = 20;
+
+export type BuildingsByCategoryAndLevel = Partial<
+  Record<BUILDINGS_CATEGORY, { level: number; amount: number }[]>
+>;

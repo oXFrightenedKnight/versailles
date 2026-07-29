@@ -1,8 +1,8 @@
-import { hasBuiltFoundation } from "#services/ai/analysis/economy.js";
 import { WorldAnalysis } from "#services/ai/analysis/types.js";
 import { BuildIntent, AIScoreReasons } from "#services/ai/intents/types.js";
 import { reserveSavingBudget, createBuildSaving } from "#services/ai/planning/goals/buildSaving.js";
 import {
+  getNextOpeningBuilding,
   getOptimisticCategoryLevels,
   getOptimisticTotalLevels,
 } from "#services/ai/planning/queries/buildings.js";
@@ -11,10 +11,9 @@ import {
   getResourceShortage,
   getNationResourcePrediction,
 } from "#services/ai/planning/queries/resources.js";
-import { AIPlanningState } from "#services/ai/planning/types.js";
-import { getBuildingsByIdMap, getHexesBuildings } from "#services/ai/world/buildings.js";
+import { AIPlanningState, BuildSavingGoalType } from "#services/ai/planning/types.js";
+import { getHexesBuildings } from "#services/ai/world/buildings.js";
 import { getHexesWithRoads } from "#services/ai/world/map.js";
-import { getOptimisticBuildInHex } from "#services/buildings.js";
 import { getHexAxialMap, getHexIdMap } from "#services/map.js";
 import { GameCtx } from "#trpc/index.js";
 import {
@@ -33,12 +32,16 @@ import {
   BIOME_SCORE_MULT,
   WAR_DEBUFF_CATEGORIES,
   BUILDING_COMPOSITION,
-  FOUNDATION_MINIMUMS,
   MAX_SAVING_TURNS,
 } from "./policy";
 import { ScoredIntent } from "./types";
 import { trySpendBudget } from "#services/ai/budget/ledger.js";
 import { revalidateBuildSaving } from "./buildSaving";
+import { createPlanningBuildIntent } from "#services/ai/planning/mutations/buildings.js";
+import { selectClosestOpeningHexes } from "./foundation";
+import { getBuildingsByIdMap, getOptimisticBuildInHex } from "#services/buildings/queries.js";
+
+type SubmissionStatus = "FAILED" | "SAVING" | "QUEUED";
 
 export function generateBuildCandidates(
   ctx: GameCtx,
@@ -50,7 +53,7 @@ export function generateBuildCandidates(
   const BuildIntents: ScoredIntent[] = [];
   const nationHexes = ctx.mapHexes.filter((h) => h.owner === nation.id);
 
-  const addBuildIntent = (
+  const createIntent = (
     category: BUILDINGS_CATEGORY,
     hexId: number,
     score: number,
@@ -165,33 +168,63 @@ export function generateBuildCandidates(
         add("existing_building", BuildingScoreTable["existing_building"]);
       }
 
-      // 9. Huge buff if this building is first foundational
-      const foundation = FOUNDATION_MINIMUMS[category];
-      const minimum = foundation?.amount ?? 0;
-
-      if (categoryLevels < minimum) {
-        add(
-          "missing_foundation_category",
-          BuildingScoreTable.missing_foundation_category * (foundation?.priority ?? 0)
-        );
-      }
-
       // calculate resource cost
       const cost = { gold: buildingData.buildCost };
 
       const targetLevel = (expectedBuilding?.level ?? 0) + 1;
 
       // Create score object
-      addBuildIntent(category, hex.id, score, cost, targetLevel, reasons);
+      createIntent(category, hex.id, score, cost, targetLevel, reasons);
     }
   }
 
   // All submited intents go here
-  const submited: BuildIntent[] = [];
-  const submit = (intent: BuildIntent) => {
-    submited.push(intent);
-    planning.intendedBuildings.set(intent.hexId, { category: intent.buildingCategory, levels: 1 });
+  const approvedIntents: BuildIntent[] = [];
+  const submit = (
+    intent: ScoredIntent,
+    type: BuildSavingGoalType
+  ): { status: SubmissionStatus } => {
+    // subtract cost from budget
+    const res = trySpendBudget(buildingBudget, intent.cost);
+    if (!res.ok) {
+      // one save goal at a time
+      if ([...planning.buildSaving].length > 0) return { status: "FAILED" };
+
+      const created = createBuildSaving(
+        planning,
+        intent.hexId,
+        intent.category,
+        intent.targetLevel,
+        type
+      );
+      if (created.ok) {
+        reserveSavingBudget(buildingBudget, planning, intent.hexId, intent.cost);
+        return { status: "SAVING" };
+      }
+    } else {
+      // approve if sufficient funds
+      const { ok } = approveIntent({
+        id: crypto.randomUUID(),
+        score: intent.score,
+        type: "buildIntent",
+        reason: intent.reason,
+        buildingCategory: intent.category,
+        hexId: intent.hexId,
+      });
+      if (ok) return { status: "QUEUED" };
+    }
+
+    return { status: "FAILED" };
   };
+  const approveIntent = (intent: BuildIntent) => {
+    approvedIntents.push(intent);
+    const success = createPlanningBuildIntent(planning, intent.hexId, intent.buildingCategory, 1);
+
+    if (success.ok) return { ok: true };
+
+    return { ok: false };
+  };
+
   // Candidates sorted by score
   const sortedIntents = BuildIntents.sort((a, b) => b.score - a.score);
   const IntentMap = new Map(sortedIntents.map((b) => [`${b.hexId},${b.category}`, b]));
@@ -211,70 +244,56 @@ export function generateBuildCandidates(
 
     const success = trySpendBudget(buildingBudget, intent.cost);
     if (success.ok) {
-      // push intent to submited
-      submit({
+      // approve building
+      const { ok } = approveIntent({
         id: crypto.randomUUID(),
         type: "buildIntent",
         score: intent.score,
         buildingCategory: intent.category,
         hexId: intent.hexId,
       });
-      // remove intent from candidate map
-      IntentMap.delete(key);
+      // remove intent from candidate list
+      if (ok) {
+        IntentMap.delete(key);
+      }
     } else {
-      // reserve budget
+      // reserve budget and keep saving
       reserveSavingBudget(buildingBudget, planning, hexId, intent.cost);
     }
   }
 
-  // step 3: submit intents until run out of budget
-  for (const intent of [...IntentMap.values()]) {
-    if (planning.intendedBuildings.has(intent.hexId)) continue;
+  // step 3: validate and submit generated candidates
+  // check if opening schema is active and select best intents from there
+  const nationResPrediction = getNationResourcePrediction(ctx, analysis, planning, nation);
 
-    // subtract cost from budget
-    const res = trySpendBudget(buildingBudget, intent.cost);
-
-    if (!res?.ok) {
-      // create saving goal if top 10 and no other goals are there (max 1)
-      // and don't make goals if there is less than 1 intent
-
-      // check if every resource this building costs won't take more than 20 turns to accumulate with
-      // current active production
-      const nationResPrediction = getNationResourcePrediction(ctx, analysis, planning, nation);
-      const isWorthSaving = typedEntries(intent.cost).every(
-        ([r, amount]) =>
-          (nation[r] ?? 0) + (nationResPrediction.get(r) ?? 0) * MAX_SAVING_TURNS <= (amount ?? 0)
-      );
-      if (
-        [...planning.buildSaving].length === 0 &&
-        isTopIntent(IntentMap, 0, 10, intent) &&
-        sortedIntents.length > 1 &&
-        (isWorthSaving || !hasBuiltFoundation(ctx, nation.id))
-      ) {
-        const created = createBuildSaving(
-          planning,
-          intent.hexId,
-          intent.category,
-          intent.targetLevel
-        );
-        if (created.ok) {
-          reserveSavingBudget(buildingBudget, planning, intent.hexId, intent.cost);
-        }
+  const nextOpening = getNextOpeningBuilding(ctx, planning, nation.id);
+  if (nextOpening) {
+    // closest hexes to current opening target
+    const closestHexes = selectClosestOpeningHexes(ctx, nextOpening, nation.id);
+    for (const intent of [...IntentMap.values()]) {
+      if (closestHexes.has(intent.hexId) && intent.category === nextOpening.category) {
+        submit(intent, "opening");
+        break; // limit to one intent
       }
-      continue;
     }
+  } else {
+    // select regular intents if no schema is active
+    for (const intent of [...IntentMap.values()]) {
+      if (planning.intendedBuildings.has(intent.hexId)) continue;
 
-    submit({
-      id: crypto.randomUUID(),
-      score: intent.score,
-      type: "buildIntent",
-      reason: intent.reason,
-      buildingCategory: intent.category,
-      hexId: intent.hexId,
-    });
+      const isWorthSaving = typedEntries(intent.cost).every(
+        ([resource, amount]) =>
+          (nation[resource] ?? 0) + (nationResPrediction.get(resource) ?? 0) * MAX_SAVING_TURNS >=
+          (amount ?? 0)
+      );
+
+      if (isTopIntent(IntentMap, 0, 10, intent) && isWorthSaving) {
+        submit(intent, "regular");
+      }
+    }
   }
 
-  return submited;
+  return approvedIntents;
 }
 
 // checks whether intent is in top # of all sorted intents

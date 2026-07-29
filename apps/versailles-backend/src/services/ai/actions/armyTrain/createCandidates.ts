@@ -4,7 +4,6 @@ import { WorldAnalysis } from "#services/ai/analysis/types.js";
 import { sortCandidates } from "#services/ai/generateCandidates.js";
 import { ArmyTrain } from "#services/ai/intents/types.js";
 import { AIPlanningState } from "#services/ai/planning/types.js";
-import { getBuildingsByIdMap } from "#services/ai/world/buildings.js";
 import { GameCtx } from "#trpc/index.js";
 import {
   NATION_RESOURCE,
@@ -17,6 +16,7 @@ import {
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { proposalPriority } from "../armyMove/policy";
 import { calcOptimisticDeficit } from "#services/ai/planning/queries/army.js";
+import { getBuildingsByIdMap } from "#services/buildings/queries.js";
 
 export function generateArmyTrainCandidates(
   ctx: GameCtx,

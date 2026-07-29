@@ -15,14 +15,15 @@ export default function FarmBlock({
   setIsContractSelected: React.Dispatch<React.SetStateAction<boolean>>;
   building: Building;
 }) {
-  // name
-  const name =
-    findBuildingNameByCategory({ buildingCategory: building.category, level: building.level }) ??
-    "nomadic_camp";
+  const nameTag = findBuildingNameByCategory({
+    buildingCategory: building.category,
+    level: building.level,
+  });
+  const name = BUILDINGS[nameTag ?? "nomadic_camp"].name;
 
   // level
   const level = building.level;
-  const populationCap = BUILDINGS[name].popCap;
+  const populationCap = BUILDINGS[nameTag].popCap;
 
   // next level building
   const nextName =

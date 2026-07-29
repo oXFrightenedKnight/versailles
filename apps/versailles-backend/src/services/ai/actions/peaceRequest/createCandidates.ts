@@ -1,15 +1,51 @@
-import { WorldAnalysis } from "#services/ai/analysis/types.js";
 import { SignPeaceReqIntent } from "#services/ai/intents/types.js";
+import { getNationWarSet, isAtWar } from "#services/army/war.js";
+import { getNationArmy } from "#services/genNations.js";
+import { hasExistingPeaceRequest } from "#services/mails.js";
 import { GameCtx } from "#trpc/index.js";
 import { Nation } from "@repo/shared";
+import { MAX_RESIST_ARMY_RATIO } from "./policy";
+import { getSortedEnemyArmies } from "#services/ai/world/armies.js";
 
 // generate peace request mails
-function generatePeaceReqCandidates(
-  ctx: GameCtx,
-  analysis: WorldAnalysis,
-  nation: Nation
-): SignPeaceReqIntent[] {
-  const mailIntents: SignPeaceReqIntent[] = [];
+export function generatePeaceReqCandidates(ctx: GameCtx, nation: Nation): SignPeaceReqIntent[] {
+  const peaceIntents: SignPeaceReqIntent[] = [];
 
-  return mailIntents;
+  const submitPeaceIntent = (nationId: string) => {
+    // don't send peace req if enemy is already asking for it
+    if (
+      hasExistingPeaceRequest(ctx.mails, nation.id, nationId) ||
+      hasExistingPeaceRequest(ctx.mails, nationId, nation.id)
+    )
+      return { ok: false };
+
+    peaceIntents.push({ id: crypto.randomUUID(), type: "signPeaceReqIntent", score: 0, nationId });
+
+    return { ok: true };
+  };
+
+  const warSet = getNationWarSet(ctx);
+
+  const ownArmy = getNationArmy(ctx, nation.id) ?? 0;
+
+  // sort enemies from weakest to strongest
+  const enemiesByArmy = getSortedEnemyArmies(ctx, nation);
+
+  let totalEnemyArmy = nation.atWar
+    .filter((enemy) => isAtWar(warSet, nation.id, enemy))
+    .reduce((acc, enemy) => acc + (getNationArmy(ctx, enemy) ?? 0), 0);
+
+  for (const { nationId: enemy, army: enemyArmy } of enemiesByArmy) {
+    // stop requesting if can resist leftover enemy army
+    if (totalEnemyArmy <= ownArmy * MAX_RESIST_ARMY_RATIO) break;
+
+    if (!isAtWar(warSet, nation.id, enemy)) continue;
+
+    // submit peace request intent
+    submitPeaceIntent(enemy);
+
+    totalEnemyArmy -= enemyArmy;
+  }
+
+  return peaceIntents;
 }

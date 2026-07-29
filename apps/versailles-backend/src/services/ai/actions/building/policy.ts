@@ -30,17 +30,6 @@ export const WAR_DEBUFF_CATEGORIES: Partial<Record<BUILDINGS_CATEGORY, number>> 
   WOODCAMP: 0.6,
 };
 
-// using a scale 0 to 1 define priority of this building early game
-export const FOUNDATION_MINIMUMS: Partial<
-  Record<BUILDINGS_CATEGORY, { amount: number; priority: number }>
-> = {
-  CIVILIAN: { amount: 1, priority: 0.2 },
-  FARM: { amount: 1, priority: 1 },
-  WOODCAMP: { amount: 1, priority: 0.5 },
-  BARRACK: { amount: 1, priority: 0.9 },
-  WATCHTOWER: { amount: 1, priority: 0.5 },
-};
-
 export const BUILDING_COMPOSITION: Partial<Record<BUILDINGS_CATEGORY, number>> = {
   CIVILIAN: 0.35,
   FARM: 0.2,
@@ -50,3 +39,13 @@ export const BUILDING_COMPOSITION: Partial<Record<BUILDINGS_CATEGORY, number>> =
 };
 
 export const MAX_SAVING_TURNS = 20;
+
+// this schema defines which buildings and in which order ai will build on game start
+export const EARLY_BUILDING_TARGET_SCHEMA: { category: BUILDINGS_CATEGORY; level: number }[] = [
+  { category: "CIVILIAN", level: 2 },
+  { category: "FARM", level: 1 },
+  { category: "FARM", level: 1 },
+  { category: "BARRACK", level: 1 },
+  { category: "FARM", level: 1 },
+  { category: "WATCHTOWER", level: 1 },
+];

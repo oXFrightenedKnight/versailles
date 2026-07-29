@@ -7,6 +7,7 @@ import {
   BUILDINGS,
   CreatedHexes,
   cubeDistance,
+  FALLBACK_COLOR,
   findBuildingNameByCategory,
   findNeighbors,
   getBuilding,
@@ -14,13 +15,14 @@ import {
   HEX_DIRECTIONS,
   MAP_RADIUS,
   Nation,
+  NATION_COLORS,
   WOOD_MOD,
 } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
 import { addArmy, removeArmy } from "./army/units.js";
-import { BuildBuilding } from "./buildings.js";
-import { getBuildingsByIdMap } from "./ai/world/buildings.js";
-import { bfs, reconstructPath } from "./ai/algorithms/bfs.js";
+import { bfs, reconstructPath } from "./algorithms/bfs.js";
+import { BuildBuilding } from "./buildings/construction.js";
+import { getBuildingsByIdMap } from "./buildings/queries.js";
 
 // DO NOT CHANGE THIS FUNCTION TO ACCEPT GAMECTX
 // generates the mathematical map & coordinates
@@ -160,12 +162,15 @@ export function generateHexMap(ctx: GameCtx) {
   ctx.mapHexes = hexes;
 }
 
-export function randomNationColor(): string {
-  const hue = Math.floor(Math.random() * 360); // оттенок
-  const saturation = 40 + Math.random() * 30; // 40–70%
-  const lightness = 35 + Math.random() * 20; // 35–55%
+export function randomNationColor(nations: Nation[]): string {
+  const takenColors = nations.map((n) => n.color);
 
-  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  const availableColors = NATION_COLORS.filter((c) => !takenColors.includes(c));
+
+  const idx = Math.floor(Math.random() * availableColors.length);
+
+  const color = availableColors[idx] ?? FALLBACK_COLOR;
+  return color;
 }
 
 // ONLY WORKS WHEN THE MAP HAS BEEN GENERATED

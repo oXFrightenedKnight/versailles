@@ -74,3 +74,10 @@ export function avgEnemyArmyInHexes(ctx: GameCtx, hexes: Hex[], defendingNationI
 
   return totalEnemyArmy / hexes.length;
 }
+
+// returns all nation enemies along with their armies sorted from weakest to strongest
+export function getSortedEnemyArmies(ctx: GameCtx, nation: Nation) {
+  return nation.atWar
+    .map((n) => ({ nationId: n, army: getNationArmy(ctx, n) ?? 0 }))
+    .sort((obj1, obj2) => obj1.army - obj2.army);
+}

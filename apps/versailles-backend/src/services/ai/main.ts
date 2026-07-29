@@ -9,6 +9,8 @@ import {
   translateRoadBuild,
   translateCreateContract,
   translateDeclareWar,
+  translatePeaceMailAnswers,
+  translateSignPeaceReq,
 } from "./intents/translate";
 
 export function runAIPipeline(ctx: GameCtx, nation: Nation) {
@@ -27,6 +29,10 @@ export function runAIPipeline(ctx: GameCtx, nation: Nation) {
   const buildRoads = translateRoadBuild(candidates.buildRoads);
   const createNewContracts = translateCreateContract(candidates.contractIntents);
   const declareWar = translateDeclareWar(candidates.attackIntents);
+  const signPeaceReq = translateSignPeaceReq(candidates.peaceIntents);
+
+  const peaceAnswers = translatePeaceMailAnswers(candidates.peaceAnswerIntents);
+  const answeredMails = [...peaceAnswers];
 
   aiIntents["newQueuedBuildings"] = newQueuedBuildings;
   aiIntents["movePlayerArmy"] = armyMove;
@@ -34,6 +40,8 @@ export function runAIPipeline(ctx: GameCtx, nation: Nation) {
   aiIntents["buildRoads"] = buildRoads;
   aiIntents["createNewContracts"] = createNewContracts;
   aiIntents["declareWar"] = declareWar;
+  aiIntents["signPeaceReq"] = signPeaceReq;
+  aiIntents["answeredMails"] = answeredMails;
 
   console.log("armyMoveIntents", armyMove);
   console.log("trainArmyIntents", armyTrain);

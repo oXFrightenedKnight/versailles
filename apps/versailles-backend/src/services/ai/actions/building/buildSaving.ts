@@ -30,8 +30,8 @@ export function revalidateBuildSaving(
     return { ok: false };
   }
 
-  // 3. If respective intent not in top 10 anymore - drop
-  if (!isTopIntent(intentsMap, 0, 19, existingIntent)) {
+  // 3. If respective intent not in top 20 anymore - drop
+  if (saved.type === "regular" && !isTopIntent(intentsMap, 0, 20, existingIntent)) {
     deleteBuildSaving(planning, hexId);
     return { ok: false };
   }

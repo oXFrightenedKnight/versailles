@@ -1,4 +1,3 @@
-import { buildRoadGraph, hasRoadPath } from "#services/ai/algorithms/bfs.js";
 import { getBuildingsShortage } from "#services/ai/analysis/resources.js";
 import { ContractIntent } from "#services/ai/intents/types.js";
 import { getProducingBuildings } from "#services/ai/world/resources.js";
@@ -9,6 +8,7 @@ import { GameCtx } from "#trpc/index.js";
 import { Nation, BASE_RESOURCE } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { producingBuildsPath } from "../road/supplyRoute";
+import { buildRoadGraph, hasRoadPath } from "#services/algorithms/bfs.js";
 
 export function generateContractCandidates(ctx: GameCtx, nation: Nation): ContractIntent[] {
   const contractIntents: ContractIntent[] = [];

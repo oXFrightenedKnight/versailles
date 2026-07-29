@@ -19,7 +19,3 @@ export function getHexesBuildings(hexes: Hex[], buildingsById: Map<string, Build
     .map((h) => (h.buildingId ? buildingsById.get(h.buildingId) : undefined))
     .filter((b): b is Building => b !== undefined);
 }
-
-export function getBuildingsByIdMap(buildings: Building[]) {
-  return new Map(buildings.map((b) => [b.id, b]));
-}

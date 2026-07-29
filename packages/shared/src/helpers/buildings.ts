@@ -7,16 +7,10 @@ import {
 } from "#data/buildings";
 import { Hex } from "#data/hex_map";
 
-export function findBuildingNameByCategory({
-  buildingCategory,
-  level,
-}: {
-  buildingCategory: BUILDINGS_CATEGORY;
-  level: number;
-}) {
+export function getBuildingName(category: BUILDINGS_CATEGORY, level: number) {
   return Object.entries(BUILDINGS).find(
-    ([key, value]) => value.category === buildingCategory && value.level === level
-  )?.[0] as BuildingType;
+    ([key, value]) => value.category === category && value.level === level
+  )?.[0] as BuildingType | undefined;
 }
 
 export function findBuildingDataByCategory({

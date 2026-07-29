@@ -1,22 +1,15 @@
-import { getNationBuildingCount } from "#services/buildings.js";
-import { GameCtx } from "#trpc/index.js";
-import { Nation, findBuildingNameByCategory, BUILDINGS_CATEGORY, BUILDINGS } from "@repo/shared";
-import { typedEntries } from "@repo/shared/helpers/tsHelpers";
-import { FOUNDATION_MINIMUMS } from "../actions/building/policy";
+import {
+  BUILDINGS,
+  BUILDINGS_CATEGORY,
+  BuildingsByCategoryAndLevel,
+  Nation,
+  findBuildingNameByCategory,
+} from "@repo/shared";
 import { getNationNeighbors } from "../world/nations";
-import { BUILDING_WEIGHT, BuildingsByCategoryAndLevel, EconomyRatio, GOLD_WEIGHT } from "./types";
-
-export function hasBuiltFoundation(ctx: GameCtx, nationId: string) {
-  const buildingCount = getNationBuildingCount(ctx, nationId);
-
-  return typedEntries(FOUNDATION_MINIMUMS).every(([category, requirement]) => {
-    const counts = buildingCount[category] ?? [];
-
-    const amount = counts.reduce((total, building) => total + building.amount * building.level, 0);
-
-    return amount >= (requirement?.amount ?? 0);
-  });
-}
+import { BUILDING_WEIGHT, GOLD_WEIGHT } from "./policy";
+import { EconomyRatio } from "./types";
+import { getNationBuildingCount } from "#services/buildings/queries.js";
+import { GameCtx } from "#trpc/index.js";
 
 export function getNeighborEconomyRatio(ctx: GameCtx, nation: Nation) {
   const nationIdMap = new Map(ctx.nations.map((n) => [n.id, n]));

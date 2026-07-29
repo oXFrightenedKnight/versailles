@@ -4,7 +4,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { getNationFlagURL } from "@/lib/helpers/flags";
 import { Nation, PeaceObj } from "@repo/shared";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
 
 export default function NationsAtPeace({
   nations,
@@ -32,7 +31,7 @@ export default function NationsAtPeace({
                     alt="nation at war flag"
                     width={32}
                     height={32}
-                    className="w-full h-full rounded-[4px] border border-gray-600"
+                    className="w-full h-full rounded-lg border border-gray-600"
                   ></Image>
                 </div>
               </TooltipTrigger>

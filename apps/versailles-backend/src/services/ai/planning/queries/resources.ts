@@ -1,8 +1,6 @@
 import { BuildingProductionNode } from "#services/ai/actions/road/types.js";
 import { WorldAnalysis } from "#services/ai/analysis/types.js";
-import { getBuildingsByIdMap } from "#services/ai/world/buildings.js";
 import { getProducingBuildings } from "#services/ai/world/resources.js";
-import { calculateResourceOutput } from "#services/buildings.js";
 import { GameCtx } from "#trpc/index.js";
 import {
   Nation,
@@ -18,6 +16,8 @@ import {
 } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { AIPlanningState } from "../types";
+import { getBuildingsByIdMap } from "#services/buildings/queries.js";
+import { calculateResourceOutput } from "#services/resources/production.js";
 
 // returns estimated producible resource production and consumption
 export function getResourcePrediction(
@@ -128,10 +128,12 @@ export function availableResourcesInBuildings(
   nation: Nation
 ) {
   const producing = getProducingBuildings(ctx, nation);
+  console.log("producing in buildings (no plan):", producing);
 
   const updated: BuildingProductionNode[] = [];
   for (const building of producing) {
     const occupied = planning.occupiedResources.get(building.buildingId);
+    console.log(`occupied at ${building.hexId}:`, occupied);
 
     if (!occupied) {
       updated.push(building);
@@ -149,6 +151,7 @@ export function availableResourcesInBuildings(
     });
 
     updated.push({ ...building, available: resources });
+    console.log(`final available resources at ${building.hexId}:`, resources);
   }
 
   return updated;

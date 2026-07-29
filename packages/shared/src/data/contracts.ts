@@ -2,15 +2,12 @@ import { BASE_RESOURCE } from "./resources";
 
 export type SupplyContract = {
   id: string;
-  buildingId: string;
+  fromBuildingId: string;
+  toBuildingId: string;
   amount: number;
   resource: BASE_RESOURCE;
   progress: number;
-  metadata: {
-    lastAmountSent: number;
-  };
   autoAdjust: boolean;
-  usedPath: number[];
 };
 
 export type ServerContractUpdate = {

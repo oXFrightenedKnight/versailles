@@ -7,7 +7,6 @@ import { AIPlanningState } from "./types";
 // return memo snapshot from planning
 export function createMemoFromPlanning(planning: AIPlanningState, nationMemo: AIMemory): AIMemory {
   // update move goals
-  const plannedMoves = planning.plannedMoves;
   const armyMovement: ArmyMoveMemo[] = [];
   for (const goal of getAllMoveGoals(planning)) {
     const currHexId = goal.path[0];
@@ -19,8 +18,8 @@ export function createMemoFromPlanning(planning: AIPlanningState, nationMemo: AI
   // update build saving
   const buildSaving: BuildSaveMemo[] = [];
 
-  for (const [hexId, { targetLevel, category }] of planning.buildSaving) {
-    buildSaving.push({ hexId, targetLevel, category });
+  for (const [hexId, { targetLevel, category, type }] of planning.buildSaving) {
+    buildSaving.push({ hexId, targetLevel, category, type });
   }
   console.log(`savingGoals:`, buildSaving);
 

@@ -1,10 +1,10 @@
-import { reconstructPath } from "#services/ai/algorithms/bfs.js";
 import { sortBorderAnalysis } from "#services/ai/analysis/military/analyzeBorders.js";
 import { BorderNeed } from "#services/ai/analysis/military/types.js";
-import { BFSResult } from "#services/ai/analysis/types.js";
 import { getLongOptimisticArmy } from "#services/ai/planning/queries/army.js";
 import { getAvailableArmyForCategory } from "#services/ai/planning/reservations/armyReserve.js";
 import { AIPlanningState } from "#services/ai/planning/types.js";
+import { reconstructPath } from "#services/algorithms/bfs.js";
+import { BFSResult } from "#services/algorithms/types.js";
 import { MINIMUM_WAR_BORDER_ARMY, WAR_DEFENSE_MULT } from "./policy";
 import { ProposalArmyMove } from "./types";
 
