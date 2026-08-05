@@ -4,19 +4,17 @@ import { SquarePen } from "lucide-react";
 import ContractComponent from "./ContractComponent";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
-import { getMergedContracts, getServerContractsFromBuildings } from "@/lib/UI/mergeData/uiContract";
+import { getMergedContracts } from "@/lib/UI/mergeData/uiContract";
 import { useMemo } from "react";
 import { Building } from "@repo/shared/data/buildings";
 
 export default function ContractBlock({
   isContractSelected,
   setIsContractSelected,
-  buildingType,
   building,
 }: {
   isContractSelected: boolean;
   setIsContractSelected: React.Dispatch<React.SetStateAction<boolean>>;
-  buildingType: string;
   building: Building;
 }) {
   const buildings = useGameStore((s) => s.buildings);
@@ -24,7 +22,7 @@ export default function ContractBlock({
   {
     /* SUBSCRIBE TO CLIENT AND SERVER CONTRACTS AND MERGE THEM */
   }
-  const serverContracts = getServerContractsFromBuildings(buildings);
+  const serverContracts = useGameStore((s) => s.contracts);
   const serverContractDelete = useIntentStore((s) => s.serverContractDelete);
   const serverContractUpdate = useIntentStore((s) => s.serverContractUpdate);
 
@@ -43,7 +41,7 @@ export default function ContractBlock({
   return (
     <div className="w-full bg-gray-800 rounded-xl">
       <div className="flex w-full justify-between items-center bg-gray-700 p-2 rounded-t-xl">
-        <p>{buildingType} Contracts</p>
+        <p>Contracts</p>
         <div
           className={`flex justify-center items-center p-2 border-gray-700 border rounded-xl 
                           ${isContractSelected ? "bg-gray-900/60" : "bg-gray-900"} shadow-md shadow-black`}

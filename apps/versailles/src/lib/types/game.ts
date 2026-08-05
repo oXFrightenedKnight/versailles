@@ -1,4 +1,4 @@
-import { BASE_RESOURCE } from "@repo/shared";
+import { ArmyTrainingObject, BASE_RESOURCE } from "@repo/shared";
 import { Building, BUILDINGS_CATEGORY } from "@repo/shared/data/buildings";
 import { SupplyContract } from "@repo/shared/data/contracts";
 import { Hex } from "@repo/shared/data/hex_map";
@@ -25,14 +25,12 @@ export type newBuilding = {
 };
 export type Contract = {
   id: string;
-  hexIds: number[];
   startBuildingId: string;
   endBuildingId: string;
   amount: number;
   resource: BASE_RESOURCE;
-  progress: number;
   autoAdjust: boolean;
-  lastSentAmount: number;
+  ownerId: string;
 };
 export type BuildModeType = "road" | "none" | BUILDINGS_CATEGORY;
 export type ArmyTraining = {
@@ -41,15 +39,6 @@ export type ArmyTraining = {
   progress: number;
   owner: string;
   barrackId: string;
-};
-
-export type serverData = {
-  mapHexes: Hex[];
-  nations: Nation[];
-  turn: number;
-  roads: Road[];
-  buildings: Building[];
-  mails: Mail[];
 };
 
 export interface MergedContract extends Contract {

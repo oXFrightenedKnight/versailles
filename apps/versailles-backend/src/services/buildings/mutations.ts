@@ -1,5 +1,6 @@
+import { adjustNationResource } from "#services/resources/production.js";
 import { GameCtx } from "#trpc/index.js";
-import { Nation, findBuildingNameByCategory, BUILDINGS, BASE_HEX_POPULATION } from "@repo/shared";
+import { Nation, BUILDINGS, BASE_HEX_POPULATION, getBuildingName } from "@repo/shared";
 
 export function cancelBuilding(ctx: GameCtx, hexIds: number[], nation: Nation) {
   const hexIdMap = new Map(ctx.mapHexes.filter((h) => h.build_queue).map((h) => [h.id, h]));
@@ -15,12 +16,12 @@ export function cancelBuilding(ctx: GameCtx, hexIds: number[], nation: Nation) {
     for (let level = 1; level < hex.build_queue.levels + 1; level++) {
       const totalLevel = existing ? level + existing.level : level;
 
-      const name = findBuildingNameByCategory({
-        buildingCategory: hex.build_queue.building,
-        level: totalLevel,
-      });
+      const name = getBuildingName(hex.build_queue.building, totalLevel);
+      if (!name) continue;
+
+      // return cost
       const cost = BUILDINGS[name].buildCost;
-      nation.gold += cost;
+      adjustNationResource(nation, "gold", cost);
     }
 
     // cancel building

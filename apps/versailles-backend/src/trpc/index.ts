@@ -1,13 +1,17 @@
-import { Building, Hex, Mail, MODIFIER, Nation, Road } from "@repo/shared";
+import {
+  ArmyTrainingObject,
+  Building,
+  Hex,
+  Mail,
+  MODIFIER,
+  Nation,
+  Road,
+  SupplyContract,
+} from "@repo/shared";
 
 import { inferProcedureInput, TRPCError } from "@trpc/server";
 import z from "zod";
-import {
-  createNewGame,
-  getPlayerSaves,
-  populateGameCtx,
-  updateStore,
-} from "../server/memoryStore.js";
+import { createNewGame, getPlayerSaves, getSaveData, updateStore } from "../server/memoryStore.js";
 
 import { runGameSimulation } from "#services/game.js";
 import { MemoryCtx } from "../services/ai/memory/types.js";
@@ -22,6 +26,8 @@ export type GameCtx = {
   buildings: Building[];
   modifiers: MODIFIER[];
   mails: Mail[];
+  contracts: SupplyContract[];
+  armyTraining: ArmyTrainingObject[];
   aiMemory: MemoryCtx;
 };
 
@@ -58,7 +64,8 @@ export const appRouter = router({
     .query(async ({ input, ctx: reqCtx }) => {
       const gameId = input.gameId;
 
-      const ctx = populateGameCtx({ gameId, userId: reqCtx.clerkId });
+      const saveData = getSaveData({ gameId, userId: reqCtx.clerkId });
+      const ctx = saveData?.data;
       if (!ctx) throw new TRPCError({ code: "NOT_FOUND" });
 
       // FILTERING/FOG OF WAR LOGIC
@@ -146,14 +153,15 @@ export const appRouter = router({
     .mutation(async ({ input, ctx }) => {
       // create gameCtx
       const gameId = input.gameId;
-      const gameCtx = populateGameCtx({ userId: ctx.clerkId, gameId });
+      const saveData = getSaveData({ userId: ctx.clerkId, gameId });
+      const gameCtx = saveData?.data;
       if (!gameCtx) throw new TRPCError({ code: "NOT_FOUND" });
 
       // start game simulation
       runGameSimulation(gameCtx, input);
 
       // update store / db
-      updateStore({ gameId, userId: ctx.clerkId, gameCtx });
+      updateStore({ gameId, userId: ctx.clerkId, gameCtx, currVersion: saveData.version });
 
       // filter world state for player
       const data = filterPlayerLogic(gameCtx);
@@ -169,7 +177,12 @@ export const appRouter = router({
     }
 
     // update store / db
-    updateStore({ gameId: game.id, userId: ctx.clerkId, gameCtx: game.data });
+    updateStore({
+      gameId: game.id,
+      userId: ctx.clerkId,
+      gameCtx: game.data,
+      currVersion: game.version,
+    });
 
     return { id: game.id, metadata: game.metadata };
   }),

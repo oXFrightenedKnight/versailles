@@ -1,9 +1,9 @@
 import { ArmyTraining, newBuilding, roadObject } from "@/lib/types/game";
-import { BASE_ROAD_COST, getArmyTrainCost, Road } from "@repo/shared";
-import { Building, BUILDINGS } from "@repo/shared/data/buildings";
+import { BASE_ROAD_COST, getArmyTrainCost, getNationResource, Road } from "@repo/shared";
+import { Building } from "@repo/shared/data/buildings";
 import { Hex } from "@repo/shared/data/hex_map";
 import { Nation } from "@repo/shared/data/nations";
-import { findBuildingNameByCategory, getBuilding } from "@repo/shared/helpers/buildings";
+import { getBuilding, getBuildingConfig } from "@repo/shared/helpers/buildings";
 import { getCanceledRoadCostServer } from "./roads";
 
 export function calculateOptimisticGold(
@@ -33,12 +33,12 @@ export function calculateOptimisticGold(
     for (let level = 1; level < building.levelsToUpgrade + 1; level++) {
       const totalLevel = existingLevel + level;
 
-      const name = findBuildingNameByCategory({
-        buildingCategory: building.buildingType,
+      const config = getBuildingConfig({
+        category: building.buildingType,
         level: totalLevel,
       });
 
-      const cost = BUILDINGS[name] ? BUILDINGS[name].buildCost : 0;
+      const cost = config ? config.buildCost : 0;
       if (cost) {
         totalCost += cost;
       }
@@ -58,12 +58,12 @@ export function calculateOptimisticGold(
     for (let level = 1; level < hex.build_queue.levels + 1; level++) {
       const totalLevel = existingLevel + level;
 
-      const name = findBuildingNameByCategory({
-        buildingCategory: hex.build_queue.building,
+      const config = getBuildingConfig({
+        category: hex.build_queue.building,
         level: totalLevel,
       });
 
-      const cost = BUILDINGS[name] ? BUILDINGS[name].buildCost : 0;
+      const cost = config ? config.buildCost : 0;
       if (cost) {
         totalCost -= cost;
       }
@@ -85,7 +85,9 @@ export function calculateOptimisticGold(
   const totalTrainCost = trainNewArmy.reduce((acc, a) => acc + getArmyTrainCost(a.amount), 0);
   totalCost += totalTrainCost;
 
-  return playerNation?.gold !== undefined ? playerNation.gold - totalCost : 0;
+  const playerGold = playerNation ? getNationResource(playerNation, "gold") : 0;
+
+  return playerGold !== undefined ? playerGold - totalCost : 0;
 }
 
 export function hasEnoughGold(effectiveGold: number, cost: number) {

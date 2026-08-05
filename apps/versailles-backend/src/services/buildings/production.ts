@@ -1,36 +1,91 @@
+import { runBuildingTraining } from "#services/army/training.js";
+import { calculatePopulationChange } from "#services/map.js";
+import { adjustNationResource, calculateResourceOutput } from "#services/resources/production.js";
 import { GameCtx } from "#trpc/index.js";
-import { Building, PRODUCIBLE_RESOURCE } from "@repo/shared";
-import { calculateFarm } from "./categories/farm";
-import { calculateWoodcamp } from "./categories/woodcamp";
-import { calculateCivilian } from "./categories/civilian";
-import { calculateBarracks } from "./categories/barrack";
-import { calculateWatchtower } from "./categories/watchtower";
+import {
+  BASE_RESOURCE,
+  Building,
+  BUILDINGS,
+  getBuildingName,
+  isBaseResource,
+  isNationResource,
+  Nation,
+  PRODUCIBLE_RESOURCE,
+} from "@repo/shared";
+import { typedEntries } from "@repo/shared/helpers/tsHelpers";
+import { calculateEfficiency } from "./consumption";
 
-export function buildingOutput(gameCtx: GameCtx) {
-  const { buildings } = gameCtx;
-  // sort buildings into different groups
-  const civilian = buildings.filter((b) => b.category === "CIVILIAN");
-  const farms = buildings.filter((b) => b.category === "FARM");
-  const barracks = buildings.filter((b) => b.category === "BARRACK");
-  const woodcamps = buildings.filter((b) => b.category === "WOODCAMP");
-  const watchtowers = buildings.filter((b) => b.category === "WATCHTOWER");
+// calculates building efficiency and updates production/available resources
+export function runBuildingsSystem(gameCtx: GameCtx) {
+  // map over every contract and create a map of available resources allocated to each building
+  const allocatedResources = calcAllocatedContractResources(gameCtx);
+  const nationMap = new Map(gameCtx.nations.map((n) => [n.id, n]));
+  const buildingHexMap = new Map(
+    gameCtx.mapHexes.filter((h) => h.buildingId).map((h) => [h.buildingId!, h])
+  );
 
-  // calculate output for every building (farms and)
-  for (const civ of civilian) {
-    calculateCivilian(civ, gameCtx);
+  for (const building of gameCtx.buildings) {
+    const recievedResources = allocatedResources.get(building.id) ?? {};
+
+    const hex = buildingHexMap.get(building.id);
+    if (!hex) continue;
+
+    const owner = hex.owner ? nationMap.get(hex.owner) : undefined;
+    if (!owner) continue;
+
+    const efficiency = calculateEfficiency(building, recievedResources);
+
+    // update population based on efficiency
+    calculatePopulationChange(hex, gameCtx, efficiency);
+
+    // calculate army training
+    runBuildingTraining(gameCtx, building, hex, efficiency);
+
+    // produce/update producing building resources
+    runBuildingProduction(building, owner, efficiency);
   }
-  for (const farm of farms) {
-    calculateFarm(farm, gameCtx);
+}
+
+// updates available building resource and adds its produced nation resources to owner
+export function runBuildingProduction(building: Building, nation: Nation, efficiency: number) {
+  const buildingName = getBuildingName(building.category, building.level);
+  if (!buildingName) return;
+
+  const availableResources = BUILDINGS[buildingName].producing ?? {};
+
+  for (const [resource, _] of typedEntries(availableResources)) {
+    if (!isBaseResource(resource)) continue;
+
+    const produced = calculateResourceOutput(resource, buildingName, efficiency);
+
+    if (isBaseResource(resource)) {
+      building.availableResources[resource] = produced;
+    } else if (isNationResource(resource)) {
+      adjustNationResource(nation, resource, produced);
+      addProductionStat(building, resource, produced);
+    }
   }
-  for (const barrack of barracks) {
-    calculateBarracks(barrack, gameCtx);
+}
+
+// allocate available resource from buildings. contracts that were created earlier get fulfilled first
+export function calcAllocatedContractResources(ctx: GameCtx) {
+  const availableResources = new Map(ctx.buildings.map((b) => [b.id, b.availableResources]));
+  const allocatedResources = new Map<string, Partial<Record<BASE_RESOURCE, number>>>(); // <buildingId, Record<BASE_RESOURCE, amount>>
+
+  for (const contract of ctx.contracts) {
+    const allocatedResource = allocatedResources.get(contract.toBuildingId) ?? {};
+    const prevAllocated = allocatedResource[contract.resource] ?? 0;
+
+    // update available resource in original building
+    const available = availableResources.get(contract.fromBuildingId) ?? {};
+    const avialableAmount = available[contract.resource] ?? 0;
+
+    const allocated = Math.min(avialableAmount, contract.amount);
+    allocatedResource[contract.resource] = prevAllocated + allocated;
+    available[contract.resource] = Math.max(0, avialableAmount - allocated);
   }
-  for (const woodcamp of woodcamps) {
-    calculateWoodcamp(woodcamp, gameCtx);
-  }
-  for (const tower of watchtowers) {
-    calculateWatchtower(tower, gameCtx);
-  }
+
+  return allocatedResources;
 }
 
 export function addProductionStat(

@@ -8,20 +8,19 @@ import { mergeConstructingBuildings } from "@/lib/UI/mergeData/uiBuildings";
 import { getFirstFreeResource, getMergedContracts } from "@/lib/UI/mergeData/uiContract";
 import { calcAvailableArmy } from "@/lib/UI/optimisticCalc/army";
 import { hasEnoughGold } from "@/lib/UI/optimisticCalc/gold";
-import { randomNumber } from "@/lib/utils";
 import { Building, topLevelsByCategory } from "@repo/shared/data/buildings";
 import { ServerContractUpdate, SupplyContract } from "@repo/shared/data/contracts";
 import { Hex, HEX_DIRECTIONS } from "@repo/shared/data/hex_map";
 import { Nation } from "@repo/shared/data/nations";
 import { BASE_ROAD_COST, Road } from "@repo/shared/data/roads";
 import { getBuilding } from "@repo/shared/helpers/buildings";
-import { calculateExportAmount } from "@repo/shared/helpers/contracts";
 import { startDijkstrasAlgo } from "@repo/shared/helpers/dijkstras";
 import { findNeighbors, getHexByAxial } from "@repo/shared/helpers/hex_map";
 import { generateRoadDs, hasSegment } from "@repo/shared/helpers/roads";
 import { Dispatch, RefObject } from "react";
 import { findHexPathBetween } from "../pathfinding";
 import { pixelToHex } from "../render";
+import { calcResourceExport } from "@/lib/helpers/contracts";
 
 export type ClickCtx = {
   mouseDownRef: RefObject<boolean>;
@@ -47,10 +46,7 @@ export type ClickCtx = {
   setArmyMove: SetStateAction<armyIntent[]>;
   contracts: Contract[];
   setContracts: SetStateAction<Contract[]>;
-  serverContracts: {
-    buildingId: string;
-    contracts: SupplyContract[];
-  }[];
+  serverContracts: SupplyContract[];
   serverContractUpdate: ServerContractUpdate[];
   setBuildRoads: SetStateAction<roadObject[]>;
   barValue: number;
@@ -155,16 +151,16 @@ function createContract(hex: Hex, ctx: ClickCtx) {
     const startBuilding = getBuilding({ buildings: BuildingsUI, id: startId });
     const endBuilding = getBuilding({ buildings: BuildingsUI, id: endId });
 
-    if (!startBuilding || !startBuilding.storage) {
+    if (!startBuilding) {
       setIsContractSelected(false);
       return;
     }
-    if (!endBuilding || !endBuilding.storage) {
+    if (!endBuilding) {
       setIsContractSelected(false);
       return;
     }
 
-    // merged Server and client contracts for ui
+    // merged Server and client contracts
     const merged = getMergedContracts(
       serverContracts,
       contracts,
@@ -201,15 +197,7 @@ function createContract(hex: Hex, ctx: ClickCtx) {
       hexIds.push(hex.id);
     }
 
-    const amount =
-      calculateExportAmount({
-        startBuilding,
-        endBuilding,
-        length: hexIds.length - 1,
-        resource,
-        mapHexes,
-        buildings: BuildingsUI,
-      }) ?? 0;
+    const amount = calcResourceExport(endBuilding, resource, merged);
 
     setContracts((prev) => [
       ...prev,
@@ -219,10 +207,8 @@ function createContract(hex: Hex, ctx: ClickCtx) {
         endBuildingId: endId,
         resource,
         amount,
-        progress: 0,
-        hexIds,
+        ownerId: playerNation.id,
         autoAdjust: true,
-        lastSentAmount: 0,
       },
     ]);
   }

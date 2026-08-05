@@ -1,3 +1,4 @@
+import { Nation } from "#data/nations";
 import {
   BASE_RESOURCE,
   baseResources,
@@ -18,4 +19,8 @@ const baseResourceSet = new Set<string>(baseResources);
 
 export function isResource(resource: string): resource is PRODUCIBLE_RESOURCE {
   return nationResourceSet.has(resource) || baseResourceSet.has(resource);
+}
+
+export function getNationResource(nation: Nation, resource: NATION_RESOURCE) {
+  return nation.resources[resource] ?? 0;
 }

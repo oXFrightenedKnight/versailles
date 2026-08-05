@@ -1,20 +1,19 @@
 import { newBuildings } from "#services/genNations.js";
 import { getHexById, getHexIdMap } from "#services/map.js";
-import { subtractGold } from "#services/resources/gold.js";
 import { GameCtx } from "#trpc/index.js";
 import {
-  BUILDINGS_CATEGORY,
-  getBuilding,
-  findBuildingNameByCategory,
-  BUILDINGS,
-  BASE_RESOURCE,
-  Nation,
-  Hex,
   Building,
   building_categoires,
+  BUILDINGS,
+  BUILDINGS_CATEGORY,
+  getBuilding,
+  getBuildingName,
+  Hex,
+  Nation,
   topLevelsByCategory,
 } from "@repo/shared";
 import { ValidationResult, ValidBuildIntentData } from "./types";
+import { adjustNationResource } from "#services/resources/production.js";
 
 // Function is used to execute player intent to build new building (subtracts gold)
 export function BuildBuilding({
@@ -35,29 +34,16 @@ export function BuildBuilding({
     ? getBuilding({ buildings: ctx.buildings, id: hex.buildingId })
     : null;
   const levelsToUpgrade = levels ?? 1;
-  const currentLevel = existing?.level ?? 0;
-  const nextBuilding = findBuildingNameByCategory({
-    buildingCategory: category, // hex.build_queue.category
-    level: currentLevel + levelsToUpgrade,
-  });
-
-  const buildingStorage = [];
-
-  // add dynamic storage
-  for (const type of Object.keys(BUILDINGS[nextBuilding].storageCap)) {
-    buildingStorage.push({ type: type as BASE_RESOURCE, amount: 0 });
-  }
 
   if (existing) {
     existing.level += levelsToUpgrade;
-    existing.storage = buildingStorage;
   } else {
     const id = crypto.randomUUID();
     ctx.buildings.push({
       id,
       category,
       level: levelsToUpgrade,
-      storage: buildingStorage,
+      availableResources: {},
       statistics: {
         consumed: [],
         produced: [],
@@ -79,13 +65,12 @@ export function giveProgressBuilding(ctx: GameCtx) {
 
     // IF ENOUGH PROGRESS - BUILD/UPGRADE
     const prevLevel = hex.buildingId ? (buildingIdMap.get(hex.buildingId)?.level ?? 0) : 0;
-    const nextBuilding = findBuildingNameByCategory({
-      buildingCategory: hex.build_queue.building,
-      level: prevLevel + 1,
-    });
+    const nextBuildingName = getBuildingName(hex.build_queue.building, prevLevel + 1);
+
+    if (!nextBuildingName) continue;
 
     // Check if progress equals to build time
-    if (hex.build_queue.progress >= BUILDINGS[nextBuilding].buildTime) {
+    if (hex.build_queue.progress >= BUILDINGS[nextBuildingName].buildTime) {
       BuildBuilding({
         ctx,
         hexId: hex.id,
@@ -131,12 +116,11 @@ export function buildNewIntentBuildings({
     const data = result.data;
 
     // --- SUBTRACT GOLD AND BUILD
-    const nextBuilding = findBuildingNameByCategory({
-      buildingCategory: intent.buildingType,
-      level: data.newTotalLevel,
-    });
-    const cost = BUILDINGS[nextBuilding].buildCost;
-    if (subtractGold(gameCtx, nation.id, cost)) {
+    const nextBuildingName = getBuildingName(intent.buildingType, data.newTotalLevel);
+    if (!nextBuildingName) continue;
+
+    const cost = BUILDINGS[nextBuildingName].buildCost;
+    if (adjustNationResource(nation, "gold", -cost)) {
       const currentProgress = data.hex.build_queue ? data.hex.build_queue.progress : 0;
       data.hex.build_queue = {
         building: intent.buildingType,

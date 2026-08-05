@@ -3,16 +3,12 @@ import InfoComponent, { Info } from "./InfoComponent";
 import { deleteBuilding } from "@/lib/UI/mergeData/uiBuildings";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { Building, BUILDINGS } from "@repo/shared/data/buildings";
-import { findBuildingNameByCategory } from "@repo/shared";
+import { getBuildingName } from "@repo/shared";
 
 export default function InfoBlock({ info, building }: { info: Info; building: Building }) {
   const mapHexes = useGameStore((s) => s.mapHexes);
   const playerNation = useGameStore((s) => s.playerNation);
-  const name =
-    BUILDINGS[
-      findBuildingNameByCategory({ buildingCategory: building.category, level: building.level }) ??
-        "nomadic_camp"
-    ].name;
+  const name = BUILDINGS[getBuildingName(building.category, building.level) ?? "nomadic_camp"].name;
 
   const hex = mapHexes.find((h) => h.buildingId === building.id);
 

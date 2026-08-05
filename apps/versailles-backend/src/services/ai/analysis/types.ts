@@ -44,7 +44,6 @@ export type Frontline = {
 export type SelfData = {
   ownedHexCount: number;
   totalArmy: number;
-  trainingArmy: { barrackId: string; amount: number }[];
   armyInHexes: { hexId: number; amount: number }[]; // army in own hexes
 
   buildingCounts: BuildingsByCategoryAndLevel;

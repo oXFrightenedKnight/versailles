@@ -1,5 +1,3 @@
-import { ArmyTrainingObject } from "./army";
-import { SupplyContract } from "./contracts";
 import { BASE_RESOURCE, PRODUCIBLE_RESOURCE } from "./resources";
 
 // consider making a union in the future
@@ -8,6 +6,7 @@ export type Building = {
   id: string;
   category: BUILDINGS_CATEGORY;
   level: number;
+  availableResources: Partial<Record<BASE_RESOURCE, number>>;
   statistics: {
     consumed: { resource: PRODUCIBLE_RESOURCE; amount: number }[];
     produced: { resource: PRODUCIBLE_RESOURCE; amount: number }[];
@@ -30,13 +29,20 @@ export type BuildingConfig = {
   popCap: number;
   buildTime: number;
   buildCost: number;
-  maxTraining?: number;
   producing?: Partial<Record<PRODUCIBLE_RESOURCE, number>>; // controls how much of each resource building produces at 100% efficiency
   consuming?: Partial<Record<BASE_RESOURCE, ConsumedResource>>;
+  systems?: CustomSystems;
 };
 export type ConsumedResource = {
   weight: number;
   amount: number;
+};
+
+// define all custom systems this building owns
+export type CustomSystems = {
+  armyTraining?: {
+    maxTraining: number;
+  };
 };
 
 // building data
@@ -48,29 +54,27 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     popCap: 10,
     buildTime: 3,
     buildCost: 50,
-    producing: {},
+    producing: { gold: 1 },
   },
   village: {
     name: "Village",
     category: "CIVILIAN",
     level: 2,
-    popCap: 800,
+    popCap: 200,
     buildTime: 6,
-    buildCost: 400,
-    storageCap: { wheat: 80 },
-    consumptionMod: { wheat: 1.2 },
-    producing: ["gold"],
+    buildCost: 1125,
+    producing: { gold: 25 },
+    consuming: { wheat: { weight: 1, amount: 25 } },
   },
   settlement: {
     name: "Settlement",
     category: "CIVILIAN",
     level: 3,
-    popCap: 1750,
+    popCap: 2000,
     buildTime: 12,
-    buildCost: 3000,
-    storageCap: { wheat: 180, wood: 260 },
-    consumptionMod: { wheat: 1.5, wood: 1.3 },
-    producing: ["gold"],
+    buildCost: 9350,
+    consuming: { wheat: { weight: 1, amount: 125 } },
+    producing: { gold: 275 },
   },
   city: {
     name: "City",
@@ -78,33 +82,34 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     level: 4,
     popCap: 8000,
     buildTime: 20,
-    buildCost: 15000,
-    storageCap: { wheat: 700, wood: 1200 },
-    consumptionMod: { wheat: 1.9, wood: 1.5 },
-    producing: ["gold"],
+    buildCost: 37500,
+    consuming: { wheat: { weight: 0.7, amount: 500 }, wood: { weight: 0.3, amount: 3000 } },
+    producing: { gold: 1500 },
   },
   imperial_city: {
     name: "Imperial City",
     category: "CIVILIAN",
     level: 5,
-    popCap: 50000,
+    popCap: 60000,
     buildTime: 35,
-    buildCost: 100000,
-    storageCap: { wheat: 6500, wood: 14000 },
-    consumptionMod: { wheat: 2.4, wood: 1.9 },
-    producing: ["gold"],
+    buildCost: 300000,
+    consuming: { wheat: { weight: 0.6, amount: 4000 }, wood: { weight: 0.4, amount: 27500 } },
+    producing: { gold: 14000 },
   },
 
   barrack1: {
     name: "Barrack I",
     category: "BARRACK",
     level: 1,
-    popCap: 30,
+    popCap: 15,
     buildTime: 10,
     buildCost: 1600,
-    storageCap: { wheat: 20 },
-    consumptionMod: { wheat: 4 },
-    maxTraining: 50,
+    consuming: { wheat: { weight: 1, amount: 50 } },
+    systems: {
+      armyTraining: {
+        maxTraining: 25,
+      },
+    },
   },
   barrack2: {
     name: "Barrack II",
@@ -113,9 +118,12 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     popCap: 125,
     buildTime: 20,
     buildCost: 9000,
-    storageCap: { wheat: 150 },
-    consumptionMod: { wheat: 4 },
-    maxTraining: 250,
+    consuming: { wheat: { weight: 1, amount: 600 } },
+    systems: {
+      armyTraining: {
+        maxTraining: 250,
+      },
+    },
   },
   barrack3: {
     name: "Barrack III",
@@ -123,44 +131,59 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     level: 3,
     popCap: 1000,
     buildTime: 40,
-    buildCost: 60000,
-    storageCap: { wheat: 900 },
-    consumptionMod: { wheat: 3.8 },
-    maxTraining: 1500,
+    buildCost: 450000,
+    consuming: { wheat: { weight: 1, amount: 10000 } },
+    systems: {
+      armyTraining: {
+        maxTraining: 5000,
+      },
+    },
   },
 
   farm1: {
     name: "Farm I",
     category: "FARM",
     level: 1,
-    popCap: 80,
+    popCap: 20,
     buildTime: 10,
     buildCost: 800,
-    storageCap: { wheat: 150 },
-    consumptionMod: {},
-    producing: ["wheat"],
+    producing: { wheat: 40 },
   },
   farm2: {
     name: "Farm II",
     category: "FARM",
     level: 2,
-    popCap: 400,
+    popCap: 80,
     buildTime: 15,
-    buildCost: 3600,
-    storageCap: { wheat: 900 },
-    consumptionMod: { wood: 4 },
-    producing: ["wheat"],
+    buildCost: 5500,
+    producing: { wheat: 200 },
+  },
+  farm3: {
+    name: "Farm III",
+    category: "FARM",
+    level: 3,
+    popCap: 350,
+    buildTime: 20,
+    buildCost: 15000,
+    producing: { wheat: 900 },
+  },
+  farm4: {
+    name: "Farm IV",
+    category: "FARM",
+    level: 4,
+    popCap: 2900,
+    buildTime: 40,
+    buildCost: 175000,
+    producing: { wheat: 10000 },
   },
 
   watch_tower1: {
     name: "Watch Tower I",
     category: "WATCHTOWER",
     level: 1,
-    popCap: 10,
-    buildTime: 5,
+    popCap: 5,
+    buildTime: 3,
     buildCost: 200,
-    storageCap: { wheat: 10 },
-    consumptionMod: {},
   },
 
   woodcamp1: {
@@ -169,20 +192,22 @@ export const BUILDINGS: Record<string, BuildingConfig> = {
     level: 1,
     popCap: 200,
     buildTime: 10,
-    buildCost: 3000,
-    storageCap: { wheat: 360, wood: 2000 },
-    consumptionMod: { wheat: 2.4 },
-    producing: ["wood"],
+    buildCost: 15000,
+    consuming: { wheat: { weight: 1, amount: 200 } },
+    producing: { wood: 5000 },
+  },
+  woodcamp2: {
+    name: "Woodcamp II",
+    category: "WOODCAMP",
+    level: 2,
+    popCap: 1800,
+    buildTime: 30,
+    buildCost: 125000,
+    consuming: { wheat: { weight: 1, amount: 1800 } },
+    producing: { wood: 40000 },
   },
 } as const;
 
-export const baseConsumeRate = 0.025; // base consumption rate
-// assuming that 1 person consumes 0.025 of resource per 1 modifier
-export const ResourceRates: Partial<Record<PRODUCIBLE_RESOURCE, number>> = {
-  gold: 0.0125, // 0.0125 gold per person
-  wheat: 0.32, // 50 wheat bags for every 80 farmers
-  wood: 0.07, // 0.07 wood per woodcamp
-};
 export const baseTrainingProgress = 0.1; // full training in 10 turns 0.1x10
 
 const LEVEL_CATEGORY = Object.entries(BUILDINGS).map(([key, value]) => ({
@@ -211,9 +236,6 @@ export const topLevelsByCategory = Object.values(
 export const ALL_BUILDING_CATEGORIES = topLevelsByCategory.map((obj) => obj.category);
 
 export type BuildingType = keyof typeof BUILDINGS;
-
-// Base wheat that capitals get per turn to allow early self-sustainment
-export const BASE_CAPITAL_WHEAT = 20;
 
 export type BuildingsByCategoryAndLevel = Partial<
   Record<BUILDINGS_CATEGORY, { level: number; amount: number }[]>

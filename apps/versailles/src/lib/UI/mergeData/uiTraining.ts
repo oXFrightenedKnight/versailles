@@ -1,4 +1,4 @@
-import { Building } from "@repo/shared/data/buildings";
+import { ArmyTrainingObject, Building } from "@repo/shared";
 import { useIntentStore } from "../../stores/intentStore";
 import { ArmyTraining } from "../../types/game";
 
@@ -11,16 +11,18 @@ export type TrainingVM = {
   fromServer: boolean;
 };
 
-export function getTrainingArmyServer(barrack: Building) {
+export function getBuildingServerTraining(buildingId: string, armyTraining: ArmyTrainingObject[]) {
+  const buildingTraining = armyTraining.filter((a) => a.barrackId === buildingId);
+  return formatServerTraining(buildingTraining);
+}
+export function formatServerTraining(armyTraining: ArmyTrainingObject[]) {
   const serverTrainingDelete = useIntentStore.getState().serverTrainingDelete;
   const deletedTrainingSet = new Set<string>(serverTrainingDelete);
 
-  const trainingTroops = barrack?.trainingTroops ?? [];
-
-  return trainingTroops
+  return armyTraining
     .filter((t) => !deletedTrainingSet.has(t.id)) // exclude server delete intent
     .map((t) => ({
-      barrackId: barrack.id,
+      barrackId: t.barrackId,
       id: t.id,
       amount: t.amount,
       progress: t.progress,

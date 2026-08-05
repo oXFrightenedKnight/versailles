@@ -10,8 +10,9 @@ import {
   Nation,
   getArmyTrainCost,
   Hex,
-  findBuildingNameByCategory,
   BUILDINGS,
+  getBuildingName,
+  getBuildingConfig,
 } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { proposalPriority } from "../armyMove/policy";
@@ -112,11 +113,11 @@ function calcArmyTrain(
       const building = buildingIdMap.get(hex.buildingId);
       if (!building) continue;
 
-      const name = findBuildingNameByCategory({
-        buildingCategory: building.category,
+      const config = getBuildingConfig({
+        category: building.category,
         level: building.level,
       });
-      const max = BUILDINGS[name].maxTraining ?? 0;
+      const max = config?.systems?.armyTraining?.maxTraining ?? 0;
 
       const amount = Math.min(max, deficit);
       trained += amount;

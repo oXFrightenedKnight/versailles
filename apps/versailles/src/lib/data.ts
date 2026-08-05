@@ -1,9 +1,5 @@
-import BarrackBlock from "@/components/buildingConfig/barrackBlock";
-import CivilianBlock from "@/components/buildingConfig/civilianBlock";
-import FarmBlock from "@/components/buildingConfig/farmBlock";
-import WatchtowerBlock from "@/components/buildingConfig/watchtowerBlock";
-import WoodcampBlock from "@/components/buildingConfig/woodcampBlock";
-import { Building, BUILDINGS, BUILDINGS_CATEGORY } from "@repo/shared/data/buildings";
+import { PRODUCIBLE_RESOURCE } from "@repo/shared";
+import { BUILDINGS, BUILDINGS_CATEGORY } from "@repo/shared/data/buildings";
 import {} from "@repo/shared/data/hex_map";
 import { PeaceOfferMail, PeaceSignedMail, WarEventMail } from "@repo/shared/data/mail";
 import {
@@ -15,9 +11,7 @@ import {
   TrainTrack,
   Wheat,
 } from "lucide-react";
-import { Dispatch } from "react";
 import { nationText } from "./helpers/mails";
-import { PRODUCIBLE_RESOURCE } from "@repo/shared";
 export type BuildingNames = keyof typeof BUILDINGS;
 
 export const BuildingIcons: Record<"road" | BUILDINGS_CATEGORY, LucideIcon> = {
@@ -57,57 +51,6 @@ export const customBuildingImages: Record<BuildingNames, string> = {};
 export const Descriptions: Record<string, string> = {
   manpower: "All people in your nation that can serve in military.",
   gold: "Your nation's exchange currency.",
-};
-
-// Add New building buttons HERE
-export type buildingPropData = {
-  setIsContractSelected: Dispatch<React.SetStateAction<boolean>>;
-  isContractSelected: boolean;
-  building: Building;
-};
-type BuildingComponentEntry = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  component: React.ComponentType<any>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getProps: (data: buildingPropData) => Record<string, any>;
-};
-export const buildingComponents: Record<string, BuildingComponentEntry> = {
-  FARM: {
-    component: FarmBlock,
-    getProps: (data: buildingPropData) => ({
-      setIsContractSelected: data.setIsContractSelected,
-      isContractSelected: data.isContractSelected,
-      building: data.building,
-    }),
-  },
-  WOODCAMP: {
-    component: WoodcampBlock,
-    getProps: (data: buildingPropData) => ({
-      setIsContractSelected: data.setIsContractSelected,
-      isContractSelected: data.isContractSelected,
-      building: data.building,
-    }),
-  },
-  BARRACK: {
-    component: BarrackBlock,
-    getProps: (data: buildingPropData) => ({
-      building: data.building,
-    }),
-  },
-  CIVILIAN: {
-    component: CivilianBlock,
-    getProps: (data: buildingPropData) => ({
-      building: data.building,
-    }),
-  },
-  WATCHTOWER: {
-    component: WatchtowerBlock,
-    getProps: (data: buildingPropData) => ({
-      setIsContractSelected: data.setIsContractSelected,
-      isContractSelected: data.isContractSelected,
-      building: data.building,
-    }),
-  },
 };
 
 export const FALLBACK_POPULATION = 1000; // displayed when no hex is selected

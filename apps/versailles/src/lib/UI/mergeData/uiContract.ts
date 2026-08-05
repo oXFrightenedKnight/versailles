@@ -1,9 +1,12 @@
-import { MergedContractChanges, ServerContractUpdate } from "@repo/shared/data/contracts";
+import {
+  MergedContractChanges,
+  ServerContractUpdate,
+  SupplyContract,
+} from "@repo/shared/data/contracts";
 import { useIntentStore } from "../../stores/intentStore";
 import { Contract, MergedContract, ServerContract } from "../../types/game";
 import { Building, BUILDINGS } from "@repo/shared/data/buildings";
-import { findBuildingNameByCategory } from "@repo/shared/helpers/buildings";
-import { BASE_RESOURCE, isBaseResource } from "@repo/shared";
+import { BASE_RESOURCE, getBuildingName, isBaseResource, typedEntries } from "@repo/shared";
 
 // function that automatically updates contractUpdateIntent in intentStore
 export function updateServerContractIntent(contractId: string, newChanges: MergedContractChanges) {
@@ -36,9 +39,7 @@ export function updateServerContractIntent(contractId: string, newChanges: Merge
 }
 
 // turn raw server contracts into canonical MergedContract
-export function mergeServerContracts(contractObj: ServerContract) {
-  const { contracts, buildingId } = contractObj;
-
+export function mergeServerContracts(contracts: SupplyContract[]) {
   const serverContractDelete = useIntentStore.getState().serverContractDelete;
   const deletedCotractsSet = new Set<string>(serverContractDelete);
 
@@ -46,44 +47,31 @@ export function mergeServerContracts(contractObj: ServerContract) {
     .filter((c) => !deletedCotractsSet.has(c.id))
     .map((contract) => ({
       id: contract.id,
-      hexIds: contract.usedPath,
-      startBuildingId: buildingId,
-      endBuildingId: contract.buildingId,
+      startBuildingId: contract.fromBuildingId,
+      endBuildingId: contract.toBuildingId,
       amount: contract.amount,
-      progress: contract.progress,
       resource: contract.resource,
       autoAdjust: contract.autoAdjust,
-      lastSentAmount: contract.metadata.lastAmountSent,
       fromServer: true,
     })) as MergedContract[];
 }
 
-export function getServerContractsFromBuildings(buildings: Building[]) {
-  return buildings
-    .filter((b) => b.contracts)
-    .map((b) => ({
-      buildingId: b.id,
-      contracts: b.contracts!,
-    }));
-}
-
-export function mergeClientContracts(contracts: Contract[]) {
+export function mergeClientContracts(contracts: Contract[]): MergedContract[] {
   return contracts.map((c) => ({
     ...c,
-    lastSentAmount: 0,
     fromServer: false,
-  })) as MergedContract[];
+  }));
 }
 
 // takes raw server and client contract data and merges them into one ui list
 export function getMergedContracts(
-  serverContracts: ServerContract[],
+  serverContracts: SupplyContract[],
   clientContracts: Contract[],
   buildingId: string,
   serverContractUpdate: ServerContractUpdate[]
 ) {
   // Step 1: filter both by building id
-  const updServerContracts = serverContracts.find((c) => c.buildingId === buildingId);
+  const updServerContracts = serverContracts.filter((c) => c.fromBuildingId === buildingId);
   const updClientContracts = clientContracts.filter((c) => c.startBuildingId === buildingId);
 
   // Step 2: get merged server and client contracts
@@ -98,15 +86,13 @@ export function getMergedContracts(
     const updateIntent = updateMap.get(c.id);
     return {
       id: c.id,
-      hexIds: c.hexIds,
       startBuildingId: c.startBuildingId, // start building - passed from props
       endBuildingId: c.endBuildingId, // end building - get from contract
       amount: c.amount,
       autoAdjust: c.autoAdjust,
       resource: c.resource,
-      progress: c.progress,
-      lastSentAmount: c.lastSentAmount,
       fromServer: true,
+      ownerId: c.ownerId,
       ...updateIntent,
     };
   });
@@ -123,10 +109,7 @@ export function getFirstFreeResource({
   endBuilding: Building;
   allContracts: MergedContract[];
 }) {
-  const startName = findBuildingNameByCategory({
-    buildingCategory: startBuilding.category,
-    level: startBuilding.level,
-  });
+  const startName = getBuildingName(startBuilding.category, startBuilding.level);
   if (!startName) return;
 
   const takenResources = new Set<BASE_RESOURCE>(
@@ -138,7 +121,9 @@ export function getFirstFreeResource({
   // get first available
   const producing = BUILDINGS[startName].producing;
   if (!producing) return;
-  const availableResource = producing.find((r) => isBaseResource(r) && !takenResources.has(r));
+  const availableResource = typedEntries(producing).find(
+    ([r, amount]) => (amount ?? 0) > 0 && isBaseResource(r) && !takenResources.has(r)
+  )?.[0];
   if (!availableResource || !isBaseResource(availableResource)) return;
   return availableResource;
 }

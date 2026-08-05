@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
 import {
-  getTrainingArmyServer,
+  formatServerTraining,
   mergeTraining,
   mergeTrainingArmyClient,
 } from "@/lib/UI/mergeData/uiTraining";
@@ -17,20 +17,25 @@ import { getArmyTrainCost } from "@repo/shared";
 import { useEffectiveGold } from "@/hooks/useEffectiveGold";
 import { useUIStore } from "@/lib/stores/uiStore";
 import { createNewPopup } from "@/lib/helpers/popups";
+import { useEffectiveManpower } from "@/hooks/useEffectiveManpower";
 
 export default function TrainingBlock({ building }: { building: Building }) {
   const gold = useEffectiveGold();
 
   const playerNation = useGameStore((s) => s.playerNation);
-  const armyTraining = useIntentStore((s) => s.armyTraining);
   const setArmyTraining = useIntentStore((s) => s.setArmyTraining);
   const serverTrainingDelete = useIntentStore((s) => s.serverTrainingDelete);
   const [amount, setAmount] = useState<number>(0);
 
-  const serverTraining = getTrainingArmyServer(building);
-  const clientTraining = mergeTrainingArmyClient(building.id, armyTraining);
+  const serverArmyTraining = useGameStore((s) => s.armyTraining);
+  const serverTraining = formatServerTraining(serverArmyTraining);
+
+  const clientArmyTraining = useIntentStore((s) => s.armyTraining);
+  const clientTraining = mergeTrainingArmyClient(building.id, clientArmyTraining);
 
   const setPopup = useUIStore((s) => s.setPopup);
+
+  const manpower = useEffectiveManpower();
 
   const training = useMemo(() => {
     return mergeTraining(serverTraining, clientTraining);
@@ -63,9 +68,9 @@ export default function TrainingBlock({ building }: { building: Building }) {
             className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
             onClick={(e) => {
               if (e.shiftKey) {
-                setAmount(Math.min(amount + 1000, playerNation?.manpower ?? 0));
+                setAmount(Math.min(amount + 1000, manpower ?? 0));
               } else {
-                setAmount(Math.min(amount + 100, playerNation?.manpower ?? 0));
+                setAmount(Math.min(amount + 100, manpower ?? 0));
               }
             }}
           >
@@ -76,8 +81,8 @@ export default function TrainingBlock({ building }: { building: Building }) {
           <div
             className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
             onClick={() => {
-              if (!armyTraining || !setArmyTraining || !playerNation) return;
-              if (amount > playerNation.manpower || amount === 0) return;
+              if (!clientArmyTraining || !setArmyTraining || !playerNation) return;
+              if (amount > manpower || amount === 0) return;
 
               const cost = getArmyTrainCost(amount);
 

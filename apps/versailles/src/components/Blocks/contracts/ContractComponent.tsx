@@ -1,20 +1,7 @@
 "use client";
 
-import { BuildingIcons, getResourceImage } from "@/lib/data";
-import {
-  ArrowBigDown,
-  Calculator,
-  Check,
-  ChevronDown,
-  CircleMinus,
-  CirclePlus,
-  Send,
-  Trash2,
-  X,
-} from "lucide-react";
-import { useCallback, useState } from "react";
-import { Progress } from "../ui/progress";
-import { Dropdown, DropdownItem } from "../GameComponents/dropdown";
+import { getResourceImage } from "@/lib/data";
+import { calcResourceExport } from "@/lib/helpers/contracts";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
 import { MergedContract } from "@/lib/types/game";
@@ -22,17 +9,18 @@ import {
   deleteClientContract,
   deleteServerContract,
   getMergedContracts,
-  getServerContractsFromBuildings,
   updateServerContractIntent,
 } from "@/lib/UI/mergeData/uiContract";
 import { numberConverter } from "@/lib/utils";
-import { Building, BUILDINGS } from "@repo/shared/data/buildings";
-import { findBuildingNameByCategory, getBuilding } from "@repo/shared/helpers/buildings";
+import { BASE_RESOURCE, isBaseResource, typedEntries } from "@repo/shared";
+import { Building } from "@repo/shared/data/buildings";
 import { MergedContractChanges } from "@repo/shared/data/contracts";
-import { calculateExportAmount } from "@repo/shared/helpers/contracts";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { getBuilding, getBuildingConfig } from "@repo/shared/helpers/buildings";
+import { Calculator, Check, ChevronDown, CircleMinus, CirclePlus, Trash2, X } from "lucide-react";
 import Image from "next/image";
-import { isBaseResource } from "@repo/shared";
+import { useCallback } from "react";
+import { Dropdown, DropdownItem } from "../../GameComponents/dropdown";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
 
 export default function ContractComponent({
   contract,
@@ -41,16 +29,15 @@ export default function ContractComponent({
   contract: MergedContract;
   buildings: Building[];
 }) {
-  const mapHexes = useGameStore((s) => s.mapHexes);
+  const serverContracts = useGameStore((s) => s.contracts);
   const updateContract = useIntentStore((s) => s.updateContract);
-  const contracts = useIntentStore((s) => s.contracts);
-  const serverContracts = getServerContractsFromBuildings(buildings);
+  const clientContracts = useIntentStore((s) => s.contracts);
   const serverContractUpdate = useIntentStore((s) => s.serverContractUpdate);
 
   // all contracts of this building (server + client)
   const allContracts = getMergedContracts(
     serverContracts,
-    contracts,
+    clientContracts,
     contract.startBuildingId,
     serverContractUpdate
   );
@@ -58,44 +45,33 @@ export default function ContractComponent({
   const startBuilding = getBuilding({ buildings, id: contract.startBuildingId });
   const endBuilding = getBuilding({ buildings, id: contract.endBuildingId });
 
-  const startName = startBuilding
-    ? findBuildingNameByCategory({
-        buildingCategory: startBuilding?.category,
-        level: startBuilding?.level,
-      })
-    : null;
-  const endName = endBuilding
-    ? findBuildingNameByCategory({
-        buildingCategory: endBuilding?.category,
-        level: endBuilding?.level,
-      })
-    : null;
-
-  const dist = contract.hexIds.length - 1;
-
-  const StartIcon = BuildingIcons[startBuilding?.category ?? "CIVILIAN"];
-  const EndIcon = BuildingIcons[endBuilding?.category ?? "CIVILIAN"];
+  const startBuildingConfig = startBuilding
+    ? getBuildingConfig({ category: startBuilding.category, level: startBuilding.level })
+    : undefined;
+  const endBuildingConfig = endBuilding
+    ? getBuildingConfig({ category: endBuilding.category, level: endBuilding.level })
+    : undefined;
 
   const sameBuildingContracts = allContracts.filter(
     (c) => c.startBuildingId === startBuilding?.id && c.endBuildingId === endBuilding?.id
   ); // contracts that have the same starting id and end id
 
-  const allAvailableResources = startName ? BUILDINGS[startName].producing : undefined; // all resources currently produced by this starting building
-  const baseAvailableResources = allAvailableResources
-    ? allAvailableResources.filter((r) => isBaseResource(r))
-    : undefined;
+  const availableResources = startBuildingConfig ? startBuildingConfig.producing : undefined; // all resources currently produced by this starting building
 
   const allowedResources =
-    baseAvailableResources && endName
-      ? baseAvailableResources.filter(
-          (r) =>
-            Object.keys(BUILDINGS[endName].storageCap).includes(r) &&
-            (sameBuildingContracts.every((c) => c.resource !== r) || r === contract.resource)
-          // leave resources that could be stored in destination and either
-          // not included in any other contract between these two buildings
-          // or is a resource of this contract of this component
-        )
+    availableResources && endBuildingConfig
+      ? (typedEntries(availableResources)
+          .filter(
+            ([r, available]) =>
+              available &&
+              available > 0 &&
+              isBaseResource(r) &&
+              endBuildingConfig.consuming?.[r] &&
+              (sameBuildingContracts.every((c) => c.resource !== r) || r === contract.resource)
+          )
+          .map(([r, _]) => r) as BASE_RESOURCE[])
       : [];
+
   const dropdownItems: DropdownItem<typeof contract.resource>[] = allowedResources.map((r) => ({
     id: crypto.randomUUID(),
     label: r,
@@ -111,10 +87,6 @@ export default function ContractComponent({
       />
     ),
   }));
-
-  const buildingResourceAmount = startBuilding?.storage
-    ? startBuilding.storage.find((s) => s.type === contract.resource)?.amount
-    : undefined;
 
   // --- FUNCTIONS ---
   const updateMergedContract = useCallback(
@@ -135,27 +107,12 @@ export default function ContractComponent({
     }
   }, [contract]);
   const recalculateAmount = useCallback(() => {
-    if (startBuilding && endBuilding && mapHexes) {
-      const newAmount = calculateExportAmount({
-        startBuilding,
-        endBuilding,
-        length: dist,
-        resource: contract.resource,
-        mapHexes,
-        buildings,
-      });
+    if (endBuilding) {
+      const newAmount = calcResourceExport(endBuilding, contract.resource, allContracts);
       if (!newAmount && newAmount !== 0) return;
       updateMergedContract({ amount: newAmount });
     }
-  }, [
-    startBuilding,
-    endBuilding,
-    mapHexes,
-    dist,
-    buildings,
-    contract.resource,
-    updateMergedContract,
-  ]);
+  }, [endBuilding, contract.resource, allContracts, updateMergedContract]);
   const setAmount = useCallback(
     (value: number) => {
       updateMergedContract({ amount: value });
@@ -171,69 +128,30 @@ export default function ContractComponent({
 
   return (
     <div className="w-full h-[110px] bg-gray-800 rounded-xl flex justify-center items-center gap-0.5 p-1">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="flex flex-col h-full bg-gray-900 items-center justify-between p-2 rounded-md">
-            <div>
-              <StartIcon className="w-4 h-4 text-amber-200"></StartIcon>
-            </div>
-            <div className="flex justify-between items-center gap-1">
-              <ArrowBigDown className="w-4 h-4 text-gray-400"></ArrowBigDown>
-            </div>
-            <div>
-              <EndIcon className="w-4 h-4 text-amber-200 "></EndIcon>
-            </div>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent>
-          <span>{`Distance: ${dist} tile(s)`}</span>
-        </TooltipContent>
-      </Tooltip>
-
       <div className="flex flex-col justify-center items-center h-full w-full gap-0.5 max-h-full">
         <div className="flex justify-center items-center bg-gray-900 p-1 rounded-md w-full gap-1 flex-1">
           <div className="w-full flex justify-between items-center">
             <Tooltip>
               <TooltipTrigger asChild>
-                {buildingResourceAmount && (
-                  <div className="w-full flex justify-center items-center">
-                    <div className="flex justify-center items-center gap-1 bg-gray-900 rounded-md">
-                      <span className="text-xs bg-gray-800 p-0.5 rounded">
-                        {buildingResourceAmount}/{contract.amount}
-                      </span>
-                      <Image
-                        src={
-                          contract.resource
-                            ? getResourceImage(contract.resource)
-                            : "/icons/unknown.png"
-                        }
-                        width={64}
-                        height={64}
-                        className="w-3.5 h-3.5"
-                        alt="Resource Icon"
-                      ></Image>
-                    </div>
-                  </div>
-                )}
-              </TooltipTrigger>
-              <TooltipContent>
-                <span>{"Stored vs Needed"}</span>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
                 <div className="w-full flex justify-center items-center">
-                  <div className="w-full flex justify-center items-center gap-1 bg-gray-900 rounded-md">
-                    <Send className="w-3.5 h-3.5 text-amber-200"></Send>
-                    <span className="text-xs bg-gray-800 rounded p-0.5">
-                      {contract.lastSentAmount}
-                    </span>
+                  <div className="flex justify-center items-center gap-1 bg-gray-900 rounded-md">
+                    <span className="text-xs bg-gray-800 p-0.5 rounded">0/{contract.amount}</span>
+                    <Image
+                      src={
+                        contract.resource
+                          ? getResourceImage(contract.resource)
+                          : "/icons/unknown.png"
+                      }
+                      width={64}
+                      height={64}
+                      className="w-3.5 h-3.5"
+                      alt="Resource Icon"
+                    ></Image>
                   </div>
                 </div>
               </TooltipTrigger>
               <TooltipContent>
-                <span>{"Amount sent during last batch"}</span>
+                <span>{"Stored vs Needed"}</span>
               </TooltipContent>
             </Tooltip>
           </div>
@@ -341,9 +259,6 @@ export default function ContractComponent({
               ></Dropdown>
             )}
           </div>
-        </div>
-        <div className="w-full flex items-center justify-center p-2 bg-gray-900 rounded-md h-[30%]">
-          <Progress className="w-full bg-gray-600" value={contract.progress * 100}></Progress>
         </div>
       </div>
     </div>

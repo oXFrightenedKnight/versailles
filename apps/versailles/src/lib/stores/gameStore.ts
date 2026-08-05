@@ -1,11 +1,11 @@
 import { Hex } from "@repo/shared/data/hex_map";
-import { serverData } from "../types/game";
-
 import { create } from "zustand";
 import { Nation } from "@repo/shared/data/nations";
 import { Road } from "@repo/shared/data/roads";
 import { Building } from "@repo/shared/data/buildings";
 import { Mail } from "@repo/shared/data/mail";
+import { ArmyTrainingObject, SupplyContract } from "@repo/shared";
+import { GameData } from "@/app/_trpc/client";
 
 export type StoreType = {
   mapHexes: Hex[];
@@ -15,7 +15,9 @@ export type StoreType = {
   buildings: Building[];
   playerNation: Nation | null;
   mails: Mail[];
-  setGameData: (data: serverData) => void;
+  armyTraining: ArmyTrainingObject[];
+  contracts: SupplyContract[];
+  setGameData: (data: GameData) => void;
   reset: () => void;
 };
 
@@ -28,6 +30,8 @@ export const initialState = {
   roads: [],
   buildings: [],
   mails: [],
+  armyTraining: [],
+  contracts: [],
 };
 
 export const useGameStore = create<StoreType>((set) => ({
@@ -35,13 +39,8 @@ export const useGameStore = create<StoreType>((set) => ({
 
   setGameData: (data) =>
     set({
-      mapHexes: data.mapHexes,
-      nations: data.nations,
-      playerNation: data.nations.find((n) => n.isPlayer),
-      turn: data.turn,
-      roads: data.roads,
-      buildings: data.buildings,
-      mails: data.mails,
+      ...data,
+      playerNation: data?.nations.find((n) => n.isPlayer),
     }),
 
   reset: () => set(initialState),

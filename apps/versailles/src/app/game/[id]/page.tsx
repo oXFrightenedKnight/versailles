@@ -23,7 +23,6 @@ import { useIntentStore } from "@/lib/stores/intentStore";
 import { useUIStore } from "@/lib/stores/uiStore";
 import { BuildModeType, roadObject } from "@/lib/types/game";
 import { getUIBuildings } from "@/lib/UI/mergeData/uiBuildings";
-import { getServerContractsFromBuildings } from "@/lib/UI/mergeData/uiContract";
 import { getRenderRoads } from "@/lib/UI/mergeData/uiRoads";
 import { calculateOptimisticManpower } from "@/lib/UI/optimisticCalc/manpower";
 import { numberConverter } from "@/lib/utils";
@@ -68,7 +67,7 @@ export default function Home() {
   // contracts
   const contracts = useIntentStore((state) => state.contracts);
   const setContracts = useIntentStore((state) => state.setContracts);
-  const serverContracts = getServerContractsFromBuildings(buildings);
+  const serverContracts = useGameStore((s) => s.contracts);
   const serverContractUpdate = useIntentStore((state) => state.serverContractUpdate);
   const serverContractDelete = useIntentStore((state) => state.serverContractDelete);
 

@@ -8,7 +8,7 @@ import {
   getNationsAtPeace,
   getNationsAtWar,
 } from "../world/nations";
-import { getNationArmyInHexes, getNeighborArmies, getTrainingNationArmy } from "../world/armies";
+import { getNationArmyInHexes, getNeighborArmies } from "../world/armies";
 import { getFrontlines } from "../world/map";
 import { getConstructing } from "../world/buildings";
 import { getNeighborEconomyRatio } from "./economy";
@@ -38,7 +38,6 @@ export function AIWorldAnalysis({
   const selfData: SelfData = {
     ownedHexCount: getNationHexCount(ctx, nation),
     totalArmy: getNationArmy(ctx, nation.id) ?? 0,
-    trainingArmy: getTrainingNationArmy(ctx, nation),
     armyInHexes: getNationArmyInHexes(ctx, nation),
     buildingCounts: getNationBuildingCount(ctx, nation.id),
     constructing: getConstructing(ctx, nation),

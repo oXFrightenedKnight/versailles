@@ -1,68 +1,48 @@
-import { getNationBuildings } from "#services/buildings/queries.js";
-import { getContractPerTurn } from "#services/contracts.js";
-import { calculateResourceOutput } from "#services/resources/production.js";
+import { getBuildingHexMap, getNationBuildings } from "#services/buildings/queries.js";
+import { getBuildingContractsMap } from "#services/contracts.js";
 import { GameCtx } from "#trpc/index.js";
-import {
-  Nation,
-  BASE_RESOURCE,
-  findBuildingNameByCategory,
-  BUILDINGS,
-  isNationResource,
-} from "@repo/shared";
-import { typedEntries } from "@repo/shared/helpers/tsHelpers";
+import { BASE_RESOURCE, baseResources, Building, Nation } from "@repo/shared";
 
 // returns available building-owned resource in producing buildings
 export function getProducingBuildings(ctx: GameCtx, nation: Nation) {
-  const buildShortage: {
+  const availableByBuilding: {
     hexId: number;
     buildingId: string;
-    available: Partial<Record<BASE_RESOURCE, number>>;
+    available: Record<BASE_RESOURCE, number>;
   }[] = [];
 
-  const hexBuildingMap = new Map(
-    ctx.mapHexes.flatMap((h) => (h.buildingId !== null ? [[h.buildingId, h] as const] : []))
-  );
+  const buildingContractsMap = getBuildingContractsMap(ctx);
+  const buildingHexMap = getBuildingHexMap(ctx);
 
   const nationBuildings = getNationBuildings(ctx, nation);
 
   for (const building of nationBuildings) {
-    const hex = hexBuildingMap.get(building.id);
+    const available = Object.fromEntries([...getAvailableBuildingResources(building)]) as Record<
+      BASE_RESOURCE,
+      number
+    >;
+
+    const hex = buildingHexMap.get(building.id);
     if (!hex) continue;
 
-    const name = findBuildingNameByCategory({
-      buildingCategory: building.category,
-      level: building.level,
+    const buildingContracts = buildingContractsMap.get(building.id) ?? [];
+
+    for (const contract of buildingContracts) {
+      const curr = available[contract.resource];
+
+      available[contract.resource] = Math.max(0, curr - contract.amount);
+    }
+
+    availableByBuilding.push({
+      hexId: hex.id,
+      buildingId: building.id,
+      available,
     });
-
-    const producing: Partial<Record<BASE_RESOURCE, number>> = {};
-
-    for (const resource of BUILDINGS[name].producing ?? []) {
-      // only count building-owned resources
-      if (isNationResource(resource)) continue;
-      producing[resource] = calculateResourceOutput(hex, resource);
-    }
-    console.log(`producing at ${hex.id}`, producing);
-
-    // exporting
-    const exporting: Partial<Record<BASE_RESOURCE, number>> = {};
-    for (const c of building.contracts ?? []) {
-      const existing = exporting[c.resource] ?? 0;
-      const perTurn = getContractPerTurn(c);
-
-      exporting[c.resource] = existing + perTurn;
-    }
-    console.log(`exporting at ${hex.id}`, exporting);
-
-    const available: Partial<Record<BASE_RESOURCE, number>> = {};
-    for (const [resource, amount] of typedEntries(producing)) {
-      const sent = exporting[resource] ?? 0;
-      const produced = amount ?? 0;
-      available[resource] = Math.max(0, produced - sent);
-    }
-    console.log(`final available in ${hex.id}:`, available);
-
-    buildShortage.push({ hexId: hex.id, buildingId: building.id, available });
   }
 
-  return buildShortage;
+  return availableByBuilding;
+}
+
+function getAvailableBuildingResources(building: Building) {
+  return new Map(baseResources.map((r) => [r, building.availableResources[r] ?? 0]));
 }

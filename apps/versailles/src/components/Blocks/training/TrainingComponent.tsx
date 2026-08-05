@@ -1,5 +1,5 @@
-import { Progress } from "../ui/progress";
-import { Field, FieldLabel } from "../ui/field";
+import { Progress } from "../../ui/progress";
+import { Field, FieldLabel } from "../../ui/field";
 import Image from "next/image";
 import { X } from "lucide-react";
 import {

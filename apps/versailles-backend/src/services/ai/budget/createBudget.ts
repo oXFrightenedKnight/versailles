@@ -1,5 +1,5 @@
 import { GameCtx } from "#trpc/index.js";
-import { calculateRoadCost, Nation } from "@repo/shared";
+import { calculateRoadCost, getNationResource, Nation } from "@repo/shared";
 import { WorldAnalysis } from "../analysis/types";
 import { BudgetAllocationRequest, ResourceBudget } from "./types";
 import { calcGoldBudget } from "./allocation/gold";
@@ -45,5 +45,7 @@ export function createAIBudget(
 
   const budgetCtx = { ctx, nationId: nation.id, foundationComplete, barrackLevels };
 
-  return { gold: calcGoldBudget(budgetCtx, nation.gold, pressure, requests).goldMap };
+  return {
+    gold: calcGoldBudget(budgetCtx, getNationResource(nation, "gold"), pressure, requests).goldMap,
+  };
 }

@@ -1,6 +1,6 @@
 import { assignNewCapital, getNationById, setDefeated } from "#services/genNations.js";
 import { addMail, createWarMail } from "#services/mails.js";
-import { getHexById, transferHexOwnership } from "#services/map.js";
+import { transferHexOwnership } from "#services/map.js";
 import { GameCtx } from "#trpc/index.js";
 import { Hex, Nation } from "@repo/shared";
 

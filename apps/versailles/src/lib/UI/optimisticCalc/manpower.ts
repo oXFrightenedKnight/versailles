@@ -1,4 +1,5 @@
 import { ArmyTraining } from "@/lib/types/game";
+import { getNationResource } from "@repo/shared";
 import { Nation } from "@repo/shared/data/nations";
 
 export function calculateOptimisticManpower(
@@ -10,5 +11,7 @@ export function calculateOptimisticManpower(
     totalArmy += army.amount;
   }
 
-  return playerNation?.manpower ? playerNation.manpower - totalArmy : 0;
+  const playerManpower = playerNation ? getNationResource(playerNation, "manpower") : 0;
+
+  return playerManpower ? playerManpower - totalArmy : 0;
 }

@@ -3,6 +3,9 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
+don't forget to revalidate training when running game simulation (function already ready)
+make sure you revalidate contracts every turn
+fix contract amounts
 fix fractional numbers in contracts and exports
 possible reason why small armies don't train: something rounds the values which prevents small armies from training. 
 consider rewriting contracts. instead of storing resources, make them always available (like lumina points)
@@ -48,3 +51,12 @@ calculcations.
 
 keep in mind that when you apply optimistic update to deleted buildings on client,
 a hex that this building belonged to still holds the reference to it.
+
+Resource/Building pipeline:
+
+1. Turns starts, contracts get updated. Client sees optimistic ui of its contracts being working.
+new contracts must be working optimsitically, right after creation since player works with previous turn state
+2. calcAllocationResource allocates resources using the new updated contracts but prev turn state
+3. each building calculates its output based on efficiency which is gathered from allocated resources
+4. After every building calculated its new output, we run the allocation again and update each 
+building's available resources with new efficiency

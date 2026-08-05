@@ -1,23 +1,19 @@
 import { BuildingProductionNode } from "#services/ai/actions/road/types.js";
 import { WorldAnalysis } from "#services/ai/analysis/types.js";
 import { getProducingBuildings } from "#services/ai/world/resources.js";
+import { getBuildingsByIdMap } from "#services/buildings/queries.js";
 import { GameCtx } from "#trpc/index.js";
 import {
-  Nation,
   BASE_RESOURCE,
-  PRODUCIBLE_RESOURCE,
-  Building,
-  findBuildingNameByCategory,
-  estimateConsumption,
-  BUILDINGS,
-  NATION_RESOURCE,
-  isResource,
+  getBuildingConfig,
   isNationResource,
+  isResource,
+  Nation,
+  NATION_RESOURCE,
+  PRODUCIBLE_RESOURCE,
 } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { AIPlanningState } from "../types";
-import { getBuildingsByIdMap } from "#services/buildings/queries.js";
-import { calculateResourceOutput } from "#services/resources/production.js";
 
 // returns estimated producible resource production and consumption
 export function getResourcePrediction(
@@ -54,35 +50,19 @@ export function getResourcePrediction(
 
     if (!estCategory || !estLevel) continue;
 
-    const estimatedBuilding: Building = {
-      id: crypto.randomUUID(),
-      category: estCategory,
-      level: estLevel,
-      statistics: {
-        produced: [],
-        consumed: [],
-      },
-    };
-
-    const name = findBuildingNameByCategory({
-      buildingCategory: estimatedBuilding.category,
-      level: estimatedBuilding.level,
-    });
+    const config = getBuildingConfig({ category: estCategory, level: estLevel });
+    const estProduction = config?.producing ?? {};
+    const estConsumption = config?.consuming ?? {};
 
     // calculate consumed resources
-    const consume = estimateConsumption({ building: estimatedBuilding, mapHexes: ctx.mapHexes });
-    if (consume) {
-      for (const [res, amount] of typedEntries(consume)) {
-        if (!amount) continue;
-        totalResourceConsumed[res] = (totalResourceConsumed[res] ?? 0) + amount;
-      }
+    for (const [res, consumed] of typedEntries(estConsumption)) {
+      const amount = consumed?.amount ?? 0;
+      totalResourceConsumed[res] = (totalResourceConsumed[res] ?? 0) + amount;
     }
 
     // calculate produced resources
-    const producing = BUILDINGS[name].producing ?? [];
-    for (const res of producing) {
-      const estProduced = calculateResourceOutput(hex, res);
-      totalResourceProduced[res] = (totalResourceProduced[res] ?? 0) + estProduced;
+    for (const [res, amount] of typedEntries(estProduction)) {
+      totalResourceProduced[res] = (totalResourceProduced[res] ?? 0) + (amount ?? 0);
     }
   }
 

@@ -6,7 +6,7 @@ import {
 } from "@repo/shared/data/buildings";
 import { Hex } from "@repo/shared/data/hex_map";
 import { BuildModeType } from "../types/game";
-import { findBuildingNameByCategory } from "@repo/shared";
+import { getBuildingConfig } from "@repo/shared";
 
 // allows to additionally filter by nationId if provided with nationId and hexes
 export function allBuildingsPerCategory(
@@ -40,7 +40,7 @@ export function isBuildingCategory(value: BuildModeType): value is BUILDINGS_CAT
 }
 
 export function getBuildingCost(type: BUILDINGS_CATEGORY, level: number) {
-  const name = findBuildingNameByCategory({ buildingCategory: type, level });
+  const config = getBuildingConfig({ category: type, level });
 
-  return BUILDINGS[name] ? BUILDINGS[name].buildCost : 0;
+  return config ? config.buildCost : 0;
 }

@@ -9,7 +9,7 @@ import {
 } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
 import { getHexAxialMap } from "./map.js";
-import { subtractGold } from "./resources/gold.js";
+import { adjustNationResource } from "./resources/production.js";
 
 export function buildNationRoads({
   gameCtx,
@@ -93,7 +93,7 @@ export function buildNationRoads({
     }
 
     const cost = calculateRoadCost(road.points.length);
-    if (subtractGold(gameCtx, nation.id, cost)) {
+    if (adjustNationResource(nation, "gold", -cost)) {
       // add road to approved roads for building
       roads.push(road);
     }
@@ -149,7 +149,7 @@ export function cancelRoadBuild(ctx: GameCtx, cancelIds: string[], nation: Natio
     road.constructing = null;
 
     // return cost
-    nation.gold += unfinishedAmount * BASE_ROAD_COST;
+    adjustNationResource(nation, "gold", unfinishedAmount * BASE_ROAD_COST);
 
     // delete road if it's 1 or fewer points long
     if (road.points.length <= 1) {
@@ -160,7 +160,7 @@ export function cancelRoadBuild(ctx: GameCtx, cancelIds: string[], nation: Natio
       }
 
       // return gold for that point
-      nation.gold += BASE_ROAD_COST;
+      adjustNationResource(nation, "gold", BASE_ROAD_COST);
     }
   }
 }

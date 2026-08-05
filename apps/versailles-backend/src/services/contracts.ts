@@ -2,19 +2,16 @@ import {
   BASE_RESOURCE,
   baseResources,
   BUILDINGS,
-  calculateExportAmount,
-  findBuildingNameByCategory,
   getBuilding,
+  getBuildingName,
   Nation,
   ServerContractUpdate,
   startDijkstrasAlgo,
   SupplyContract,
 } from "@repo/shared";
-import { GameCtx } from "../trpc/index.js";
-import { buildRoadGraph, buildRoadPath } from "./algorithms/bfs.js";
+import { GameCtx, IntentInput } from "../trpc/index.js";
 import { getBuildingsByIdMap } from "./buildings/queries.js";
-import { getHexAxialMap } from "./map.js";
-import { getNationRoads, pointKey, pointsToHexIds } from "./road.js";
+import { pointKey } from "./road.js";
 
 export type newContract = {
   startBuildingId: string;
@@ -24,7 +21,7 @@ export type newContract = {
   autoAdjust: boolean;
 };
 
-export function createContracts({
+export function submitNewContracts({
   contracts,
   gameCtx,
   nation,
@@ -35,7 +32,7 @@ export function createContracts({
 }) {
   const { mapHexes, buildings, roads } = gameCtx;
 
-  const axialMap = getHexAxialMap(gameCtx);
+  const buildingContractMap = getBuildingContractsMap(gameCtx);
 
   // check whether starting building is allowed to have contracts
   for (const contract of contracts) {
@@ -50,34 +47,32 @@ export function createContracts({
 
     // -- VALIDATION --
     // check if building produces anything to export
-    const startName = findBuildingNameByCategory({
-      buildingCategory: startBuilding?.category,
-      level: startBuilding.level,
-    });
+    const startName = getBuildingName(startBuilding.category, startBuilding.level);
+
     if (!startName) continue;
-    if (!BUILDINGS[startName].producing || BUILDINGS[startName].producing.length === 0) continue;
+    if (
+      !BUILDINGS[startName].producing ||
+      Object.entries(BUILDINGS[startName].producing).length === 0
+    )
+      continue;
 
     // check if destination is allowed to store that resource
-    const endName = findBuildingNameByCategory({
-      buildingCategory: endBuilding.category,
-      level: endBuilding.level,
-    });
+    const endName = getBuildingName(endBuilding.category, endBuilding.level);
     if (!endName) continue;
 
-    const canStore = BUILDINGS[endName].storageCap?.[contract.resource];
+    const canAccept = BUILDINGS[endName].consuming?.[contract.resource];
 
-    if (!canStore || canStore <= 0) continue;
+    if (!canAccept) continue;
 
     // check if these two buildings already have a contract with the same resource
-    const buildingContracts = startBuilding.contracts ?? [];
+    const buildingContracts = buildingContractMap.get(startBuilding.id) ?? [];
 
     const sameContract = buildingContracts.find(
-      (c) => c.buildingId === endBuilding.id && c.resource === contract.resource
+      (c) => c.toBuildingId === endBuilding.id && c.resource === contract.resource
     );
     if (sameContract) continue;
 
     // --- CREATE ---
-    const prevContracts = startBuilding.contracts ?? [];
     const points = startDijkstrasAlgo({ startingHex: startingHex, endHex, mapHexes, roads });
     if (!points) continue;
 
@@ -87,122 +82,49 @@ export function createContracts({
 
     if (!baseResources.includes(contract.resource)) continue;
 
-    startBuilding.contracts = [
-      ...prevContracts,
-      {
-        id: crypto.randomUUID(),
-        buildingId: endHex.buildingId,
-        amount: contract.amount,
-        resource: contract.resource,
-        progress: 0,
-        autoAdjust: contract.autoAdjust,
-        metadata: {
-          lastAmountSent: 0,
-        },
-        usedPath: pointsToHexIds(points, axialMap),
-      },
-    ];
+    createContract(gameCtx.contracts, {
+      id: crypto.randomUUID(),
+      fromBuildingId: contract.startBuildingId,
+      toBuildingId: contract.endBuildingId,
+      amount: contract.amount,
+      resource: contract.resource,
+      autoAdjust: contract.autoAdjust,
+      ownerId: nation.id,
+    });
   }
 }
 
-// double check
-export function executeContracts(ctx: GameCtx) {
-  // find all buildings with contracts
-  const contractBuildings = ctx.buildings.filter((b) => b.contracts);
-
-  const buildingHexMap = new Map(ctx.mapHexes.map((h) => [h.buildingId, h]));
-  const axialMap = getHexAxialMap(ctx);
-
-  for (const startBuilding of contractBuildings) {
-    const hex = buildingHexMap.get(startBuilding.id);
-    if (!hex || !hex.owner) continue;
-
-    const nationRoads = getNationRoads(ctx, hex.owner);
-    const graph = buildRoadGraph(nationRoads);
-
-    // add progress to existing contracts
-    if (!startBuilding.contracts) continue;
-    for (const contract of startBuilding.contracts) {
-      const endHex = buildingHexMap.get(contract.buildingId);
-      if (!endHex) continue;
-
-      const path = buildRoadPath(ctx.mapHexes, graph, hex, endHex);
-      if (!path || path.length <= 0) continue;
-
-      const dist = path.length - 1;
-      contract.progress += 1 / dist;
-
-      if (contract.progress >= 1) {
-        const endBuilding = getBuilding({ buildings: ctx.buildings, id: contract.buildingId });
-        if (!endBuilding) continue;
-
-        const startResourceStore = startBuilding.storage?.find((s) => s.type === contract.resource);
-        const endResourceStore = endBuilding.storage?.find((s) => s.type === contract.resource);
-        if (!endResourceStore || !startResourceStore) continue;
-
-        const destName = findBuildingNameByCategory({
-          buildingCategory: endBuilding.category,
-          level: endBuilding.level,
-        });
-        if (!destName) continue;
-
-        const amount = Math.min(startResourceStore.amount, contract.amount);
-
-        const endResourceMax = BUILDINGS[destName].storageCap[contract.resource] ?? 0;
-
-        // amount of resource that will be actually sent
-        const outForDelivery = Math.min(amount, endResourceMax - endResourceStore.amount);
-
-        startResourceStore.amount -= outForDelivery;
-        endResourceStore.amount += outForDelivery;
-
-        contract.progress = 0;
-
-        contract.metadata.lastAmountSent = outForDelivery;
-
-        // update last used path
-        contract.usedPath = pointsToHexIds(path, axialMap);
-      }
-    }
-  }
+export function createContract(contracts: SupplyContract[], newContract: SupplyContract) {
+  contracts.push(newContract);
+  return { ok: true };
 }
 
+// this function only recalculates contracts which have "autoAdjust" feature enabled
 export function recalculateContractsAmounts(ctx: GameCtx) {
   const buildingHexMap = new Map(ctx.mapHexes.map((h) => [h.buildingId, h]));
 
-  const contractBuildinds = ctx.buildings.filter((b) => b.contracts !== undefined);
-  for (const building of contractBuildinds) {
-    const startHex = buildingHexMap.get(building.id);
+  for (const contract of ctx.contracts) {
+    const startHex = buildingHexMap.get(contract.fromBuildingId);
     if (!startHex || !startHex.owner) continue;
 
-    const roadSegments = getNationRoads(ctx, startHex.owner);
-    const graph = buildRoadGraph(roadSegments);
+    if (!contract.autoAdjust) continue; // only recalculate with auto-adjust
 
-    for (const contract of building.contracts!) {
-      if (!contract.autoAdjust) continue; // only recalculate with auto-adjust
-      const endHex = buildingHexMap.get(contract.buildingId);
-      const endBuilding = getBuilding({ buildings: ctx.buildings, id: contract.buildingId });
-      if (!endHex || !endBuilding) continue;
+    const toBuilding = getBuilding({ buildings: ctx.buildings, id: contract.toBuildingId });
+    if (!toBuilding) continue;
 
-      // RE-CALCULATE amount AND path every time executing contract
-      const startPoint = { q: startHex.q, r: startHex.r };
-      const endPoint = { q: endHex.q, r: endHex.r };
+    {
+      /*const amount = calculateExportAmount({
+      startBuilding: building,
+      endBuilding,
+      length: path.length - 1,
+      resource: contract.resource,
+      mapHexes: ctx.mapHexes,
+      buildings: ctx.buildings,
+    }); 
 
-      const path = buildRoadPath(ctx.mapHexes, graph, startPoint, endPoint);
-      if (!path || path.length <= 0) continue;
+    if (!amount) continue;
 
-      const amount = calculateExportAmount({
-        startBuilding: building,
-        endBuilding,
-        length: path.length - 1,
-        resource: contract.resource,
-        mapHexes: ctx.mapHexes,
-        buildings: ctx.buildings,
-      });
-
-      if (!amount) continue;
-
-      contract.amount = amount;
+    contract.amount = amount; */
     }
   }
 }
@@ -212,60 +134,46 @@ export function updateContracts(
   updateIntent: ServerContractUpdate[],
   nation: Nation
 ) {
-  const buildings = ctx.buildings.filter((b) => b.contracts);
-  const hexBuildingMap = new Map(
-    ctx.mapHexes.filter((h) => h.buildingId).map((h) => [h.buildingId!, h])
-  );
-  const contractMap = new Map(
-    buildings.flatMap((b) => b.contracts!.map((c) => [c.id, { building: b, contract: c }]))
-  ); // contractId: { building, contract }
+  const contractMap = getContractIdMap(ctx);
 
   for (const contractUpdate of updateIntent) {
     if (contractUpdate.changes.resource && !baseResources.includes(contractUpdate.changes.resource))
       continue;
-    const contractObj = contractMap.get(contractUpdate.contractId);
+    const contract = contractMap.get(contractUpdate.contractId);
+    if (!contract) continue;
 
-    if (!contractObj) continue;
-    const hex = hexBuildingMap.get(contractObj.building.id);
-    if (!hex || hex.owner !== nation.id) continue;
+    if (contract.ownerId !== nation.id) continue;
 
     // update contract
-    Object.assign(contractObj.contract, contractUpdate.changes, {
+    Object.assign(contract, contractUpdate.changes, {
       progress: 0,
     });
   }
 }
 
-// cancel army training by the object id
-export function deleteContracts(ctx: GameCtx, deleteIds: string[], nation: Nation) {
-  const buildings = ctx.buildings.filter((b) => b.contracts);
-  const hexBuildingMap = new Map(
-    ctx.mapHexes.filter((h) => h.buildingId).map((h) => [h.buildingId!, h])
-  );
-  const contractMap = new Map(
-    buildings.flatMap((b) => b.contracts!.map((c) => [c.id, { building: b, contract: c }]))
-  ); // contractId: { building, contract }
+export function submitDeleteContracts(
+  ctx: GameCtx,
+  deleteContracts: IntentInput["deleteContracts"],
+  nation: Nation
+) {
+  const contractIdMap = getContractIdMap(ctx);
 
-  for (const id of deleteIds) {
-    const contractObj = contractMap.get(id);
-    if (!contractObj) continue;
+  for (const contractId of deleteContracts) {
+    const contract = contractIdMap.get(contractId);
+    if (!contract || contract.ownerId !== nation.id) continue;
 
-    const { building, contract } = contractObj;
-    const hex = hexBuildingMap.get(building.id);
-    if (!hex || hex.owner !== nation.id) continue;
-
-    // delete contract
-    const contracts = building.contracts;
-    if (!contracts) continue;
-
-    const idx = contracts.indexOf(contract);
-
-    if (idx !== -1) {
-      contracts.splice(idx, 1);
-    }
+    deleteContract(ctx, contract.id);
   }
 }
 
+// cancel army training by the object id
+export function deleteContract({ contracts }: { contracts: SupplyContract[] }, contractId: string) {
+  contracts = contracts.filter((c) => c.id !== contractId);
+
+  return { ok: true };
+}
+
+// returns true if a two buildings have at least 1 contract of specified resource
 export function hasContract(
   ctx: GameCtx,
   fromBuildingId: string,
@@ -277,20 +185,45 @@ export function hasContract(
   const fromBuilding = buildingIdMap.get(fromBuildingId);
   const toBuilding = buildingIdMap.get(toBuildingId);
 
-  if (!fromBuilding || !toBuilding) return false;
+  const buildingContracts = getBuildingContracts(ctx, fromBuildingId);
 
-  if (
-    fromBuilding.contracts &&
-    fromBuilding.contracts.find((c) => c.buildingId === toBuildingId && c.resource === resource)
-  )
+  if (!fromBuilding || !toBuilding || !buildingContracts) return false;
+
+  if (buildingContracts.find((c) => c.toBuildingId === toBuildingId && c.resource === resource))
     return true;
 
   return false;
 }
 
-export function getContractPerTurn(contract: SupplyContract) {
-  const distance = contract.usedPath.length - 1;
-  if (contract.amount <= 0 || distance <= 0) return 0;
+export function getBuildingContracts(
+  { contracts }: { contracts: SupplyContract[] },
+  buildingId: string
+) {
+  return contracts.filter((c) => c.fromBuildingId === buildingId);
+}
 
-  return contract.amount / distance;
+export function getContractBuilding(ctx: GameCtx, contractId: string) {
+  const contract = ctx.contracts.find((c) => c.id === contractId);
+  if (!contract) return null;
+
+  return ctx.buildings.find((b) => b.id === contract.fromBuildingId) ?? null;
+}
+
+export function getContractIdMap({ contracts }: { contracts: SupplyContract[] }) {
+  return new Map(contracts.map((c) => [c.id, c]));
+}
+
+export function getBuildingContractsMap(ctx: GameCtx) {
+  const map = new Map<string, SupplyContract[]>();
+  for (const contract of ctx.contracts) {
+    const prev = map.get(contract.fromBuildingId) ?? [];
+
+    map.set(contract.fromBuildingId, [...prev, contract]);
+  }
+
+  return map;
+}
+
+export function getContractsToBuilding({ contracts }: { contracts: SupplyContract[] }) {
+  return new Map(contracts.map((c) => [c.toBuildingId, c]));
 }

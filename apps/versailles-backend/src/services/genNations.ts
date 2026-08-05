@@ -7,13 +7,14 @@ import {
   Nation,
   NATION_NAMES,
   NATION_NUMBER,
+  NATION_RESOURCE,
 } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
 import { getHexById, randomNationColor } from "./map.js";
 import { addArmy } from "./army/units.js";
 import { getNationWarSet, isAtWar, warKey } from "./army/war.js";
 import { BuildBuilding } from "./buildings/construction.js";
-import { addGold } from "./resources/gold.js";
+import { adjustNationResource } from "./resources/production.js";
 
 export type newBuildings = {
   hexId: number;
@@ -100,8 +101,10 @@ export function createNewNation({
     isPlayer: isPlayer ? isPlayer : false,
     atWar: [],
     atPeace: [],
-    gold: baseGold ? baseGold : 0,
-    manpower: 0,
+    resources: {
+      gold: baseGold ? baseGold : 0,
+      manpower: 0,
+    },
   });
 }
 
@@ -206,7 +209,7 @@ export function addBaseNationGold(ctx: GameCtx) {
   for (const nation of ctx.nations) {
     if (nation.isDefeated) continue;
 
-    addGold(nation, BASE_GOLD_INCOME);
+    adjustNationResource(nation, "gold", BASE_GOLD_INCOME);
   }
 }
 

@@ -19,8 +19,9 @@ import { GameCtx } from "#trpc/index.js";
 import {
   building_categoires,
   BUILDINGS_CATEGORY,
-  findBuildingDataByCategory,
   findNeighbors,
+  getBuildingConfig,
+  getNationResource,
   getTopCategoryLevel,
   isBaseResource,
   Nation,
@@ -98,11 +99,11 @@ export function generateBuildCandidates(
 
       // --- VALIDATION ---
       const nextBuilding = {
-        buildingCategory: category,
+        category: category,
         level: expectedBuilding ? expectedBuilding.level + 1 : 1,
       };
-      const buildingData = findBuildingDataByCategory(nextBuilding);
-      if (!buildingData) continue;
+      const config = getBuildingConfig(nextBuilding);
+      if (!config) continue;
 
       // init scoring
       let score = 0;
@@ -157,8 +158,10 @@ export function generateBuildCandidates(
 
       // 7. Buff if this building produces shortaged resource
       if (
-        buildingData?.producing &&
-        buildingData.producing.some((res) => isBaseResource(res) && (shortage[res] ?? 0) < 0)
+        config?.producing &&
+        typedEntries(config.producing).some(
+          ([res, amount]) => (amount ?? 0) > 0 && isBaseResource(res) && (shortage[res] ?? 0) > 0
+        )
       ) {
         add("shortage_resource", BuildingScoreTable["shortage_resource"]);
       }
@@ -169,7 +172,7 @@ export function generateBuildCandidates(
       }
 
       // calculate resource cost
-      const cost = { gold: buildingData.buildCost };
+      const cost = { gold: config.buildCost };
 
       const targetLevel = (expectedBuilding?.level ?? 0) + 1;
 
@@ -283,7 +286,8 @@ export function generateBuildCandidates(
 
       const isWorthSaving = typedEntries(intent.cost).every(
         ([resource, amount]) =>
-          (nation[resource] ?? 0) + (nationResPrediction.get(resource) ?? 0) * MAX_SAVING_TURNS >=
+          getNationResource(nation, resource) +
+            (nationResPrediction.get(resource) ?? 0) * MAX_SAVING_TURNS >=
           (amount ?? 0)
       );
 

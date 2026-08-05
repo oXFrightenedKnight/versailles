@@ -30,22 +30,6 @@ export function getNationArmyInHexes(ctx: GameCtx, nation: Nation) {
   // FUNCTION WHERE YOU SEND ALL HEXES TO CHECK AND GET TOTAL AMOUNT
 }
 
-export function getTrainingNationArmy(ctx: GameCtx, nation: Nation) {
-  const nationBuildingIds = new Set(
-    ctx.mapHexes.filter((h) => h.buildingId && h.owner === nation.id).map((h) => h.buildingId!)
-  );
-
-  return ctx.buildings
-    .filter((b) => b.category === "BARRACK" && nationBuildingIds.has(b.id))
-    .map((b) => ({
-      barrackId: b.id,
-      amount:
-        b.trainingTroops?.reduce((acc, t) => {
-          return acc + t.amount;
-        }, 0) ?? 0,
-    }));
-}
-
 export function getAvailableArmy(ctx: GameCtx, nationId: string) {
   const availableArmyByHex = new Map<number, number>();
 

@@ -1,19 +1,18 @@
 "use client";
 
+import { Progress } from "@/components/ui/progress";
 import { BuildingIcons } from "@/lib/data";
+import { useGameStore } from "@/lib/stores/gameStore";
+import { useIntentStore } from "@/lib/stores/intentStore";
 import {
   BuildingConstructionVM,
   cancelClientBuildingIntent,
   cancelServerBuildingIntent,
   getUIBuildings,
 } from "@/lib/UI/mergeData/uiBuildings";
+import { getBuilding, getBuildingConfig } from "@repo/shared/helpers/buildings";
 import { Hammer, SquareArrowUp, X } from "lucide-react";
-import { useGameStore } from "@/lib/stores/gameStore";
 import { useCallback } from "react";
-import { useIntentStore } from "@/lib/stores/intentStore";
-import { Progress } from "@/components/ui/progress";
-import { findBuildingNameByCategory, getBuilding } from "@repo/shared/helpers/buildings";
-import { BUILDINGS } from "@repo/shared/data/buildings";
 
 export default function ConstructingBuilding({ building }: { building: BuildingConstructionVM }) {
   const mapHexes = useGameStore((s) => s.mapHexes);
@@ -31,12 +30,13 @@ export default function ConstructingBuilding({ building }: { building: BuildingC
       ? getBuilding({ buildings: uiBuildings, id: hex.buildingId })
       : undefined;
 
-  const name = findBuildingNameByCategory({
-    buildingCategory: building.buildingType,
+  const config = getBuildingConfig({
+    category: building.buildingType,
     level: existingBuilding?.level ? existingBuilding.level + 1 : 1,
   });
+  const buildTime = config?.buildTime ?? 0;
 
-  const progress = (building.progress / BUILDINGS[name].buildTime) * 100;
+  const progress = buildTime > 0 ? (building.progress / buildTime) * 100 : 0;
 
   // FUNCTIONS
   const cancelMergedConstruction = useCallback(() => {

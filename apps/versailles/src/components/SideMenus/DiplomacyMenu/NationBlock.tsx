@@ -16,6 +16,7 @@ import TotalArmy from "./Info/army";
 import GoldAmount from "./Info/gold";
 import BuildingCount from "./Info/buildingCount";
 import { ArrowLeft } from "lucide-react";
+import { getNationResource } from "@repo/shared";
 
 export default function NationInfo({
   nationId,
@@ -42,7 +43,7 @@ export default function NationInfo({
   const nationHexes = mapHexes.filter((h) => h.owner === nationId);
 
   const totalArmy = numberConverter(totalNationArmy({ mapHexes, nationId }));
-  const gold = numberConverter(nation?.gold ?? 0);
+  const gold = numberConverter(nation ? getNationResource(nation, "gold") : 0);
   const buildingsInfo = allBuildingsPerCategory(buildingsUI, nationId, mapHexes);
 
   const atWar = nation?.atWar ?? [];

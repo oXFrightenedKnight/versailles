@@ -1,78 +1,35 @@
-import { roundToNearestDecimal } from "#lib/helpers.js";
-import { GameCtx } from "#trpc/index.js";
-import {
-  Building,
-  findBuildingNameByCategory,
-  BUILDINGS,
-  BASE_RESOURCE,
-  estimateConsumption,
-  PRODUCIBLE_RESOURCE,
-} from "@repo/shared";
+import { Building, BUILDINGS, getBuildingName, PRODUCIBLE_RESOURCE } from "@repo/shared";
+import { typedEntries } from "@repo/shared/helpers/tsHelpers";
+import { AllocatedContractResources } from "./types";
 
-export function calculateConsumption({
-  building,
-  gameCtx,
-}: {
-  building: Building;
-  gameCtx: GameCtx;
-}) {
-  const { mapHexes } = gameCtx;
+export function calculateEfficiency(
+  building: Building,
+  receivedResources: AllocatedContractResources
+) {
+  const name = getBuildingName(building.category, building.level);
+  if (!name) return 0;
 
-  // this function calculates and applies consumption, returning the consumed ratio
-  // later we use that ratio to multiply our output.
+  const consuming = BUILDINGS[name].consuming;
+  if (!consuming) return 1; // return 100% efficiency if building does not consume anything
 
-  const storage = building.storage;
+  const totalWeight = typedEntries(consuming).reduce((acc, [_, c]) => acc + (c?.weight ?? 0), 0);
 
-  const name = findBuildingNameByCategory({
-    buildingCategory: building.category,
-    level: building.level,
-  });
+  let totalEfficiency = 0;
 
-  const consuming = Object.keys(BUILDINGS[name].consumptionMod) as BASE_RESOURCE[];
-  const estConsumption = estimateConsumption({ building, mapHexes });
-  if (!estConsumption || !name || !storage) {
-    return {};
+  for (const [resource, c] of typedEntries(consuming)) {
+    const weight = c?.weight ?? 0;
+    const normalized = weight / totalWeight;
+
+    const receivedResource = receivedResources[resource] ?? 0;
+    const neededResource = consuming[resource]?.amount ?? 0;
+
+    const ratio = neededResource > 0 ? receivedResource / neededResource : 1;
+
+    const f = Math.max(0, normalized * ratio);
+    totalEfficiency += f;
   }
 
-  let estConsumptionRatio = new Map<string, number>();
-  for (const resource of consuming) {
-    const currStoredResource = storage.find((s) => s.type === resource);
-    if (!currStoredResource) continue;
-    // don't add a resource if it can't be stored and doesn't have a maximum cap
-    const storageCap = BUILDINGS[name].storageCap[resource];
-    if (!storageCap || storageCap === 0) continue;
-
-    // consume resource
-    const left = Math.round(
-      Math.max(currStoredResource.amount - (estConsumption[resource] ?? 0), 0)
-    );
-    const consumed = Math.max(currStoredResource.amount - left, 0); // just in case
-
-    addConsumptionStat(building, resource, consumed);
-    console.log("consumed this turn", consumed);
-
-    currStoredResource.amount = left;
-
-    const need = estConsumption[resource] ?? 0;
-
-    const ratio = need > 0 ? consumed / need : 1;
-    estConsumptionRatio.set(
-      resource,
-      roundToNearestDecimal(ratio, 100) // to hundredth
-    );
-  }
-
-  return Object.fromEntries(estConsumptionRatio);
-}
-
-export function calculateAverageConsumption(consumptionMod: Record<string, number>) {
-  let avgConsumption = 0; // median consumption of all resources
-  for (const ratio of Object.values(consumptionMod)) {
-    const resourceNum = Object.values(consumptionMod).length;
-    avgConsumption += resourceNum > 0 ? ratio / resourceNum : 0;
-  }
-
-  return avgConsumption;
+  return totalEfficiency;
 }
 
 export function addConsumptionStat(

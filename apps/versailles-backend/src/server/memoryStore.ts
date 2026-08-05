@@ -7,8 +7,9 @@ type GameSave = {
   id: string;
   userId: string;
 
-  metadata: GameMetadata;
+  version: number;
 
+  metadata: GameMetadata;
   data: GameCtx;
 };
 
@@ -24,11 +25,11 @@ export const memoryStore = {
   maps: new Map<string, GameSave>(), // key has to be gameId
 };
 
-export function populateGameCtx({ userId, gameId }: { userId: string; gameId?: string }) {
+export function getSaveData({ userId, gameId }: { userId: string; gameId?: string }) {
   let playerMap = getGame({ userId, gameId });
   if (!playerMap) return null;
 
-  return playerMap.data;
+  return playerMap;
 }
 
 function getGame({ userId, gameId }: { userId: string; gameId?: string }) {
@@ -50,14 +51,17 @@ export function createNewGame(userId: string) {
     modifiers: [],
     mails: [],
     aiMemory: {},
+    contracts: [],
+    armyTraining: [],
   };
   populateWorld(ctx);
 
   const date = new Date().toISOString();
 
-  const game = {
+  const game: GameSave = {
     id,
     userId,
+    version: 1,
     metadata: {
       createdAt: date,
       updatedAt: date,
@@ -81,19 +85,25 @@ export function updateStore({
   gameId,
   userId,
   gameCtx,
+  currVersion,
 }: {
   gameId: string;
   userId: string;
   gameCtx: GameCtx;
+  currVersion: number;
 }) {
   const game = memoryStore.maps.get(gameId);
   if (!game) return;
   if (game?.userId !== userId) return;
 
+  // do not update if game versions don't match
+  if (currVersion !== game.version) return;
+
   const newMetadata = updateMetadata(gameCtx, game.metadata);
 
   const obj = {
     ...game,
+    version: game.version + 1,
     data: gameCtx,
     metadata: newMetadata,
   };

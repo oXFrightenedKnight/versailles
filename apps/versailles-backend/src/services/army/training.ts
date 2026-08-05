@@ -1,18 +1,18 @@
-import { getBuildingsByIdMap } from "#services/buildings/queries.js";
-import { getHexIdMap } from "#services/map.js";
+import { getBuildingHexMap } from "#services/buildings/queries.js";
 import { addModifier } from "#services/modifiers.js";
-import { subtractGold } from "#services/resources/gold.js";
+import { trySpendNationResource } from "#services/resources/production.js";
 import { GameCtx } from "#trpc/index.js";
 import {
+  ArmyTrainingObject,
   baseTrainingProgress,
   Building,
-  BUILDINGS,
-  BUILDINGS_CATEGORY,
   getArmyTrainCost,
-  getBuildingName,
+  getBuildingConfig,
+  getNationResource,
   Hex,
   Nation,
 } from "@repo/shared";
+import { addArmy } from "./units";
 
 // create army training object in a barrack
 export function queueArmyTraining({
@@ -33,7 +33,7 @@ export function queueArmyTraining({
 
   // map over every request and create a queue
   for (const newArmy of trainNewArmy) {
-    if (nation.manpower < newArmy.amount) continue; // continue if now enough manpower
+    if (getNationResource(nation, "manpower") < newArmy.amount) continue; // continue if now enough manpower
 
     const barrack = buildingsById.get(newArmy.barrackId);
     const hex = hexByBuilding.get(newArmy.barrackId);
@@ -44,21 +44,10 @@ export function queueArmyTraining({
 
     // subtract gold
     const cost = getArmyTrainCost(newArmy.amount);
-    const success = subtractGold(gameCtx, nationId, cost);
+    const success = trySpendNationResource(nation, "gold", cost);
     if (!success) continue;
 
-    if (barrack.trainingTroops) {
-      barrack.trainingTroops.push({
-        id: crypto.randomUUID(),
-        amount: newArmy.amount,
-        progress: 0,
-        nationId,
-      });
-    } else {
-      barrack.trainingTroops = [
-        { id: crypto.randomUUID(), amount: newArmy.amount, progress: 0, nationId },
-      ];
-    }
+    trainArmy(gameCtx, { ...newArmy, barrackId: barrack.id, nationId });
 
     // create flat manpower modifier to decrease manpower
     addModifier({
@@ -73,77 +62,115 @@ export function queueArmyTraining({
 
 // cancel army training by the object id
 export function cancelArmyTraining(ctx: GameCtx, cancelIds: string[], nation: Nation) {
-  const armyTrainMap = new Map(
-    ctx.buildings
-      .filter((b) => b.category === "BARRACK" && b.trainingTroops)
-      .flatMap((b) => b.trainingTroops!.map((t) => [t.id, { troop: t, building: b }]))
-  );
+  const cancelIdsSet = new Set(cancelIds);
+  const newTraining: ArmyTrainingObject[] = [];
 
-  for (const id of cancelIds) {
-    const armyToDelete = armyTrainMap.get(id);
+  for (const trainingInstance of ctx.armyTraining) {
+    if (!trainingInstance) continue;
+    if (trainingInstance.nationId !== nation.id) continue;
 
-    if (!armyToDelete) continue;
-    if (armyToDelete.troop.nationId !== nation.id) continue;
-
-    // delete training object
-    const troops = armyToDelete.building.trainingTroops!;
-    const idx = troops.indexOf(armyToDelete.troop);
-
-    if (idx !== -1) {
-      troops.splice(idx, 1);
+    if (!cancelIdsSet.has(trainingInstance.id)) {
+      newTraining.push(trainingInstance);
     }
   }
+
+  ctx.armyTraining = newTraining;
 }
 
 // gives training progress and deploys ready armies
-export function trainArmyProgress(
+export function runBuildingTraining(
   ctx: GameCtx,
-  buildingId: string,
-  hexId: number,
+  building: Building,
+  hex: Hex,
   efficiency: number
 ) {
-  const buildingIdMap = getBuildingsByIdMap(ctx.buildings);
-  const building = buildingIdMap.get(buildingId);
+  const config = getBuildingConfig(building);
+  if (!config?.systems?.armyTraining) return;
+  const maxTraining = config.systems.armyTraining.maxTraining ?? 0;
 
-  const hexIdMap = getHexIdMap(ctx);
-  const hex = hexIdMap.get(hexId);
+  const training = getBuildingTraining(ctx, building.id);
 
-  if (!building || !hex) return { ok: false };
+  let amountTrained = 0; // add progress to every training contract until reached cap
 
-  const name = getBuildingName(building.category, building.level);
-  if (!name) return { ok: false };
-
-  const training = building.trainingTroops;
-  const maxTraining = BUILDINGS[name].maxTraining ?? 0;
-  let trainingCap = 0; // add progress to every training contract until reached cap
-  const idxsToDelete: number[] = [];
+  const deleteFinished: string[] = [];
   if (training && training.length > 0) {
-    for (const [i, army] of training.entries()) {
-      if (trainingCap >= maxTraining) break;
+    for (const trainInstance of training) {
+      if (amountTrained >= maxTraining) break;
 
-      const amountTrained = Math.min(army.amount, maxTraining - trainingCap);
+      const trainingAvailable = Math.min(trainInstance.amount, maxTraining - amountTrained);
       const progress = Math.round(baseTrainingProgress * amountTrained * efficiency);
 
-      army.progress += progress;
-      trainingCap += amountTrained;
+      trainInstance.progress += progress;
+      amountTrained += trainingAvailable;
 
       // if progress is full, deploy army
-      if (army.progress >= army.amount) {
-        const ownerArmyInHex = hex.army.find((a) => a.nationId === army.nationId);
-        if (!ownerArmyInHex) {
-          hex.army.push({ amount: army.amount, nationId: army.nationId });
-        } else {
-          ownerArmyInHex.amount += army.amount;
-        }
+      if (trainInstance.progress >= trainInstance.amount) {
+        addArmy({
+          ctx,
+          nationId: trainInstance.nationId,
+          hexId: hex.id,
+          amount: trainInstance.amount,
+        });
 
         // add index to delete after loop
-        idxsToDelete.push(i);
+        deleteFinished.push(trainInstance.id);
       }
     }
 
     // delete armies that finished training and deployed
-    building.trainingTroops = training.filter((_, i) => !idxsToDelete.includes(i));
+    for (const id of deleteFinished) {
+      deleteTrainInstance(ctx, id);
+    }
   }
 
+  return { ok: true };
+}
+
+export function getBuildingTraining(
+  { armyTraining }: { armyTraining: ArmyTrainingObject[] },
+  buildingId: string
+) {
+  return armyTraining.filter((a) => a.barrackId === buildingId);
+}
+
+export function revalidateTraining(ctx: GameCtx) {
+  const buildingHexMap = getBuildingHexMap(ctx);
+
+  const deleteTraining = new Set<string>();
+
+  for (const training of ctx.armyTraining) {
+    const hex = buildingHexMap.get(training.barrackId);
+    if (!hex) continue;
+
+    if (hex.owner !== training.nationId) {
+      deleteTraining.add(training.id);
+    }
+  }
+
+  ctx.armyTraining = ctx.armyTraining.filter((a) => !deleteTraining.has(a.id));
+}
+
+export function trainArmy(
+  ctx: GameCtx,
+  { amount, barrackId, nationId }: { amount: number; barrackId: string; nationId: string }
+) {
+  const id = crypto.randomUUID();
+  const obj = {
+    id,
+    amount,
+    barrackId,
+    nationId,
+    progress: 0,
+  };
+
+  ctx.armyTraining.push(obj);
+
+  return obj;
+}
+export function deleteTrainInstance(
+  { armyTraining }: { armyTraining: ArmyTrainingObject[] },
+  id: string
+) {
+  armyTraining = armyTraining.filter((i) => i.id !== id);
   return { ok: true };
 }

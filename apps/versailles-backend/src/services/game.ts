@@ -3,14 +3,15 @@ import { TRPCError } from "@trpc/server";
 import { runAIPipeline } from "./ai/main";
 import { calcWars, peaceCountdown } from "./army/war";
 import { giveProgressBuilding } from "./buildings/construction";
-import { buildingOutput } from "./buildings/production";
-import { executeContracts, recalculateContractsAmounts } from "./contracts";
+import { recalculateContractsAmounts } from "./contracts";
 import { runAIDiplomacy, runNationDiplomacy } from "./intents/diplomacyIntents";
 import { runIntentForEachNation } from "./intents/executeIntents";
 import { mailsExpire } from "./mails";
 import { getPlayerNation, updatePlayerUI } from "./player";
 import { nationsUpdateManpower } from "./resources/manpower";
 import { addBaseNationGold } from "./genNations";
+import { BuildingOutputState } from "./buildings/types";
+import { runBuildingsSystem } from "./buildings/production";
 
 export function runGameSimulation(gameCtx: GameCtx, input: NextTurnType) {
   const playerNation = getPlayerNation(gameCtx);
@@ -61,11 +62,8 @@ export function runGameSimulation(gameCtx: GameCtx, input: NextTurnType) {
   // step 7: calculate base gold income
   addBaseNationGold(gameCtx);
 
-  // step 8: calculate contracts
-  executeContracts(gameCtx);
-
-  // step 9: calculate gold & building output
-  buildingOutput(gameCtx);
+  // step 9: calculate building systems
+  runBuildingsSystem(gameCtx);
 
   // step 10: recalculate all auto-adjust contracts to match new state
   recalculateContractsAmounts(gameCtx);

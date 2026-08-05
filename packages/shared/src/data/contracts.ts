@@ -6,8 +6,8 @@ export type SupplyContract = {
   toBuildingId: string;
   amount: number;
   resource: BASE_RESOURCE;
-  progress: number;
   autoAdjust: boolean;
+  ownerId: string;
 };
 
 export type ServerContractUpdate = {

@@ -1,16 +1,16 @@
 "use client";
 
-import { X } from "lucide-react";
-import Image from "next/image";
-import { buildingComponents } from "@/lib/data";
-import NoBuilding from "../../buildingConfig/noBuilding";
+import BuildingMenu from "@/components/buildingConfig/buildingMenu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getOptimisticPopulation } from "@/lib/UI/optimisticCalc/population";
 import { getNationFlagURL } from "@/lib/helpers/flags";
 import { getNationName } from "@/lib/helpers/nations";
-import { Hex } from "@repo/shared/data/hex_map";
 import { Building } from "@repo/shared/data/buildings";
-import { findBuildingNameByCategory, getBuilding } from "@repo/shared/helpers/buildings";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Hex } from "@repo/shared/data/hex_map";
+import { getBuilding, getBuildingName } from "@repo/shared/helpers/buildings";
+import { X } from "lucide-react";
+import Image from "next/image";
+import NoBuilding from "../../buildingConfig/noBuilding";
 
 export default function ProvinceInfoSidebar({
   selectedHex,
@@ -29,31 +29,22 @@ export default function ProvinceInfoSidebar({
     ? (getBuilding({ buildings: buildingsUI, id: selectedHex.buildingId }) ?? null)
     : null;
   const buildingName = buildingData?.category
-    ? findBuildingNameByCategory({
-        buildingCategory: buildingData.category,
-        level: buildingData.level,
-      })
+    ? getBuildingName(buildingData.category, buildingData.level)
     : "empty";
+
+  const building = buildingsUI.find((b) => b.id === selectedHex?.buildingId);
 
   const population = getOptimisticPopulation(selectedHex, serverBuildingsDelete);
 
   function renderBuildingButtons() {
-    if (!buildingData) return <NoBuilding></NoBuilding>;
-
-    const entry = buildingComponents[buildingData.category];
-
-    if (!entry) return <NoBuilding></NoBuilding>;
-
-    const Component = entry.component;
+    if (!buildingData || !building) return <NoBuilding></NoBuilding>;
 
     return (
-      <Component
-        {...entry.getProps({
-          isContractSelected,
-          setIsContractSelected,
-          building: buildingData,
-        })}
-      />
+      <BuildingMenu
+        building={building}
+        isContractSelected={isContractSelected}
+        setIsContractSelected={setIsContractSelected}
+      ></BuildingMenu>
     );
   }
 

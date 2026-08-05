@@ -1,6 +1,11 @@
 import { Nation, ServerContractUpdate } from "@repo/shared";
 import { GameCtx, IntentInput } from "../../trpc";
-import { createContracts, deleteContracts, newContract, updateContracts } from "../contracts";
+import {
+  newContract,
+  submitDeleteContracts,
+  submitNewContracts,
+  updateContracts,
+} from "../contracts";
 import { newBuildings } from "../genNations";
 import { buildNationRoads, cancelRoadBuild } from "../road";
 import { cancelArmyTraining, queueArmyTraining } from "#services/army/training.js";
@@ -22,7 +27,7 @@ export function executeIntents(ctx: GameCtx, nation: Nation, intentCtx: IntentIn
   // 1. Cancel Army Training
   cancelArmyTraining(ctx, intentCtx.deleteArmyTrain, nation);
   // 2. delete contracts
-  deleteContracts(ctx, intentCtx.deleteContracts, nation);
+  submitDeleteContracts(ctx, intentCtx.deleteContracts, nation);
   // 3. cancel building
   cancelBuilding(ctx, intentCtx.buildingCancel, nation);
   // 4. cancel road building
@@ -55,7 +60,7 @@ export function executeIntents(ctx: GameCtx, nation: Nation, intentCtx: IntentIn
     });
   }
   // 13. create new contracts
-  createContracts({
+  submitNewContracts({
     contracts: intentCtx.createNewContracts as newContract[],
     gameCtx: ctx,
     nation,

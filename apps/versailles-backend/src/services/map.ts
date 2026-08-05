@@ -8,9 +8,9 @@ import {
   CreatedHexes,
   cubeDistance,
   FALLBACK_COLOR,
-  findBuildingNameByCategory,
   findNeighbors,
   getBuilding,
+  getBuildingName,
   Hex,
   HEX_DIRECTIONS,
   MAP_RADIUS,
@@ -23,6 +23,7 @@ import { addArmy, removeArmy } from "./army/units.js";
 import { bfs, reconstructPath } from "./algorithms/bfs.js";
 import { BuildBuilding } from "./buildings/construction.js";
 import { getBuildingsByIdMap } from "./buildings/queries.js";
+import { deleteContract, getBuildingContractsMap } from "./contracts.js";
 
 // DO NOT CHANGE THIS FUNCTION TO ACCEPT GAMECTX
 // generates the mathematical map & coordinates
@@ -189,10 +190,7 @@ export function calculatePopulationChange(hex: Hex, gameCtx: GameCtx, consumeMod
   if (!hex.owner || !hex.buildingId) return;
   const building = getBuilding({ buildings, id: hex.buildingId });
   if (!building) return;
-  const buildingName = findBuildingNameByCategory({
-    buildingCategory: building.category,
-    level: building.level,
-  });
+  const buildingName = getBuildingName(building.category, building.level);
   const cap =
     BUILDINGS[buildingName || "nomadic_camp"].popCap * BIOME_GROWTH[hex.biome || "plains"];
   const rate = 0.15 * BIOME_GROWTH[hex.biome || "plains"];
@@ -329,10 +327,12 @@ export function getDeltaAxial(
   return { dq: endAxial.q - startAxial.q, dr: endAxial.r - startAxial.r };
 }
 
+// think if you can optimize this
 export function transferHexOwnership(ctx: GameCtx, hexId: number, toNationId: string) {
   const hexIdMap = getHexIdMap(ctx);
   const axialMap = getHexAxialMap(ctx);
   const buildingIdMap = getBuildingsByIdMap(ctx.buildings);
+  const buildingContractMap = getBuildingContractsMap(ctx);
 
   const hex = hexIdMap.get(hexId);
   if (!hex) return { ok: false };
@@ -350,8 +350,11 @@ export function transferHexOwnership(ctx: GameCtx, hexId: number, toNationId: st
     hex.build_queue = null;
 
     // reset contracts if building in hex
-    if (building && building.contracts) {
-      building.contracts = undefined;
+    if (building) {
+      const buildingContracts = buildingContractMap.get(building.id) ?? [];
+      for (const contract of buildingContracts) {
+        deleteContract(ctx, contract.id);
+      }
     }
   }
 

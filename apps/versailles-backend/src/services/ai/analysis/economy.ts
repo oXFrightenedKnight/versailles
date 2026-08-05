@@ -2,8 +2,9 @@ import {
   BUILDINGS,
   BUILDINGS_CATEGORY,
   BuildingsByCategoryAndLevel,
+  getBuildingConfig,
+  getNationResource,
   Nation,
-  findBuildingNameByCategory,
 } from "@repo/shared";
 import { getNationNeighbors } from "../world/nations";
 import { BUILDING_WEIGHT, GOLD_WEIGHT } from "./policy";
@@ -22,7 +23,7 @@ export function getNeighborEconomyRatio(ctx: GameCtx, nation: Nation) {
     const nation = nationIdMap.get(nationId);
     if (!nation) return 1; // minimum viable power
 
-    const gold = nation.gold;
+    const gold = getNationResource(nation, "gold");
     const buildings = getNationBuildingCount(ctx, nation.id);
 
     const power = getEconomicPower(gold, buildings);
@@ -44,12 +45,13 @@ export function getEconomicPower(gold: number, buildings: BuildingsByCategoryAnd
   let buildingPower = 0;
   for (const [category, counts] of Object.entries(buildings)) {
     for (const levelsObj of counts) {
-      const name = findBuildingNameByCategory({
-        buildingCategory: category as BUILDINGS_CATEGORY,
+      const config = getBuildingConfig({
+        category: category as BUILDINGS_CATEGORY,
         level: levelsObj.level,
       });
+      if (!config) continue;
 
-      buildingPower += BUILDINGS[name].buildCost * BUILDING_WEIGHT * levelsObj.amount;
+      buildingPower += config.buildCost * BUILDING_WEIGHT * levelsObj.amount;
     }
   }
 

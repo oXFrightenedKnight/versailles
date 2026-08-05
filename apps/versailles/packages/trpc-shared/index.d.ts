@@ -1,5 +1,15 @@
-import { Building, Hex, Mail, MODIFIER, Nation, Road } from "@repo/shared";
+import {
+  ArmyTrainingObject,
+  Building,
+  Hex,
+  Mail,
+  MODIFIER,
+  Nation,
+  Road,
+  SupplyContract,
+} from "@repo/shared";
 import { inferProcedureInput } from "@trpc/server";
+import { MemoryCtx } from "../services/ai/memory/types.js";
 export type GameCtx = {
   mapHexes: Hex[];
   nations: Nation[];
@@ -8,7 +18,11 @@ export type GameCtx = {
   buildings: Building[];
   modifiers: MODIFIER[];
   mails: Mail[];
+  contracts: SupplyContract[];
+  armyTraining: ArmyTrainingObject[];
+  aiMemory: MemoryCtx;
 };
+export declare const emptyIntentCtx: IntentInput;
 export type NextTurnType = inferProcedureInput<AppRouter["nextTurn"]>;
 export type IntentInput = NextTurnType["playerIntents"];
 export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
@@ -27,12 +41,13 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
       };
       output: {
         mails: Mail[];
-        modifiers: MODIFIER[];
         mapHexes: Hex[];
         nations: Nation[];
         turn: number;
         roads: Road[];
         buildings: Building[];
+        contracts: SupplyContract[];
+        armyTraining: ArmyTrainingObject[];
       } | null;
       meta: object;
     }>;
@@ -97,19 +112,20 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
       };
       output: {
         mails: Mail[];
-        modifiers: MODIFIER[];
         mapHexes: Hex[];
         nations: Nation[];
         turn: number;
         roads: Road[];
         buildings: Building[];
+        contracts: SupplyContract[];
+        armyTraining: ArmyTrainingObject[];
       } | null;
       meta: object;
     }>;
     createNewGame: import("@trpc/server").TRPCMutationProcedure<{
       input: void;
       output: {
-        id: `${string}-${string}-${string}-${string}-${string}`;
+        id: string;
         metadata: {
           createdAt: string;
           updatedAt: string;
@@ -125,6 +141,7 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
       output: {
         id: string;
         userId: string;
+        version: number;
         metadata: {
           createdAt: string;
           updatedAt: string;
