@@ -1,45 +1,54 @@
 "use client";
 
-import TrainingComponent from "./TrainingComponent";
-import { CircleMinus, CirclePlus, Cog } from "lucide-react";
-import { useMemo, useState } from "react";
+import { createNewPopup } from "@/lib/helpers/popups";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
-import {
-  formatServerTraining,
-  mergeTraining,
-  mergeTrainingArmyClient,
-} from "@/lib/UI/mergeData/uiTraining";
-import { numberConverter } from "@/lib/utils";
-import { Building } from "@repo/shared/data/buildings";
-import { hasEnoughGold } from "@/lib/UI/optimisticCalc/gold";
-import { getArmyTrainCost } from "@repo/shared";
-import { useEffectiveGold } from "@/hooks/useEffectiveGold";
 import { useUIStore } from "@/lib/stores/uiStore";
-import { createNewPopup } from "@/lib/helpers/popups";
-import { useEffectiveManpower } from "@/hooks/useEffectiveManpower";
+import {
+  cancelArmyTraining,
+  selectTrainings,
+  setArmyTraining,
+} from "@/lib/UI/mergeData/training/selectors";
+import { TrainingProjection } from "@/lib/UI/mergeData/training/types";
+import { numberConverter } from "@/lib/utils";
+import { getArmyTrainCost } from "@repo/shared";
+import { Building } from "@repo/shared/data/buildings";
+import { CircleMinus, CirclePlus, Cog } from "lucide-react";
+import { useCallback, useState } from "react";
+import TrainingComponent from "./TrainingComponent";
+import { useOptimisticResources } from "@/hooks/useOptimisticResources";
 
 export default function TrainingBlock({ building }: { building: Building }) {
-  const gold = useEffectiveGold();
-
-  const playerNation = useGameStore((s) => s.playerNation);
-  const setArmyTraining = useIntentStore((s) => s.setArmyTraining);
-  const serverTrainingDelete = useIntentStore((s) => s.serverTrainingDelete);
   const [amount, setAmount] = useState<number>(0);
 
-  const serverArmyTraining = useGameStore((s) => s.armyTraining);
-  const serverTraining = formatServerTraining(serverArmyTraining);
-
-  const clientArmyTraining = useIntentStore((s) => s.armyTraining);
-  const clientTraining = mergeTrainingArmyClient(building.id, clientArmyTraining);
+  const playerResources = useOptimisticResources();
+  const manpower = playerResources.manpower ?? 0;
+  const gold = playerResources.gold ?? 0;
 
   const setPopup = useUIStore((s) => s.setPopup);
 
-  const manpower = useEffectiveManpower();
+  const playerNation = useGameStore((s) => s.playerNation);
+  const serverArmyTraining = useGameStore((s) => s.armyTraining);
 
-  const training = useMemo(() => {
-    return mergeTraining(serverTraining, clientTraining);
-  }, [serverTraining, clientTraining, serverTrainingDelete]);
+  const gameActions = useIntentStore((s) => s.gameActions);
+  const createGameAction = useIntentStore((s) => s.createGameAction);
+  const deleteGameAction = useIntentStore((s) => s.deleteGameAction);
+
+  const training = selectTrainings(serverArmyTraining, gameActions);
+
+  const handleArmyTraining = useCallback(
+    (barrackId: string, amount: number) => {
+      setArmyTraining(barrackId, amount, createGameAction);
+    },
+    [createGameAction]
+  );
+
+  const handleCancelTraining = useCallback(
+    (projection: TrainingProjection) => {
+      cancelArmyTraining(projection, deleteGameAction, createGameAction);
+    },
+    [deleteGameAction, createGameAction]
+  );
 
   return (
     <div className="w-full bg-gray-800 rounded-xl">
@@ -68,9 +77,9 @@ export default function TrainingBlock({ building }: { building: Building }) {
             className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
             onClick={(e) => {
               if (e.shiftKey) {
-                setAmount(Math.min(amount + 1000, manpower ?? 0));
+                setAmount(Math.min(amount + 1000, playerResources.manpower ?? 0));
               } else {
-                setAmount(Math.min(amount + 100, manpower ?? 0));
+                setAmount(Math.min(amount + 100, playerResources.manpower ?? 0));
               }
             }}
           >
@@ -81,26 +90,17 @@ export default function TrainingBlock({ building }: { building: Building }) {
           <div
             className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
             onClick={() => {
-              if (!clientArmyTraining || !setArmyTraining || !playerNation) return;
+              if (!training || !playerNation) return;
               if (amount > manpower || amount === 0) return;
 
               const cost = getArmyTrainCost(amount);
 
-              if (!hasEnoughGold(gold, cost)) {
+              if (gold < cost) {
                 createNewPopup(setPopup, "missing_gold");
                 return;
               }
 
-              setArmyTraining((prev) => [
-                ...prev,
-                {
-                  id: crypto.randomUUID(),
-                  amount: amount,
-                  progress: 0,
-                  barrackId: building.id,
-                  owner: playerNation.id,
-                },
-              ]);
+              handleArmyTraining(building.id, amount);
             }}
           >
             <Cog className="w-4 h-4 text-amber-200 "></Cog>
@@ -110,8 +110,12 @@ export default function TrainingBlock({ building }: { building: Building }) {
       <div>
         {training && training.length > 0 ? (
           <div className="w-full flex flex-col gap-2">
-            {training.map((obj) => (
-              <TrainingComponent key={obj.id} data={obj}></TrainingComponent>
+            {training.map((p) => (
+              <TrainingComponent
+                key={p.key}
+                projection={p}
+                cancelTraining={handleCancelTraining}
+              ></TrainingComponent>
             ))}
           </div>
         ) : (

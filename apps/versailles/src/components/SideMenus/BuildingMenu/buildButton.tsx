@@ -1,17 +1,27 @@
 "use client";
 
-import { X } from "lucide-react";
-import ToggleBuilding from "./ToggleBuilding";
 import { BuildingDescriptions, BuildingIcons, OpenMenus } from "@/lib/data";
-import { BuildModeType } from "@/lib/types/game";
 import { useGameStore } from "@/lib/stores/gameStore";
-import { mergeConstructingBuildings } from "@/lib/UI/mergeData/uiBuildings";
 import { useIntentStore } from "@/lib/stores/intentStore";
-import ConstructingBuilding from "./ConstructingBuilding";
-import { mergeBuildingRoads } from "@/lib/UI/mergeData/uiRoads";
-import ConstructingRoad from "./RoadConstructing";
-import React from "react";
+import { BuildModeType } from "@/lib/types/game";
+import {
+  cancelRoadConstruction,
+  selectRoadConstructions,
+} from "@/lib/UI/mergeData/construction/roadSelectors";
+import {
+  cancelBuildingConstruction,
+  selectBuildingConstructions,
+} from "@/lib/UI/mergeData/construction/selectors";
+import {
+  BuildingConstructionProjection,
+  RoadConstructionProjection,
+} from "@/lib/UI/mergeData/construction/types";
 import { ALL_BUILDING_CATEGORIES, BUILDINGS_CATEGORY } from "@repo/shared/data/buildings";
+import { X } from "lucide-react";
+import React, { useCallback } from "react";
+import ConstructingBuilding from "./ConstructingBuilding";
+import ConstructingRoad from "./RoadConstructing";
+import ToggleBuilding from "./ToggleBuilding";
 
 export default function BuildMenu({
   setOpenMenu,
@@ -33,17 +43,30 @@ export default function BuildMenu({
 
   // Display server + client constructing buildings
   const mapHexes = useGameStore((s) => s.mapHexes);
-  const buildBuildings = useIntentStore((s) => s.buildBuildings);
-  const serverCancelBuilding = useIntentStore((s) => s.serverCancelBuilding);
+  const buildings = useGameStore((s) => s.buildings);
+  const roads = useGameStore((s) => s.roads);
 
-  const uiConstructing = mergeConstructingBuildings(mapHexes, serverCancelBuilding, buildBuildings);
+  const actions = useIntentStore((s) => s.gameActions);
+  const createGameAction = useIntentStore((s) => s.createGameAction);
+  const deleteGameAction = useIntentStore((s) => s.deleteGameAction);
+
+  // --- BUILDINGS ---
+  const constructing = selectBuildingConstructions(mapHexes, buildings, actions);
+  const cancelConstruction = useCallback(
+    (projection: BuildingConstructionProjection) => {
+      cancelBuildingConstruction(projection, createGameAction, deleteGameAction);
+    },
+    [createGameAction, deleteGameAction]
+  );
 
   // --- ROADS ---
-  const roads = useGameStore((s) => s.roads);
-  const cancelRoadServer = useIntentStore((s) => s.serverCancelRoadBuilding);
-  const buildRoads = useIntentStore((s) => s.buildRoads);
-
-  const buildingRoads = mergeBuildingRoads(roads, mapHexes, cancelRoadServer, buildRoads);
+  const constructingRoads = selectRoadConstructions(mapHexes, roads, actions);
+  const cancelConstructingRoad = useCallback(
+    (projection: RoadConstructionProjection) => {
+      cancelRoadConstruction(projection, createGameAction, deleteGameAction);
+    },
+    [createGameAction, deleteGameAction]
+  );
 
   return (
     <>
@@ -77,16 +100,24 @@ export default function BuildMenu({
           </div>
           <div className="w-full h-[70%] flex flex-col justify-start items-center  bg-gray-900 shadow-md shadow-black rounded-[8px] overflow-y-auto no-scrollbar gap-2">
             <div
-              className={`flex flex-col gap-2 w-full ${uiConstructing.length > 0 && buildingRoads.length > 0 ? "border-b pb-2" : ""}`}
+              className={`flex flex-col gap-2 w-full ${constructing.length > 0 && constructingRoads.length > 0 ? "border-b pb-2" : ""}`}
             >
-              {uiConstructing.map((c, key) => (
-                <ConstructingBuilding building={c} key={key}></ConstructingBuilding>
+              {constructing.map((p) => (
+                <ConstructingBuilding
+                  key={p.key}
+                  projection={p}
+                  onCancel={cancelConstruction}
+                ></ConstructingBuilding>
               ))}
             </div>
 
             <div className="flex flex-col gap-2 w-full">
-              {buildingRoads.map((r, key) => (
-                <ConstructingRoad road={r} key={key}></ConstructingRoad>
+              {constructingRoads.map((p) => (
+                <ConstructingRoad
+                  key={p.key}
+                  projection={p}
+                  handleRoadCancel={cancelConstructingRoad}
+                ></ConstructingRoad>
               ))}
             </div>
           </div>

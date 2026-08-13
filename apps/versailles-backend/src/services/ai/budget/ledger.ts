@@ -1,9 +1,9 @@
-import { NATION_RESOURCE } from "@repo/shared";
+import { NATION_RESOURCE, NationResourceTable } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 
 export function trySpendBudget(
   buildingBudget: Map<NATION_RESOURCE, number>,
-  cost: Partial<Record<NATION_RESOURCE, number>>
+  cost: NationResourceTable
 ) {
   const setResources: { resource: NATION_RESOURCE; total: number }[] = [];
   for (const [resource, amount] of typedEntries(cost)) {

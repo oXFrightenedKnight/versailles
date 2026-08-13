@@ -2,15 +2,20 @@
 
 import { getMailText } from "@/lib/helpers/mails";
 import { useGameStore } from "@/lib/stores/gameStore";
-import { useIntentStore } from "@/lib/stores/intentStore";
-import { Mail } from "@repo/shared/data/mail";
+import { MailProjection } from "@/lib/UI/mergeData/mails/types";
 import { Check, X } from "lucide-react";
 import { useMemo } from "react";
 
-export default function MailBlock({ mail }: { mail: Mail }) {
+export default function MailBlock({
+  projection,
+  answerMail,
+}: {
+  projection: MailProjection;
+  answerMail: (mailId: string, answer: boolean) => void;
+}) {
   const playerNation = useGameStore((s) => s.playerNation);
-  const answeredMails = useIntentStore((s) => s.answeredMails);
-  const setAnsweredMails = useIntentStore((s) => s.setAnsweredMails);
+
+  const mail = projection.mail;
 
   const text = useMemo(() => {
     const playerId = playerNation ? playerNation.id : null;
@@ -18,15 +23,6 @@ export default function MailBlock({ mail }: { mail: Mail }) {
 
     return getMailText(mail, playerId);
   }, [mail, playerNation]);
-
-  function saveAnswer(answer: boolean) {
-    const answeredIds = answeredMails.map((m) => m.id);
-    if (!answeredIds.includes(mail.id)) {
-      setAnsweredMails((prev) => [...prev, { id: mail.id, answer }]);
-    }
-  }
-
-  console.log("mailRead?", mail.read);
 
   if (!text) return null;
   return (
@@ -49,14 +45,14 @@ export default function MailBlock({ mail }: { mail: Mail }) {
             <div className="w-full flex justify-end items-center gap-1">
               <div
                 className="bg-green-700 flex justify-center items-center p-1 gap-1 rounded-md cursor-pointer"
-                onClick={() => saveAnswer(true)}
+                onClick={() => answerMail(mail.id, true)}
               >
                 <Check className="w-6 h-6"></Check>
                 <span>Accept</span>
               </div>
               <div
                 className="bg-red-700 flex justify-center items-center p-1 gap-1 rounded-md cursor-pointer"
-                onClick={() => saveAnswer(false)}
+                onClick={() => answerMail(mail.id, false)}
               >
                 <X className="w-6 h-6"></X>
                 <span>Decline</span>

@@ -1,5 +1,5 @@
 import { generateNations } from "#services/genNations.js";
-import { getPlayerNation } from "#services/player.js";
+import { filterPlayerLogic, getPlayerNation } from "#services/player.js";
 import { generateHexMap } from "../services/map.js";
 import { GameCtx } from "../trpc/index.js";
 
@@ -124,5 +124,10 @@ function updateMetadata(ctx: GameCtx, metadata: GameMetadata) {
 export function getPlayerSaves(userId: string) {
   return [...memoryStore.maps.entries()]
     .filter(([_, save]) => save.userId === userId)
-    .map((save) => save[1]);
+    .map((save) => ({
+      id: save[1].id,
+      userId: save[1].userId,
+      version: save[1].version,
+      metadata: save[1].metadata,
+    }));
 }

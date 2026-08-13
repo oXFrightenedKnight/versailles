@@ -3,6 +3,10 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
+put contract recalculation after submission and before execution
+add availableResources to contract projection
+fix ai not training army
+add cost to each client action and have one hook to calculate optimistic nation resource based on that
 don't forget to revalidate training when running game simulation (function already ready)
 make sure you revalidate contracts every turn
 fix contract amounts

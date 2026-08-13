@@ -1,6 +1,6 @@
 import { calculateModifiers } from "#services/modifiers.js";
 import { GameCtx } from "#trpc/index.js";
-import { MANPOWER_RATE, Nation } from "@repo/shared";
+import { getNationResource, MANPOWER_RATE, Nation } from "@repo/shared";
 import { adjustNationResource } from "./production";
 
 export function calculateManpower({ nation, gameCtx }: { nation: Nation; gameCtx: GameCtx }) {
@@ -30,7 +30,10 @@ export function calculateManpower({ nation, gameCtx }: { nation: Nation; gameCtx
   });
 
   // sum all base and mod manpower
-  adjustNationResource(nation, "manpower", Math.round(baseManpower + modManpower));
+  const newManpower = Math.round(baseManpower + modManpower);
+  const currentManpower = getNationResource(nation, "manpower");
+  const delta = newManpower - currentManpower;
+  adjustNationResource(nation, "manpower", delta);
 }
 
 export function nationsUpdateManpower(gameCtx: GameCtx) {

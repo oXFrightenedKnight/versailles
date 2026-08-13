@@ -1,27 +1,21 @@
-import { Progress } from "../../ui/progress";
-import { Field, FieldLabel } from "../../ui/field";
-import Image from "next/image";
-import { X } from "lucide-react";
-import {
-  cancelClientTraining,
-  cancelServerTraining,
-  TrainingVM,
-} from "@/lib/UI/mergeData/uiTraining";
-import { useCallback } from "react";
+import { TrainingProjection } from "@/lib/UI/mergeData/training/types";
 import { numberConverter } from "@/lib/utils";
+import { X } from "lucide-react";
+import Image from "next/image";
+import { Field, FieldLabel } from "../../ui/field";
+import { Progress } from "../../ui/progress";
 
-export default function TrainingComponent({ data }: { data: TrainingVM }) {
-  const value = Math.round((data.progress / data.amount) * 100);
+export default function TrainingComponent({
+  projection,
+  cancelTraining,
+}: {
+  projection: TrainingProjection;
+  cancelTraining: (projection: TrainingProjection) => void;
+}) {
+  const progress = projection.source === "server" ? projection.progress : 0;
+  const value = Math.round((progress / projection.amount) * 100);
   const ICON = `/icons/manpower.png`;
 
-  // FUNCTIONS
-  const cancelMergedTraining = useCallback(() => {
-    if (data.fromServer) {
-      cancelServerTraining(data.id);
-    } else {
-      cancelClientTraining(data.id);
-    }
-  }, [data]);
   return (
     <div className="w-full h-[75px] p-2">
       <div className="w-full h-full flex justify-between items-center rounded-md gap-1">
@@ -33,7 +27,7 @@ export default function TrainingComponent({ data }: { data: TrainingVM }) {
             height={32}
             className="h-5 w-5 shrink-0"
           ></Image>
-          <span className="text-[14px]">{numberConverter(data.amount)}</span>
+          <span className="text-[14px]">{numberConverter(projection.amount)}</span>
         </div>
         <Field className="w-full h-full max-w-sm bg-gray-900 border-gray-600 border rounded-md p-1">
           <FieldLabel htmlFor="progress-upload">
@@ -45,7 +39,7 @@ export default function TrainingComponent({ data }: { data: TrainingVM }) {
         <div
           className="flex bg-gray-900 border border-gray-600 p-1 gap-1 rounded-md text-amber-200 h-full justify-center items-center"
           onClick={() => {
-            cancelMergedTraining();
+            cancelTraining(projection);
           }}
         >
           <X className="w-6 h-6 shrink-0"></X>

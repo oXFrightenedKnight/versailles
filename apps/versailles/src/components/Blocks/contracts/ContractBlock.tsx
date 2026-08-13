@@ -1,12 +1,19 @@
 "use client";
 
-import { SquarePen } from "lucide-react";
-import ContractComponent from "./ContractComponent";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
-import { getMergedContracts } from "@/lib/UI/mergeData/uiContract";
-import { useMemo } from "react";
-import { Building } from "@repo/shared/data/buildings";
+import {
+  cancelContract,
+  selectContracts,
+  updateContract,
+} from "@/lib/UI/mergeData/contracts/selectors";
+import { ContractProjection } from "@/lib/UI/mergeData/contracts/types";
+import { ActionOfType, Building } from "@repo/shared";
+import { SquarePen } from "lucide-react";
+import { useCallback } from "react";
+import ContractComponent from "./ContractComponent";
+import { selectContractPredictions } from "@/lib/UI/predictions/contracts";
+import { getAvailableResourcesByContract } from "@/lib/helpers/contracts";
 
 export default function ContractBlock({
   isContractSelected,
@@ -17,26 +24,33 @@ export default function ContractBlock({
   setIsContractSelected: React.Dispatch<React.SetStateAction<boolean>>;
   building: Building;
 }) {
+  const serverContracts = useGameStore((s) => s.contracts);
   const buildings = useGameStore((s) => s.buildings);
 
-  {
-    /* SUBSCRIBE TO CLIENT AND SERVER CONTRACTS AND MERGE THEM */
-  }
-  const serverContracts = useGameStore((s) => s.contracts);
-  const serverContractDelete = useIntentStore((s) => s.serverContractDelete);
-  const serverContractUpdate = useIntentStore((s) => s.serverContractUpdate);
+  const gameActions = useIntentStore((s) => s.gameActions);
+  const updateGameAction = useIntentStore((s) => s.updateGameAction);
+  const createGameAction = useIntentStore((s) => s.createGameAction);
+  const deleteGameAction = useIntentStore((s) => s.deleteGameAction);
 
-  const clientContracts = useIntentStore((s) => s.contracts)
-    .filter((c) => c.startBuildingId === building.id)
-    .map((c) => ({ ...c, fromServer: false }));
+  const contractProjections = selectContracts(serverContracts, gameActions);
+  const contracts = selectContractPredictions(contractProjections, buildings);
+  const buildingContracts = contracts.filter((c) => c.fromBuildingId === building.id);
 
-  const contracts = useMemo(() => {
-    return getMergedContracts(serverContracts, clientContracts, building.id, serverContractUpdate);
-  }, [serverContracts, clientContracts, building, serverContractUpdate, serverContractDelete]);
+  const availableResourcesMap = getAvailableResourcesByContract(contracts, buildings);
 
-  console.log(contracts, "contracts");
-  console.log("serverContracts", serverContracts);
-  console.log("client contracts", clientContracts);
+  // --- FUNCTIONS ---
+  const handleContractUpdate = useCallback(
+    (projection: ContractProjection, changes: ActionOfType<"contract.update">["changes"]) => {
+      updateContract(projection, changes, createGameAction, updateGameAction);
+    },
+    [createGameAction, updateGameAction]
+  );
+  const handleContractDelete = useCallback(
+    (projection: ContractProjection) => {
+      cancelContract(projection, createGameAction, deleteGameAction);
+    },
+    [createGameAction, deleteGameAction]
+  );
 
   return (
     <div className="w-full bg-gray-800 rounded-xl">
@@ -53,12 +67,15 @@ export default function ContractBlock({
       <div className="w-full">
         {contracts.length > 0 ? (
           <div>
-            {contracts.map((contract) => {
+            {buildingContracts.map((contract) => {
+              const availableResources = availableResourcesMap.get(contract.resource) ?? [];
               return (
                 <ContractComponent
-                  key={contract.id}
+                  key={contract.key}
                   contract={contract}
-                  buildings={buildings}
+                  availableResources={[...availableResources]}
+                  deleteContract={handleContractDelete}
+                  updateContract={handleContractUpdate}
                 ></ContractComponent>
               );
             })}

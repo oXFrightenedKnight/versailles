@@ -1,4 +1,4 @@
-import { NATION_RESOURCE } from "./resources";
+import { NATION_RESOURCE, NationResourceTable } from "./resources";
 
 export type PeaceObj = {
   nationId: string;
@@ -21,7 +21,7 @@ export type Nation = {
   isPlayer: boolean;
   atWar: string[];
   atPeace: PeaceObj[];
-  resources: Partial<Record<NATION_RESOURCE, number>>;
+  resources: NationResourceTable;
   isDefeated?: boolean;
   defeatedAtTurn?: number;
 };

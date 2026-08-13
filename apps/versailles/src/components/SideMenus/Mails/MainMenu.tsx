@@ -1,21 +1,30 @@
 "use client";
 
-import { getUIMails } from "@/lib/UI/mergeData/uiMails";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
 import { ChevronDown, Mail as MailIcon, MailOpen } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import MailBlock from "./MailBlock";
+import { selectMails, setMailAnswer, setMailRead } from "@/lib/UI/mergeData/mails/selectors";
 
 export default function MailMenu() {
   const [mailOpen, setMailOpen] = useState<boolean>(false);
-  const mails = useGameStore((s) => s.mails);
-  const readMails = useIntentStore((s) => s.readMails);
-  const setReadMails = useIntentStore((s) => s.setReadMails);
-  const answeredMails = useIntentStore((s) => s.answeredMails);
 
-  const mailsUI = getUIMails(mails, readMails, answeredMails);
-  const unreadMails = mailsUI.filter((m) => !m.read);
+  const gameActions = useIntentStore((s) => s.gameActions);
+  const createGameAction = useIntentStore((s) => s.createGameAction);
+  const updateGameAction = useIntentStore((s) => s.updateGameAction);
+
+  const serverMails = useGameStore((s) => s.mails);
+
+  const mails = selectMails(serverMails, gameActions);
+  const unreadMails = mails.filter((m) => !m.read);
+
+  const handleMailAnswer = useCallback(
+    (mailId: string, answer: boolean) => {
+      setMailAnswer(mailId, answer, gameActions, createGameAction, updateGameAction);
+    },
+    [createGameAction, updateGameAction, gameActions]
+  );
 
   // MAIL OBSERVER
   const pendingReadMails = useRef<Set<string>>(new Set());
@@ -46,18 +55,23 @@ export default function MailMenu() {
     return () => observerRef.current?.disconnect();
   }, [mailOpen]);
 
-  // track mail meny closure to set mails to "already read"
+  // track mail menu closure to set mails to "already read"
   useEffect(() => {
     if (mailOpen) return;
     if ([...pendingReadMails.current].length <= 0) return;
 
+    const mailsById = new Map(mails.map((m) => [m.mail.id, m]));
+
     for (const mailId of pendingReadMails.current) {
-      if (!readMails.includes(mailId)) {
-        setReadMails((prev) => [...prev, mailId]);
+      const mail = mailsById.get(mailId);
+      if (!mail) continue;
+
+      if (!mail.read) {
+        setMailRead(mailId, createGameAction);
       }
     }
     pendingReadMails.current.clear();
-  }, [mailOpen]);
+  }, [mailOpen, mails, createGameAction]);
 
   return (
     <div className="absolute w-full h-[50%] flex flex-col justify-start items-end right-0 p-1 gap-1 top-[10%] text-white border border-red-500">
@@ -84,17 +98,17 @@ export default function MailMenu() {
               ref={rootDiv}
               className="flex flex-col justify-start items-center w-full h-full overflow-y-auto no-scrollbar"
             >
-              {mailsUI.length > 0 ? (
-                mailsUI.map((mail) => (
+              {mails.length > 0 ? (
+                mails.map((projection) => (
                   <div
-                    key={mail.id}
+                    key={projection.mail.id}
                     ref={(element) => {
                       if (element) observerRef.current?.observe(element);
                     }}
-                    data-mail-id={mail.id}
+                    data-mail-id={projection.mail.id}
                     className="w-full h-auto"
                   >
-                    <MailBlock mail={mail}></MailBlock>
+                    <MailBlock projection={projection} answerMail={handleMailAnswer}></MailBlock>
                   </div>
                 ))
               ) : (

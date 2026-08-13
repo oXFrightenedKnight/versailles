@@ -1,7 +1,6 @@
-import { getNationById } from "#services/genNations.js";
 import { getHexById } from "#services/map.js";
 import { GameCtx } from "#trpc/index.js";
-import { Hex } from "@repo/shared";
+import { ActionOfType, Hex, Nation } from "@repo/shared";
 import { getNationWarSet, isAtWar } from "./war";
 
 export function moveArmy({
@@ -10,14 +9,17 @@ export function moveArmy({
   nationId,
   direction,
   gameCtx,
+  moverId,
 }: {
   hexId: number;
   amount: number;
   nationId: string;
   direction: { dq: number; dr: number };
   gameCtx: GameCtx;
+  moverId: string;
 }) {
-  const { mapHexes } = gameCtx;
+  // Prohibit moving non-owned armies for now
+  if (moverId !== nationId) return;
 
   const warSet = getNationWarSet(gameCtx);
 
@@ -27,7 +29,7 @@ export function moveArmy({
   if (!hex || contested || flooredAmount <= 0) return;
 
   // find destination hex
-  const hexToMove = mapHexes.find(
+  const hexToMove = gameCtx.mapHexes.find(
     (h) => h.q === hex.q + direction.dq && h.r === hex.r + direction.dr
   );
   // find army of nation in hex from where it is moving
@@ -114,5 +116,22 @@ export function removeArmy(
   } else {
     // update
     nationArmy.amount = newArmy;
+  }
+}
+
+export function executeArmyMoveActions(
+  ctx: GameCtx,
+  moverId: string,
+  moveActions: ActionOfType<"army.move">[]
+) {
+  for (const action of moveActions) {
+    moveArmy({
+      hexId: action.hexId,
+      amount: action.amount,
+      direction: action.direction,
+      nationId: action.nationId,
+      gameCtx: ctx,
+      moverId,
+    });
   }
 }

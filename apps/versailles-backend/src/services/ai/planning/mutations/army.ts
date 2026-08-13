@@ -7,6 +7,7 @@ export function planArmyMove(
   fromHexId: number,
   toHexId: number,
   amount: number,
+  nationId: string,
   score: number
 ) {
   const available = planning.availableArmyByHex.get(fromHexId) ?? 0;
@@ -32,6 +33,7 @@ export function planArmyMove(
     toHexId,
     amount: send,
     score,
+    nationId,
   };
 
   return intent;

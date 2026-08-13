@@ -1,48 +1,26 @@
 "use client";
 
-import { BuildingIcons } from "@/lib/data";
-import { Hammer, Hash, X } from "lucide-react";
-import { useGameStore } from "@/lib/stores/gameStore";
-import { useCallback } from "react";
-import {
-  cancelRoadBuildingClient,
-  cancelRoadBuildingServer,
-  RoadConstructionVM,
-} from "@/lib/UI/mergeData/uiRoads";
 import { Progress } from "@/components/ui/progress";
+import { BuildingIcons } from "@/lib/data";
+import { RoadConstructionProjection } from "@/lib/UI/mergeData/construction/types";
+import { Hammer, Hash, X } from "lucide-react";
 
-export default function ConstructingRoad({ road }: { road: RoadConstructionVM }) {
-  const mapHexes = useGameStore((s) => s.mapHexes);
-
+export default function ConstructingRoad({
+  projection,
+  handleRoadCancel,
+}: {
+  projection: RoadConstructionProjection;
+  handleRoadCancel: (projection: RoadConstructionProjection) => void;
+}) {
   const Icon = BuildingIcons["road"];
-
-  // progress is a value from 0 to 1 representing how
-  // much of the total road has been completed
-  const progress = (road.finsishedAmount / road.hexIds.length) * 100;
-
-  const firstHex = mapHexes.find((h) => h.id === road.hexIds[0]);
-  const lastHex = mapHexes.find((h) => h.id === road.hexIds.at(-1));
-
-  // REPLACE LATER WHEN
-  const finishedAmount = road.finsishedAmount;
-  const leftAmount = road.hexIds.length - finishedAmount;
-
-  // FUNCTIONS
-  const cancelMergedConstruction = useCallback(() => {
-    if (road.fromServer) {
-      cancelRoadBuildingServer(road.id);
-    } else {
-      cancelRoadBuildingClient(road.id);
-    }
-  }, [road]);
 
   return (
     <div className="w-full h-[75px] flex justify-center items-center text-white">
       <div className="flex flex-row w-full h-full bg-gray-900 rounded-md p-1 gap-1">
         {/* Display City Name/HexId */}
         <div className="flex flex-col justify-center items-center p-1 w-1/5 bg-gray-800 rounded-md">
-          <span>{firstHex?.id ?? 0}...</span>
-          <span>...{lastHex?.id ?? 0}</span>
+          <span>{projection.hexIds[0] ?? 0}...</span>
+          <span>...{projection.hexIds.at(-1) ?? 0}</span>
         </div>
         {/* Icon, progress and to which level the building is being built */}
         <div className="flex justify-between items-center w-full gap-2 p-2 bg-gray-800 rounded-md">
@@ -56,19 +34,22 @@ export default function ConstructingRoad({ road }: { road: RoadConstructionVM })
 
           <div className="flex flex-col w-full h-full justify-between items-center gap-1">
             <div className=" flex justify-center items-center w-full h-[50%]">
-              <Progress className="bg-gray-600" value={progress}></Progress>
+              <Progress
+                className="bg-gray-600"
+                value={projection.source === "server" ? projection.progress : 0}
+              ></Progress>
             </div>
 
             <div className="flex bg-gray-900 border border-gray-600 p-1 gap-1 rounded-md text-amber-200 justify-center items-center w-full h-[50%]">
               <Hash className="w-5 h-5 shrink-0"></Hash>
-              <span className="text-md text-white">{leftAmount}</span>
+              <span className="text-md text-white">{projection.constructingPoints}</span>
             </div>
           </div>
 
           <div
             className="flex bg-gray-900 border border-gray-600 p-1 gap-1 rounded-md text-amber-200 h-full justify-center items-center"
             onClick={() => {
-              cancelMergedConstruction();
+              handleRoadCancel(projection);
             }}
           >
             <X className="w-6 h-6 shrink-0"></X>

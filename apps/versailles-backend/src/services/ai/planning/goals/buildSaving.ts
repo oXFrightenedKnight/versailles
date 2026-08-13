@@ -1,4 +1,4 @@
-import { BUILDINGS_CATEGORY, NATION_RESOURCE } from "@repo/shared";
+import { BUILDINGS_CATEGORY, NATION_RESOURCE, NationResourceTable } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { AIPlanningState, BuildSavingGoalType } from "../types";
 
@@ -25,7 +25,7 @@ export function reserveSavingBudget(
   buildingbudget: Map<NATION_RESOURCE, number>,
   planning: AIPlanningState,
   hexId: number,
-  cost: Partial<Record<NATION_RESOURCE, number>>
+  cost: NationResourceTable
 ) {
   const saved = planning.buildSaving.get(hexId);
   if (!saved) return { ok: false };

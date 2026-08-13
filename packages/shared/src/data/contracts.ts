@@ -2,17 +2,14 @@ import { BASE_RESOURCE } from "./resources";
 
 export type SupplyContract = {
   id: string;
+  executionOrder: number;
+
   fromBuildingId: string;
   toBuildingId: string;
   amount: number;
   resource: BASE_RESOURCE;
   autoAdjust: boolean;
   ownerId: string;
-};
-
-export type ServerContractUpdate = {
-  contractId: string;
-  changes: MergedContractChanges;
 };
 
 // ensuring both contracts are able to handle "updatable" fields

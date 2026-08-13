@@ -10,5 +10,8 @@
   },
   "imports": {
     "#data/*": "./src/data/*.ts"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
   }
 }

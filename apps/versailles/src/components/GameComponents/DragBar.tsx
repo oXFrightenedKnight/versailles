@@ -1,5 +1,5 @@
 import { useIntentStore } from "@/lib/stores/intentStore";
-import { calcAvailableArmy } from "@/lib/UI/optimisticCalc/army";
+import { getNationArmyInHex } from "@repo/shared";
 import { Hex } from "@repo/shared/data/hex_map";
 import { Nation } from "@repo/shared/data/nations";
 import { RefObject } from "react";
@@ -17,9 +17,7 @@ export default function DragBar({
   setBarDragging: React.Dispatch<React.SetStateAction<boolean>>;
   barRef: RefObject<HTMLDivElement | null>;
 }) {
-  const armyMove = useIntentStore((s) => s.armyMove);
-
-  const army = calcAvailableArmy(selectedHex, playerNation, armyMove);
+  const army = getNationArmyInHex(selectedHex, playerNation.id);
   if (army <= 0) return null;
   const percent = (value / army) * 100;
   const clampedPercent = Math.max(0, Math.min(100, percent));

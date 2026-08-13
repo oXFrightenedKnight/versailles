@@ -1,6 +1,6 @@
-import { getBuildingsByIdMap } from "#services/buildings/queries.js";
 import { getNationHexes } from "#services/genNations.js";
 import { GameCtx } from "#trpc/index.js";
+import { getBuildingsByIdMap } from "@repo/shared";
 import { OpeningTarget } from "./types";
 
 // returns an array of hexes that are the closest to fulfilling the current foundation target

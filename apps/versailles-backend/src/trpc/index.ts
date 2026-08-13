@@ -1,6 +1,7 @@
 import {
   ArmyTrainingObject,
   Building,
+  gameActionSchema,
   Hex,
   Mail,
   MODIFIER,
@@ -31,27 +32,7 @@ export type GameCtx = {
   aiMemory: MemoryCtx;
 };
 
-// change later so server does not expect full intent input. Skip running intent if there is none
-export const emptyIntentCtx: IntentInput = {
-  newQueuedBuildings: [],
-  buildingCancel: [],
-  buildingDelete: [],
-  movePlayerArmy: [],
-  signPeaceReq: [],
-  buildRoads: [],
-  cancelRoadBuild: [],
-  createNewContracts: [],
-  deleteContracts: [],
-  updateContracts: [],
-  trainNewArmy: [],
-  deleteArmyTrain: [],
-  declareWar: [],
-  readMails: [],
-  answeredMails: [],
-};
-
 export type NextTurnType = inferProcedureInput<AppRouter["nextTurn"]>;
-export type IntentInput = NextTurnType["playerIntents"];
 
 export const appRouter = router({
   // Init game
@@ -77,77 +58,7 @@ export const appRouter = router({
     .input(
       z.object({
         gameId: z.string(),
-        playerIntents: z.object({
-          newQueuedBuildings: z.array(
-            z.object({
-              hexId: z.int(),
-              buildingType: z.string(),
-              levelsToUpgrade: z.int().min(1),
-            })
-          ),
-          buildingCancel: z.array(z.number()),
-          buildingDelete: z.array(z.string()),
-          movePlayerArmy: z.array(
-            z.object({
-              hexId: z.int(),
-              amount: z.int(),
-              direction: z.object({
-                dq: z.int(),
-                dr: z.int(),
-              }),
-            })
-          ),
-          buildRoads: z.array(
-            z.object({
-              id: z.string(),
-              points: z.array(
-                z.object({
-                  q: z.int(),
-                  r: z.int(),
-                  d1: z.number(),
-                  d2: z.number(),
-                })
-              ),
-            })
-          ),
-          cancelRoadBuild: z.array(z.string()),
-          createNewContracts: z.array(
-            z.object({
-              startBuildingId: z.string(), // export from
-              endBuildingId: z.string(), // import to
-              amount: z.int().min(0),
-              resource: z.string(),
-              autoAdjust: z.boolean(),
-            })
-          ),
-          deleteContracts: z.array(z.string()),
-          updateContracts: z.array(
-            z.object({
-              contractId: z.string(),
-              changes: z.object({
-                amount: z.number().optional(),
-                resource: z.string().optional(),
-                autoAdjust: z.boolean().optional(),
-              }),
-            })
-          ),
-          trainNewArmy: z.array(
-            z.object({
-              amount: z.int().min(0),
-              barrackId: z.string(),
-            })
-          ),
-          deleteArmyTrain: z.array(z.string()),
-          declareWar: z.array(z.string()),
-          readMails: z.array(z.string()),
-          answeredMails: z.array(
-            z.object({
-              id: z.string(),
-              answer: z.boolean(),
-            })
-          ),
-          signPeaceReq: z.array(z.string()),
-        }),
+        actions: z.array(gameActionSchema),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -173,7 +84,7 @@ export const appRouter = router({
 
     // dev: run simulation for 300 turns
     for (let i = 0; i < 300; i++) {
-      runGameSimulation(game.data, { gameId: game.id, playerIntents: emptyIntentCtx });
+      runGameSimulation(game.data, { gameId: game.id, actions: [] });
     }
 
     // update store / db

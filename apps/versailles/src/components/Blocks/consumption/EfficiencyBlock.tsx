@@ -1,9 +1,11 @@
+"use client";
+
+import { getOptimisticImportedResources } from "@/lib/helpers/contracts";
+import { useGameStore } from "@/lib/stores/gameStore";
+import { useIntentStore } from "@/lib/stores/intentStore";
+import { selectContracts } from "@/lib/UI/mergeData/contracts/selectors";
 import { Building, getBuildingConfig, typedEntries } from "@repo/shared";
 import EfficiencyComponent from "./EfficiencyComponent";
-import { useGameStore } from "@/lib/stores/gameStore";
-import { getMergedContracts } from "@/lib/UI/mergeData/uiContract";
-import { useIntentStore } from "@/lib/stores/intentStore";
-import { getContractResourceMap } from "@/lib/helpers/contracts";
 
 export default function EfficiencyBlock({ building }: { building: Building }) {
   const config = getBuildingConfig(building);
@@ -11,18 +13,10 @@ export default function EfficiencyBlock({ building }: { building: Building }) {
 
   // gather optimistic contracts from store
   const serverContracts = useGameStore((s) => s.contracts);
-  const { contracts: clientContracts, serverContractUpdate } = useIntentStore((s) => ({
-    contracts: s.contracts,
-    serverContractUpdate: s.serverContractUpdate,
-  }));
+  const gameActions = useIntentStore((s) => s.gameActions);
 
-  const mergedBuildingContracts = getMergedContracts(
-    serverContracts,
-    clientContracts,
-    building.id,
-    serverContractUpdate
-  );
-  const contractResourceMap = getContractResourceMap(mergedBuildingContracts);
+  const contracts = selectContracts(serverContracts, gameActions);
+  const importedResources = getOptimisticImportedResources(contracts);
   return (
     <>
       {config && consuming && Object.entries(consuming).length > 0 && (
@@ -34,17 +28,16 @@ export default function EfficiencyBlock({ building }: { building: Building }) {
 
           <div className="w-full grid grid-cols-4 gap-2">
             {typedEntries(consuming).map(([resource, consumedObject]) => {
-              const resourceContracts = contractResourceMap.get(resource);
-              const totalImported = resourceContracts?.reduce((acc, c) => acc + c.amount, 0) ?? 0;
+              const imported = importedResources.get(resource) ?? 0;
 
-              const totalNeeded = consumedObject?.amount ?? 0;
+              const needed = consumedObject?.amount ?? 0;
 
               return (
                 <EfficiencyComponent
                   key={resource}
                   resource={resource}
-                  totalNeeded={totalNeeded}
-                  totalImported={totalImported}
+                  totalNeeded={needed}
+                  totalImported={imported}
                 ></EfficiencyComponent>
               );
             })}

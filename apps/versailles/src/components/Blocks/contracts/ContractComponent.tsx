@@ -1,78 +1,29 @@
 "use client";
 
 import { getResourceImage } from "@/lib/data";
-import { calcResourceExport } from "@/lib/helpers/contracts";
-import { useGameStore } from "@/lib/stores/gameStore";
-import { useIntentStore } from "@/lib/stores/intentStore";
-import { MergedContract } from "@/lib/types/game";
-import {
-  deleteClientContract,
-  deleteServerContract,
-  getMergedContracts,
-  updateServerContractIntent,
-} from "@/lib/UI/mergeData/uiContract";
+import { ContractProjection } from "@/lib/UI/mergeData/contracts/types";
 import { numberConverter } from "@/lib/utils";
-import { BASE_RESOURCE, isBaseResource, typedEntries } from "@repo/shared";
-import { Building } from "@repo/shared/data/buildings";
-import { MergedContractChanges } from "@repo/shared/data/contracts";
-import { getBuilding, getBuildingConfig } from "@repo/shared/helpers/buildings";
+import { ActionOfType, BASE_RESOURCE } from "@repo/shared";
 import { Calculator, Check, ChevronDown, CircleMinus, CirclePlus, Trash2, X } from "lucide-react";
 import Image from "next/image";
-import { useCallback } from "react";
 import { Dropdown, DropdownItem } from "../../GameComponents/dropdown";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
 
 export default function ContractComponent({
   contract,
-  buildings,
+  availableResources,
+  deleteContract,
+  updateContract,
 }: {
-  contract: MergedContract;
-  buildings: Building[];
+  contract: ContractProjection;
+  availableResources: BASE_RESOURCE[];
+  deleteContract: (projection: ContractProjection) => void;
+  updateContract: (
+    projection: ContractProjection,
+    changes: ActionOfType<"contract.update">["changes"]
+  ) => void;
 }) {
-  const serverContracts = useGameStore((s) => s.contracts);
-  const updateContract = useIntentStore((s) => s.updateContract);
-  const clientContracts = useIntentStore((s) => s.contracts);
-  const serverContractUpdate = useIntentStore((s) => s.serverContractUpdate);
-
-  // all contracts of this building (server + client)
-  const allContracts = getMergedContracts(
-    serverContracts,
-    clientContracts,
-    contract.startBuildingId,
-    serverContractUpdate
-  );
-
-  const startBuilding = getBuilding({ buildings, id: contract.startBuildingId });
-  const endBuilding = getBuilding({ buildings, id: contract.endBuildingId });
-
-  const startBuildingConfig = startBuilding
-    ? getBuildingConfig({ category: startBuilding.category, level: startBuilding.level })
-    : undefined;
-  const endBuildingConfig = endBuilding
-    ? getBuildingConfig({ category: endBuilding.category, level: endBuilding.level })
-    : undefined;
-
-  const sameBuildingContracts = allContracts.filter(
-    (c) => c.startBuildingId === startBuilding?.id && c.endBuildingId === endBuilding?.id
-  ); // contracts that have the same starting id and end id
-
-  const availableResources = startBuildingConfig ? startBuildingConfig.producing : undefined; // all resources currently produced by this starting building
-
-  const allowedResources =
-    availableResources && endBuildingConfig
-      ? (typedEntries(availableResources)
-          .filter(
-            ([r, available]) =>
-              available &&
-              available > 0 &&
-              isBaseResource(r) &&
-              endBuildingConfig.consuming?.[r] &&
-              (sameBuildingContracts.every((c) => c.resource !== r) || r === contract.resource)
-          )
-          .map(([r, _]) => r) as BASE_RESOURCE[])
-      : [];
-
-  const dropdownItems: DropdownItem<typeof contract.resource>[] = allowedResources.map((r) => ({
+  const dropdownItems: DropdownItem<typeof contract.resource>[] = availableResources.map((r) => ({
     id: crypto.randomUUID(),
     label: r,
     value: r,
@@ -87,44 +38,6 @@ export default function ContractComponent({
       />
     ),
   }));
-
-  // --- FUNCTIONS ---
-  const updateMergedContract = useCallback(
-    (newChanges: MergedContractChanges) => {
-      if (contract.fromServer) {
-        updateServerContractIntent(contract.id, newChanges);
-      } else {
-        updateContract(contract.id, newChanges); // just pass changed data. no spread.
-      }
-    },
-    [updateContract, contract]
-  );
-  const deleteContract = useCallback(() => {
-    if (contract.fromServer) {
-      deleteServerContract(contract.id);
-    } else {
-      deleteClientContract(contract.id);
-    }
-  }, [contract]);
-  const recalculateAmount = useCallback(() => {
-    if (endBuilding) {
-      const newAmount = calcResourceExport(endBuilding, contract.resource, allContracts);
-      if (!newAmount && newAmount !== 0) return;
-      updateMergedContract({ amount: newAmount });
-    }
-  }, [endBuilding, contract.resource, allContracts, updateMergedContract]);
-  const setAmount = useCallback(
-    (value: number) => {
-      updateMergedContract({ amount: value });
-    },
-    [updateMergedContract]
-  );
-  const setAutoAdjust = useCallback(
-    (value: boolean) => {
-      updateMergedContract({ autoAdjust: value });
-    },
-    [updateMergedContract]
-  );
 
   return (
     <div className="w-full h-[110px] bg-gray-800 rounded-xl flex justify-center items-center gap-0.5 p-1">
@@ -161,17 +74,18 @@ export default function ContractComponent({
           <div
             className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
             onClick={(e) => {
+              updateContract(contract, { autoAdjust: false });
+
               // delete contract if it's at 0
               if (contract.amount === 0) {
-                deleteContract();
+                deleteContract(contract);
               }
 
               if (e.shiftKey) {
-                setAmount(Math.max(contract.amount - 100, 0));
+                updateContract(contract, { amount: Math.max(contract.amount - 100, 0) });
               } else {
-                setAmount(Math.max(contract.amount - 10, 0));
+                updateContract(contract, { amount: Math.max(contract.amount - 10, 0) });
               }
-              setAutoAdjust(false);
             }}
           >
             {contract.amount === 0 ? (
@@ -188,12 +102,13 @@ export default function ContractComponent({
           <div
             className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
             onClick={(e) => {
+              updateContract(contract, { autoAdjust: false });
+
               if (e.shiftKey) {
-                setAmount(Math.min(contract.amount + 100, 1_000_000));
+                updateContract(contract, { amount: Math.min(contract.amount + 100, 1_000_000) });
               } else {
-                setAmount(Math.min(contract.amount + 10, 1_000_000));
+                updateContract(contract, { amount: Math.min(contract.amount + 10, 1_000_000) });
               }
-              setAutoAdjust(false);
             }}
           >
             <CirclePlus className="w-4 h-4 text-amber-200 "></CirclePlus>
@@ -204,8 +119,7 @@ export default function ContractComponent({
               <div
                 className={`flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black`}
                 onClick={() => {
-                  setAutoAdjust(!contract.autoAdjust);
-                  recalculateAmount();
+                  updateContract(contract, { autoAdjust: !contract.autoAdjust });
                 }}
               >
                 {contract.autoAdjust ? (
@@ -228,7 +142,7 @@ export default function ContractComponent({
               <Dropdown
                 items={dropdownItems}
                 updaterFn={(selectedValue) => {
-                  updateMergedContract({ resource: selectedValue });
+                  updateContract(contract, { resource: selectedValue });
                 }}
                 value={contract.resource}
                 renderItem={(item, isSelected) => (

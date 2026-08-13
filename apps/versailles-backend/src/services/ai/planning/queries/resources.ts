@@ -1,11 +1,11 @@
 import { BuildingProductionNode } from "#services/ai/actions/road/types.js";
 import { WorldAnalysis } from "#services/ai/analysis/types.js";
 import { getProducingBuildings } from "#services/ai/world/resources.js";
-import { getBuildingsByIdMap } from "#services/buildings/queries.js";
 import { GameCtx } from "#trpc/index.js";
 import {
   BASE_RESOURCE,
   getBuildingConfig,
+  getBuildingsByIdMap,
   isNationResource,
   isResource,
   Nation,

@@ -5,7 +5,6 @@ import { getNationFlagURL } from "@/lib/helpers/flags";
 import { getNationName, isAtWar, totalNationArmy } from "@/lib/helpers/nations";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
-import { getUIBuildings } from "@/lib/UI/mergeData/uiBuildings";
 import { numberConverter } from "@/lib/utils";
 import Image from "next/image";
 import { useState } from "react";
@@ -17,6 +16,7 @@ import GoldAmount from "./Info/gold";
 import BuildingCount from "./Info/buildingCount";
 import { ArrowLeft } from "lucide-react";
 import { getNationResource } from "@repo/shared";
+import { selectBuildings } from "@/lib/UI/mergeData/buildings/selectors";
 
 export default function NationInfo({
   nationId,
@@ -32,10 +32,10 @@ export default function NationInfo({
   const serverBuildings = useGameStore((s) => s.buildings);
   const playerNation = useGameStore((s) => s.playerNation);
 
-  const serverBuildingsDelete = useIntentStore((s) => s.serverBuildingsDelete);
-  const setDeclareWar = useIntentStore((s) => s.setDeclareWar);
+  const gameActions = useIntentStore((s) => s.gameActions);
+  const createGameAction = useIntentStore((s) => s.createGameAction);
 
-  const buildingsUI = getUIBuildings(serverBuildings, serverBuildingsDelete);
+  const buildings = selectBuildings(serverBuildings, gameActions);
 
   const nation = nations.find((n) => n.id === nationId);
   const name = getNationName({ id: nationId });
@@ -44,10 +44,32 @@ export default function NationInfo({
 
   const totalArmy = numberConverter(totalNationArmy({ mapHexes, nationId }));
   const gold = numberConverter(nation ? getNationResource(nation, "gold") : 0);
-  const buildingsInfo = allBuildingsPerCategory(buildingsUI, nationId, mapHexes);
+  const buildingsInfo = allBuildingsPerCategory(buildings, nationId, mapHexes);
 
   const atWar = nation?.atWar ?? [];
   const atPeace = nation?.atPeace ?? [];
+
+  const handleDeclareWar = (nationId: string) => {
+    createGameAction({
+      action: {
+        id: crypto.randomUUID(),
+        type: "diplomacy.war",
+        nationId,
+      },
+      resourceDelta: {},
+    });
+  };
+
+  const handlePeace = (nationId: string) => {
+    createGameAction({
+      action: {
+        id: crypto.randomUUID(),
+        type: "diplomacy.peace",
+        nationId,
+      },
+      resourceDelta: {},
+    });
+  };
 
   return (
     <div className="w-full h-full yellow-500 flex justify-center items-start rounded-xl">
@@ -131,14 +153,14 @@ export default function NationInfo({
                 {playerNation && nation && isAtWar(playerNation, nation) ? (
                   <Button
                     className="w-full bg-gray-800 border border-gray-600 cursor-pointer"
-                    onClick={() => setDeclareWar((prev) => [...prev, nationId])}
+                    onClick={() => handlePeace(nationId)}
                   >
                     Send Peace Treaty
                   </Button>
                 ) : (
                   <Button
                     className="w-full bg-gray-800 border border-gray-600 cursor-pointer"
-                    onClick={() => setDeclareWar((prev) => [...prev, nationId])}
+                    onClick={() => handleDeclareWar(nationId)}
                   >
                     Declare War
                   </Button>

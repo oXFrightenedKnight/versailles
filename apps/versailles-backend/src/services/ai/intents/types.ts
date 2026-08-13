@@ -38,6 +38,7 @@ export type MoveArmy = BaseAIIntent & {
   fromHexId: number;
   toHexId: number;
   amount: number;
+  nationId: string;
 };
 export type BuildRoad = BaseAIIntent & {
   type: "buildRoad";

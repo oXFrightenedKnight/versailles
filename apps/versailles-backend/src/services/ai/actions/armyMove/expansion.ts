@@ -1,8 +1,8 @@
 import { getAvailableArmyForCategory } from "#services/ai/planning/reservations/armyReserve.js";
 import { AIPlanningState } from "#services/ai/planning/types.js";
-import { getBorderHexes, getHexAxialMap } from "#services/map.js";
+import { getBorderHexes } from "#services/map.js";
 import { GameCtx } from "#trpc/index.js";
-import { Nation, Hex, findNeighbors } from "@repo/shared";
+import { Nation, Hex, findNeighbors, getHexAxialMap } from "@repo/shared";
 import { ProposalArmyMove } from "./types";
 
 export function getExpansionProposals(ctx: GameCtx, planning: AIPlanningState, nation: Nation) {

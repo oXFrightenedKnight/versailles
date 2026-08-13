@@ -1,5 +1,6 @@
 import {
   Building,
+  BuildingConfig,
   BUILDINGS,
   BUILDINGS_CATEGORY,
   BuildingType,
@@ -8,6 +9,7 @@ import {
 import { SupplyContract } from "#data/contracts";
 import { Hex } from "#data/hex_map";
 import { BASE_RESOURCE } from "#data/resources";
+import { typedEntries } from "./tsHelpers";
 
 export function getBuildingName(category: BUILDINGS_CATEGORY, level: number) {
   return Object.entries(BUILDINGS).find(
@@ -79,4 +81,50 @@ export function calculateNeededResource(
 
   const needed = Math.max(0, required - importing);
   return needed;
+}
+
+// returns total amount of gold that was spent on given building
+export function calcTotalBuildingCost(category: BUILDINGS_CATEGORY, level: number) {
+  let cost = 0;
+
+  for (let i = 1; i < level + 1; i++) {
+    const config = getBuildingConfig({ category, level: i });
+    if (!config) break;
+
+    const levelCost = config.buildCost;
+    cost += levelCost;
+  }
+
+  return cost;
+}
+
+export function getBuildingsByIdMap(buildings: Building[]) {
+  return new Map(buildings.map((b) => [b.id, b]));
+}
+
+export function getAvailableByBuildingMap(buildings: Building[]) {
+  return new Map<string, Partial<Record<BASE_RESOURCE, number>>>(
+    buildings.map((b) => [b.id, b.availableResources])
+  );
+}
+
+export function getRequiredByBuildingMap(buildings: Building[]) {
+  const map = new Map<string, Partial<Record<BASE_RESOURCE, number>>>();
+
+  for (const building of buildings) {
+    const config = getBuildingConfig(building);
+    if (!config || !config.consuming) continue;
+
+    const required: Partial<Record<BASE_RESOURCE, number>> = {};
+
+    for (const [res, consume] of typedEntries(config.consuming)) {
+      if (consume?.amount) {
+        required[res] = consume.amount;
+      }
+    }
+
+    map.set(building.id, required);
+  }
+
+  return map;
 }

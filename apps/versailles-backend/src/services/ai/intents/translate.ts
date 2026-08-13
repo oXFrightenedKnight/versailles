@@ -1,6 +1,6 @@
-import { getDeltaAxial, getHexIdMap } from "#services/map.js";
-import { GameCtx, IntentInput } from "#trpc/index.js";
-import { generateRoadDs } from "@repo/shared";
+import { getDeltaAxial } from "#services/map.js";
+import { GameCtx } from "#trpc/index.js";
+import { ActionOfType, generateRoadDs, getHexIdMap } from "@repo/shared";
 import {
   BuildIntent,
   MoveArmy,
@@ -12,11 +12,12 @@ import {
   AnswerMail,
 } from "./types";
 
-export function translateBuilding(buildIntents: BuildIntent[]): IntentInput["newQueuedBuildings"] {
-  const translated: IntentInput["newQueuedBuildings"] = [];
+export function translateBuilding(buildIntents: BuildIntent[]): ActionOfType<"building.build">[] {
+  const translated: ActionOfType<"building.build">[] = [];
 
   for (const intent of buildIntents) {
     translated.push({
+      id: intent.id,
       hexId: intent.hexId,
       buildingType: intent.buildingCategory,
       levelsToUpgrade: 1,
@@ -29,8 +30,8 @@ export function translateBuilding(buildIntents: BuildIntent[]): IntentInput["new
 export function translateArmyMove(
   ctx: GameCtx,
   armyMoveIntents: MoveArmy[]
-): IntentInput["movePlayerArmy"] {
-  const translated: IntentInput["movePlayerArmy"] = [];
+): ActionOfType<"army.move">[] {
+  const translated: ActionOfType<"army.move">[] = [];
 
   const hexIdMap = getHexIdMap(ctx);
 
@@ -40,24 +41,30 @@ export function translateArmyMove(
     if (!fromHex || !toHex) continue;
 
     const deltaDir = getDeltaAxial({ q: fromHex.q, r: fromHex.r }, { q: toHex.q, r: toHex.r });
-    translated.push({ hexId: intent.fromHexId, amount: intent.amount, direction: deltaDir });
+    translated.push({
+      id: intent.id,
+      hexId: intent.fromHexId,
+      amount: intent.amount,
+      direction: deltaDir,
+      nationId: intent.nationId,
+    });
   }
 
   return translated;
 }
 
-export function translateArmyTrain(armyTrainIntents: ArmyTrain[]): IntentInput["trainNewArmy"] {
-  const translated: IntentInput["trainNewArmy"] = [];
+export function translateArmyTrain(armyTrainIntents: ArmyTrain[]): ActionOfType<"army.train">[] {
+  const translated: ActionOfType<"army.train">[] = [];
 
   for (const intent of armyTrainIntents) {
-    translated.push({ barrackId: intent.barrackId, amount: intent.amount });
+    translated.push({ id: intent.id, barrackId: intent.barrackId, amount: intent.amount });
   }
 
   return translated;
 }
 
 export function translateRoadBuild(buildRoads: BuildRoad[]) {
-  const translated: IntentInput["buildRoads"] = [];
+  const translated: ActionOfType<"road.build">[] = [];
 
   for (const intent of buildRoads) {
     const points: { q: number; r: number; d1: number; d2: number }[] = [];
@@ -74,27 +81,31 @@ export function translateRoadBuild(buildRoads: BuildRoad[]) {
 
 export function translateCreateContract(
   createContracts: ContractIntent[]
-): IntentInput["createNewContracts"] {
-  const translated: IntentInput["createNewContracts"] = [];
+): ActionOfType<"contract.create">[] {
+  const translated: ActionOfType<"contract.create">[] = [];
 
   for (const intent of createContracts) {
     translated.push({
+      id: intent.id,
       startBuildingId: intent.fromBuildingId,
       endBuildingId: intent.toBuildingId,
       amount: 0,
       autoAdjust: true,
       resource: intent.resource,
+      contractId: crypto.randomUUID(),
     });
   }
 
   return translated;
 }
 
-export function translateDeclareWar(warIntents: DeclareWarIntent[]): IntentInput["declareWar"] {
-  const translated: IntentInput["declareWar"] = [];
+export function translateDeclareWar(
+  warIntents: DeclareWarIntent[]
+): ActionOfType<"diplomacy.war">[] {
+  const translated: ActionOfType<"diplomacy.war">[] = [];
 
   for (const intent of warIntents) {
-    translated.push(intent.toNationId);
+    translated.push({ id: intent.id, nationId: intent.toNationId });
   }
 
   return translated;
@@ -102,11 +113,11 @@ export function translateDeclareWar(warIntents: DeclareWarIntent[]): IntentInput
 
 export function translateSignPeaceReq(
   peaceIntents: SignPeaceReqIntent[]
-): IntentInput["signPeaceReq"] {
-  const translated: IntentInput["signPeaceReq"] = [];
+): ActionOfType<"diplomacy.peace">[] {
+  const translated: ActionOfType<"diplomacy.peace">[] = [];
 
   for (const intent of peaceIntents) {
-    translated.push(intent.nationId);
+    translated.push({ id: intent.id, nationId: intent.nationId });
   }
 
   return translated;
@@ -114,14 +125,11 @@ export function translateSignPeaceReq(
 
 export function translatePeaceMailAnswers(
   answeredMails: AnswerMail[]
-): IntentInput["answeredMails"] {
-  const translated: IntentInput["answeredMails"] = [];
+): ActionOfType<"mails.answer">[] {
+  const translated: ActionOfType<"mails.answer">[] = [];
 
   for (const intent of answeredMails) {
-    translated.push({
-      id: intent.mailId,
-      answer: intent.answer,
-    });
+    translated.push(intent);
   }
 
   return translated;

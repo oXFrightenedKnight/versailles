@@ -1,5 +1,5 @@
-import { GameCtx, IntentInput } from "#trpc/index.js";
-import { Nation } from "@repo/shared";
+import { GameCtx } from "#trpc/index.js";
+import { ActionBuckets, Nation } from "@repo/shared";
 import { AIWorldAnalysis } from "./analysis/analyzeWorld";
 import { getCandidates } from "./generateCandidates";
 import {
@@ -14,7 +14,7 @@ import {
 } from "./intents/translate";
 
 export function runAIPipeline(ctx: GameCtx, nation: Nation) {
-  const aiIntents: Partial<IntentInput> = {};
+  const aiActionBuckets: ActionBuckets = {};
   const analysis = AIWorldAnalysis({ ctx, nationId: nation.id });
   if (!analysis) {
     throw new Error("AI couldn't analyze the world correctly!");
@@ -34,18 +34,18 @@ export function runAIPipeline(ctx: GameCtx, nation: Nation) {
   const peaceAnswers = translatePeaceMailAnswers(candidates.peaceAnswerIntents);
   const answeredMails = [...peaceAnswers];
 
-  aiIntents["newQueuedBuildings"] = newQueuedBuildings;
-  aiIntents["movePlayerArmy"] = armyMove;
-  aiIntents["trainNewArmy"] = armyTrain;
-  aiIntents["buildRoads"] = buildRoads;
-  aiIntents["createNewContracts"] = createNewContracts;
-  aiIntents["declareWar"] = declareWar;
-  aiIntents["signPeaceReq"] = signPeaceReq;
-  aiIntents["answeredMails"] = answeredMails;
+  aiActionBuckets["building.build"] = newQueuedBuildings;
+  aiActionBuckets["army.move"] = armyMove;
+  aiActionBuckets["army.train"] = armyTrain;
+  aiActionBuckets["road.build"] = buildRoads;
+  aiActionBuckets["contract.create"] = createNewContracts;
+  aiActionBuckets["diplomacy.war"] = declareWar;
+  aiActionBuckets["diplomacy.peace"] = signPeaceReq;
+  aiActionBuckets["mails.answer"] = answeredMails;
 
   console.log("armyMoveIntents", armyMove);
   console.log("trainArmyIntents", armyTrain);
   console.dir(`buildRoads: ${buildRoads}`, { depth: null });
 
-  return aiIntents;
+  return aiActionBuckets;
 }

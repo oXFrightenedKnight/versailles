@@ -2,39 +2,39 @@
 
 import BuildingMenu from "@/components/buildingConfig/buildingMenu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { getOptimisticPopulation } from "@/lib/UI/optimisticCalc/population";
 import { getNationFlagURL } from "@/lib/helpers/flags";
 import { getNationName } from "@/lib/helpers/nations";
-import { Building } from "@repo/shared/data/buildings";
 import { Hex } from "@repo/shared/data/hex_map";
 import { getBuilding, getBuildingName } from "@repo/shared/helpers/buildings";
 import { X } from "lucide-react";
 import Image from "next/image";
 import NoBuilding from "../../buildingConfig/noBuilding";
+import { useGameStore } from "@/lib/stores/gameStore";
+import { selectBuildings } from "@/lib/UI/mergeData/buildings/selectors";
+import { useIntentStore } from "@/lib/stores/intentStore";
 
 export default function ProvinceInfoSidebar({
   selectedHex,
-  buildingsUI,
   isContractSelected,
   setIsContractSelected,
-  serverBuildingsDelete,
 }: {
   selectedHex: Hex | null;
-  buildingsUI: Building[];
   isContractSelected: boolean;
   setIsContractSelected: React.Dispatch<React.SetStateAction<boolean>>;
-  serverBuildingsDelete: string[];
 }) {
+  const serverBuildings = useGameStore((s) => s.buildings);
+
+  const gameActions = useIntentStore((s) => s.gameActions);
+  const buildings = selectBuildings(serverBuildings, gameActions);
+
   const buildingData = selectedHex?.buildingId
-    ? (getBuilding({ buildings: buildingsUI, id: selectedHex.buildingId }) ?? null)
+    ? (getBuilding({ buildings, id: selectedHex.buildingId }) ?? null)
     : null;
   const buildingName = buildingData?.category
     ? getBuildingName(buildingData.category, buildingData.level)
     : "empty";
 
-  const building = buildingsUI.find((b) => b.id === selectedHex?.buildingId);
-
-  const population = getOptimisticPopulation(selectedHex, serverBuildingsDelete);
+  const building = buildings.find((b) => b.id === selectedHex?.buildingId);
 
   function renderBuildingButtons() {
     if (!buildingData || !building) return <NoBuilding></NoBuilding>;
@@ -121,7 +121,7 @@ export default function ProvinceInfoSidebar({
               </Tooltip>
             </div>
             <div className="bg-gray-900 shadow-md shadow-black rounded-lg text-white h-full flex justify-center items-center text-2xl">
-              {population}
+              {selectedHex?.population ?? 999}
               <Image
                 src="/icons/population.png"
                 alt="population icon"

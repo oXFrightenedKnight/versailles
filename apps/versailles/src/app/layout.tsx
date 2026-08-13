@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Providers from "@/components/Providers";
-import ClerkClientProvider from "@/components/ClerkClientProvider";
+import Providers from "@/components/clerk/Providers";
+import ClerkClientProvider from "@/components/clerk/ClerkClientProvider";
 import localFont from "next/font/local";
 import { TooltipProvider } from "@/components/ui/tooltip";
 

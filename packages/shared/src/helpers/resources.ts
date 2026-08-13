@@ -4,8 +4,10 @@ import {
   baseResources,
   NATION_RESOURCE,
   nationResources,
+  NationResourceTable,
   PRODUCIBLE_RESOURCE,
 } from "#data/resources";
+import { typedEntries } from "./tsHelpers";
 
 export function isNationResource(resource: PRODUCIBLE_RESOURCE): resource is NATION_RESOURCE {
   return nationResourceSet.has(resource);
@@ -23,4 +25,16 @@ export function isResource(resource: string): resource is PRODUCIBLE_RESOURCE {
 
 export function getNationResource(nation: Nation, resource: NATION_RESOURCE) {
   return nation.resources[resource] ?? 0;
+}
+
+export function invertResourceTable(table: NationResourceTable) {
+  const newTable: NationResourceTable = {};
+
+  for (const [res, amount] of typedEntries(table)) {
+    if (amount === undefined) continue;
+
+    newTable[res] = -amount;
+  }
+
+  return newTable;
 }

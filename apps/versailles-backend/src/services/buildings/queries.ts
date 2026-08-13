@@ -1,4 +1,3 @@
-import { getHexIdMap } from "#services/map.js";
 import { GameCtx } from "#trpc/index.js";
 import {
   getBuilding,
@@ -9,6 +8,8 @@ import {
   getBuildingName,
   BUILDINGS,
   BUILDINGS_CATEGORY,
+  getBuildingsByIdMap,
+  getHexIdMap,
 } from "@repo/shared";
 import { BuildingInfo } from "./types";
 
@@ -86,10 +87,6 @@ export function getNationBuildings(ctx: GameCtx, nation: Nation) {
   );
 
   return ctx.buildings.filter((b) => hexBuildingMap.has(b.id));
-}
-
-export function getBuildingsByIdMap(buildings: Building[]) {
-  return new Map(buildings.map((b) => [b.id, b]));
 }
 
 export function getBuildingHexMap({ mapHexes }: { mapHexes: Hex[] }) {

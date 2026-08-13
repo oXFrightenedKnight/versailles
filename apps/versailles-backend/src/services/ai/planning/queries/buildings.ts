@@ -2,9 +2,8 @@ import { EARLY_BUILDING_TARGET_SCHEMA } from "#services/ai/actions/building/poli
 import { OpeningTarget } from "#services/ai/actions/building/types.js";
 import { WorldAnalysis } from "#services/ai/analysis/types.js";
 import { GameCtx } from "#trpc/index.js";
-import { building_categoires, BUILDINGS_CATEGORY } from "@repo/shared";
+import { building_categoires, BUILDINGS_CATEGORY, getBuildingsByIdMap } from "@repo/shared";
 import { AIPlanningState } from "../types";
-import { getBuildingsByIdMap } from "#services/buildings/queries.js";
 
 export function getOptimisticCategoryLevels(
   analysis: WorldAnalysis,

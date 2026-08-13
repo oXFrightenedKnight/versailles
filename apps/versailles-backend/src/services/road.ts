@@ -1,26 +1,24 @@
 import {
+  ActionOfType,
   BASE_ROAD_COST,
   calculateRoadCost,
   findNeighbors,
+  getHexAxialMap,
   hasSegment,
   Hex,
   Nation,
   Road,
+  RoadPoint,
 } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
-import { getHexAxialMap } from "./map.js";
-import { adjustNationResource } from "./resources/production.js";
+import { adjustNationResource, trySpendNationResource } from "./resources/production.js";
 
-export function buildNationRoads({
-  gameCtx,
-  buildRoads,
-  nationId,
-}: {
-  gameCtx: GameCtx;
-  buildRoads: Road[];
-  nationId: string;
-}) {
-  const { mapHexes, nations, buildings, roads } = gameCtx;
+export function buildNationRoads(
+  ctx: GameCtx,
+  nationId: string,
+  buildRoads: ActionOfType<"road.build">[]
+) {
+  const { mapHexes, nations, roads } = ctx;
 
   // create a set of hex coordinates and a map of hex maps
   const hexCoorSet = new Set<string>(mapHexes.map((hex) => `${hex.q},${hex.r}`));
@@ -33,7 +31,12 @@ export function buildNationRoads({
   }
 
   // add client built roads to road array
-  outer: for (const road of buildRoads) {
+  outer: for (const roadAction of buildRoads) {
+    const road: Road = {
+      id: crypto.randomUUID(),
+      points: roadAction.points.map((p) => ({ ...p, isConstructing: true })),
+      constructing: null,
+    };
     const points = road.points;
     const pointsCoor = points.map((point) => ({ q: point.q, r: point.r }));
 
@@ -80,7 +83,7 @@ export function buildNationRoads({
       if (nextPoint) {
         const roadsWithoutCurr = roads.filter((r) => r.id !== road.id);
         for (const r of roadsWithoutCurr) {
-          if (hasSegment(r, point, nextPoint)) {
+          if (hasSegment(r.points, point, nextPoint)) {
             continue outer;
           }
         }
@@ -93,7 +96,9 @@ export function buildNationRoads({
     }
 
     const cost = calculateRoadCost(road.points.length);
-    if (adjustNationResource(nation, "gold", -cost)) {
+
+    const result = trySpendNationResource(nation, "gold", cost);
+    if (result.ok) {
       // add road to approved roads for building
       roads.push(road);
     }
@@ -133,10 +138,14 @@ export function buildNationRoads({
   }
 }
 
-export function cancelRoadBuild(ctx: GameCtx, cancelIds: string[], nation: Nation) {
+export function cancelRoadBuild(
+  ctx: GameCtx,
+  cancelActions: ActionOfType<"road.cancel">[],
+  nation: Nation
+) {
   const roadMap = new Map(ctx.roads.filter((r) => r.constructing).map((r) => [r.id, r]));
 
-  for (const id of cancelIds) {
+  for (const { roadId: id } of cancelActions) {
     const road = roadMap.get(id);
 
     if (!road || !road.constructing) continue;
@@ -148,8 +157,10 @@ export function cancelRoadBuild(ctx: GameCtx, cancelIds: string[], nation: Natio
     road.points = finishedPoints;
     road.constructing = null;
 
+    const refund = calculateRoadCost(unfinishedAmount);
+
     // return cost
-    adjustNationResource(nation, "gold", unfinishedAmount * BASE_ROAD_COST);
+    adjustNationResource(nation, "gold", refund);
 
     // delete road if it's 1 or fewer points long
     if (road.points.length <= 1) {
@@ -166,7 +177,6 @@ export function cancelRoadBuild(ctx: GameCtx, cancelIds: string[], nation: Natio
 }
 
 // return roads with points that exist only on nation's owned hexes
-export type RoadPoint = { q: number; r: number; d1: number; d2: number; isConstructing: boolean };
 export function getNationRoads(ctx: GameCtx, nationId: string): Point[][] {
   const axialMap = getHexAxialMap(ctx);
 

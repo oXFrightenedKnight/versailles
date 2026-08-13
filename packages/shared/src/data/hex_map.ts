@@ -66,9 +66,11 @@ export type Hex = {
     owner: string;
     levels: number;
   } | null;
-  army: { amount: number; nationId: string }[];
+  army: HexArmy[];
   wood: number;
 };
+
+export type HexArmy = { amount: number; nationId: string };
 
 export const BASE_HEX_POPULATION = 10; // population after deleting a building
 

@@ -10,3 +10,5 @@ export type PRODUCIBLE_RESOURCE = NATION_RESOURCE | BASE_RESOURCE;
 
 // The general rule is: buildings CAN produce all types of resources (PRODUCIBLE_RESOURCE),
 // but can only consume BASE_RESOURCE
+
+export type NationResourceTable = Partial<Record<NATION_RESOURCE, number>>;

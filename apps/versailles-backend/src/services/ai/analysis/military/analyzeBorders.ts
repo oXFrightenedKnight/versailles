@@ -6,9 +6,9 @@ import {
 import { AIPlanningState } from "#services/ai/planning/types.js";
 import { avgEnemyArmyInHexes } from "#services/ai/world/armies.js";
 import { getNationWarSet, isAtWar, isNationAtWar } from "#services/army/war.js";
-import { getHexIdMap, getHexAxialMap, getNationArmyFromHex } from "#services/map.js";
+import { getNationArmyFromHex } from "#services/map.js";
 import { GameCtx } from "#trpc/index.js";
-import { Nation, findNeighbors } from "@repo/shared";
+import { Nation, findNeighbors, getHexAxialMap, getHexIdMap } from "@repo/shared";
 import { WorldAnalysis } from "../types";
 import { BorderNeed } from "./types";
 

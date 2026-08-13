@@ -1,16 +1,20 @@
 import {
+  ActionOfType,
   BASE_RESOURCE,
   baseResources,
-  BUILDINGS,
+  calculateContracts,
+  ContractCalculationInput,
+  getAvailableByBuildingMap,
+  getAvailableResources,
   getBuilding,
-  getBuildingName,
+  getBuildingConfig,
+  getBuildingsByIdMap,
+  getRequiredByBuildingMap,
   Nation,
-  ServerContractUpdate,
   startDijkstrasAlgo,
   SupplyContract,
 } from "@repo/shared";
-import { GameCtx, IntentInput } from "../trpc/index.js";
-import { getBuildingsByIdMap } from "./buildings/queries.js";
+import { GameCtx } from "../trpc/index.js";
 import { pointKey } from "./road.js";
 
 export type newContract = {
@@ -21,56 +25,56 @@ export type newContract = {
   autoAdjust: boolean;
 };
 
-export function submitNewContracts({
-  contracts,
-  gameCtx,
-  nation,
-}: {
-  contracts: newContract[];
-  gameCtx: GameCtx;
-  nation: Nation;
-}) {
-  const { mapHexes, buildings, roads } = gameCtx;
+export function submitNewContracts(
+  ctx: GameCtx,
+  nation: Nation,
+  createContracts: ActionOfType<"contract.create">[]
+) {
+  const { mapHexes, buildings, roads } = ctx;
 
-  const buildingContractMap = getBuildingContractsMap(gameCtx);
+  const buildingContractMap = getBuildingContractsMap(ctx);
+
+  const contractIds = new Set(ctx.contracts.map((c) => c.id));
+  let currHighestOrder = ctx.contracts.reduce(
+    (acc, c) => (c.executionOrder > acc ? c.executionOrder : acc),
+    0
+  );
 
   // check whether starting building is allowed to have contracts
-  for (const contract of contracts) {
-    if (!baseResources.includes(contract.resource)) continue;
+  for (const action of createContracts) {
+    if (contractIds.has(action.contractId)) continue;
 
-    const startBuilding = getBuilding({ buildings, id: contract.startBuildingId });
-    const startingHex = mapHexes.find((h) => h.buildingId === contract.startBuildingId);
-    const endHex = mapHexes.find((h) => h.buildingId === contract.endBuildingId);
-    const endBuilding = getBuilding({ buildings, id: contract.endBuildingId });
+    if (!baseResources.includes(action.resource)) continue;
+
+    const startBuilding = getBuilding({ buildings, id: action.startBuildingId });
+    const startingHex = mapHexes.find((h) => h.buildingId === action.startBuildingId);
+
+    const endHex = mapHexes.find((h) => h.buildingId === action.endBuildingId);
+    const endBuilding = getBuilding({ buildings, id: action.endBuildingId });
+
     if (!startBuilding || !endHex?.buildingId || !startingHex || !endHex || !endBuilding) continue;
     if (startingHex.owner !== nation.id || endHex.owner !== nation.id) continue;
 
     // -- VALIDATION --
     // check if building produces anything to export
-    const startName = getBuildingName(startBuilding.category, startBuilding.level);
+    const startConfig = getBuildingConfig(startBuilding);
+    const endConfig = getBuildingConfig(endBuilding);
 
-    if (!startName) continue;
-    if (
-      !BUILDINGS[startName].producing ||
-      Object.entries(BUILDINGS[startName].producing).length === 0
-    )
-      continue;
-
-    // check if destination is allowed to store that resource
-    const endName = getBuildingName(endBuilding.category, endBuilding.level);
-    if (!endName) continue;
-
-    const canAccept = BUILDINGS[endName].consuming?.[contract.resource];
-
-    if (!canAccept) continue;
+    const startProduction = startConfig?.producing ?? {};
+    const endConsumption = endConfig?.consuming ?? {};
 
     // check if these two buildings already have a contract with the same resource
     const buildingContracts = buildingContractMap.get(startBuilding.id) ?? [];
-
-    const sameContract = buildingContracts.find(
-      (c) => c.toBuildingId === endBuilding.id && c.resource === contract.resource
+    const exportedResources = new Set(
+      buildingContracts.flatMap((c) => (c.toBuildingId === endBuilding.id ? [c.resource] : []))
     );
-    if (sameContract) continue;
+
+    const availableResources = getAvailableResources(
+      [...exportedResources],
+      startProduction,
+      endConsumption
+    );
+    if (!availableResources.has(action.resource)) continue;
 
     // --- CREATE ---
     const points = startDijkstrasAlgo({ startingHex: startingHex, endHex, mapHexes, roads });
@@ -80,17 +84,18 @@ export function submitNewContracts({
     const last = points.at(-1);
     if (last && pointKey(last) !== pointKey({ q: endHex.q, r: endHex.r })) continue;
 
-    if (!baseResources.includes(contract.resource)) continue;
-
-    createContract(gameCtx.contracts, {
-      id: crypto.randomUUID(),
-      fromBuildingId: contract.startBuildingId,
-      toBuildingId: contract.endBuildingId,
-      amount: contract.amount,
-      resource: contract.resource,
-      autoAdjust: contract.autoAdjust,
+    createContract(ctx.contracts, {
+      id: action.contractId,
+      fromBuildingId: action.startBuildingId,
+      toBuildingId: action.endBuildingId,
+      amount: action.amount,
+      resource: action.resource,
+      autoAdjust: action.autoAdjust,
       ownerId: nation.id,
+      executionOrder: currHighestOrder + 1,
     });
+    currHighestOrder++;
+    contractIds.add(action.contractId);
   }
 }
 
@@ -99,44 +104,36 @@ export function createContract(contracts: SupplyContract[], newContract: SupplyC
   return { ok: true };
 }
 
+export function updateContract(ctx: GameCtx, contractId: string, changes: Partial<SupplyContract>) {
+  ctx.contracts = ctx.contracts.flatMap((c) =>
+    c.id === contractId ? [{ ...c, changes }] : [{ ...c }]
+  );
+  return { ok: true };
+}
+
 // this function only recalculates contracts which have "autoAdjust" feature enabled
 export function recalculateContractsAmounts(ctx: GameCtx) {
-  const buildingHexMap = new Map(ctx.mapHexes.map((h) => [h.buildingId, h]));
+  const availableByBuilding = getAvailableByBuildingMap(ctx.buildings);
+  const requiredByBuilding = getRequiredByBuildingMap(ctx.buildings);
 
-  for (const contract of ctx.contracts) {
-    const startHex = buildingHexMap.get(contract.fromBuildingId);
-    if (!startHex || !startHex.owner) continue;
+  const adjustable = ctx.contracts.filter((c) => c.autoAdjust);
+  const converted = convertContractInput(adjustable);
 
-    if (!contract.autoAdjust) continue; // only recalculate with auto-adjust
+  const result = calculateContracts(converted, { availableByBuilding, requiredByBuilding });
 
-    const toBuilding = getBuilding({ buildings: ctx.buildings, id: contract.toBuildingId });
-    if (!toBuilding) continue;
-
-    {
-      /*const amount = calculateExportAmount({
-      startBuilding: building,
-      endBuilding,
-      length: path.length - 1,
-      resource: contract.resource,
-      mapHexes: ctx.mapHexes,
-      buildings: ctx.buildings,
-    }); 
-
-    if (!amount) continue;
-
-    contract.amount = amount; */
-    }
+  for (const { contractId, calculatedAmount } of result) {
+    updateContract(ctx, contractId, { amount: calculatedAmount });
   }
 }
 
 export function updateContracts(
   ctx: GameCtx,
-  updateIntent: ServerContractUpdate[],
+  updateActions: ActionOfType<"contract.update">[],
   nation: Nation
 ) {
   const contractMap = getContractIdMap(ctx);
 
-  for (const contractUpdate of updateIntent) {
+  for (const contractUpdate of updateActions) {
     if (contractUpdate.changes.resource && !baseResources.includes(contractUpdate.changes.resource))
       continue;
     const contract = contractMap.get(contractUpdate.contractId);
@@ -144,21 +141,18 @@ export function updateContracts(
 
     if (contract.ownerId !== nation.id) continue;
 
-    // update contract
-    Object.assign(contract, contractUpdate.changes, {
-      progress: 0,
-    });
+    updateContract(ctx, contract.id, { ...contractUpdate.changes });
   }
 }
 
 export function submitDeleteContracts(
   ctx: GameCtx,
-  deleteContracts: IntentInput["deleteContracts"],
+  deleteActions: ActionOfType<"contract.delete">[],
   nation: Nation
 ) {
   const contractIdMap = getContractIdMap(ctx);
 
-  for (const contractId of deleteContracts) {
+  for (const { contractId } of deleteActions) {
     const contract = contractIdMap.get(contractId);
     if (!contract || contract.ownerId !== nation.id) continue;
 
@@ -226,4 +220,23 @@ export function getBuildingContractsMap(ctx: GameCtx) {
 
 export function getContractsToBuilding({ contracts }: { contracts: SupplyContract[] }) {
   return new Map(contracts.map((c) => [c.toBuildingId, c]));
+}
+
+export function sortContracts(contracts: SupplyContract[]) {
+  return contracts.sort((a, b) => a.executionOrder - b.executionOrder || a.id.localeCompare(b.id));
+}
+
+export function convertContractInput(contracts: SupplyContract[]): ContractCalculationInput[] {
+  return contracts.map((c) => ({
+    contractId: c.id,
+    order: {
+      group: "confirmed",
+      index: c.executionOrder,
+    },
+    fromBuildingId: c.fromBuildingId,
+    toBuildingId: c.toBuildingId,
+    amount: c.amount,
+    resource: c.resource,
+    autoAdjust: c.autoAdjust,
+  }));
 }

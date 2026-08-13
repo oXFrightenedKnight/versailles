@@ -1,6 +1,6 @@
 import {
+  ActionOfType,
   Mail,
-  MailAnswer,
   Nation,
   PeaceOfferMail,
   PeaceSignedMail,
@@ -84,9 +84,13 @@ export function filterNationMails(mails: Mail[], nationId: string) {
   return mails.filter((m) => m.visibleTo.includes(nationId) || m.visibleTo === "ALL");
 }
 
-export function markReadMails(ctx: GameCtx, readMails: string[], nation: Nation) {
+export function markReadMails(
+  ctx: GameCtx,
+  readMails: ActionOfType<"mails.read">[],
+  nation: Nation
+) {
   const mailIdMap = new Map(ctx.mails.map((m) => [m.id, m]));
-  for (const mailId of readMails) {
+  for (const { mailId } of readMails) {
     if (!mailIdMap.has(mailId)) continue;
 
     const mail = mailIdMap.get(mailId);
@@ -98,7 +102,11 @@ export function markReadMails(ctx: GameCtx, readMails: string[], nation: Nation)
 }
 
 // Remember that for now this only supports one nation to answer one mail
-export function executeMailsAnswers(ctx: GameCtx, answeredMails: MailAnswer[], nation: Nation) {
+export function executeMailsAnswers(
+  ctx: GameCtx,
+  answeredMails: ActionOfType<"mails.answer">[],
+  nation: Nation
+) {
   const answerMails = ctx.mails.filter((m) => m.requireAnswer);
   const answeredMap = new Map(answeredMails.map((obj) => [obj.id, obj.answer]));
 

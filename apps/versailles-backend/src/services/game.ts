@@ -1,44 +1,41 @@
-import { GameCtx, IntentInput, NextTurnType, emptyIntentCtx } from "#trpc/index.js";
+import { GameCtx, NextTurnType } from "#trpc/index.js";
 import { TRPCError } from "@trpc/server";
 import { runAIPipeline } from "./ai/main";
 import { calcWars, peaceCountdown } from "./army/war";
 import { giveProgressBuilding } from "./buildings/construction";
+import { runBuildingsSystem } from "./buildings/production";
 import { recalculateContractsAmounts } from "./contracts";
+import { addBaseNationGold } from "./genNations";
 import { runAIDiplomacy, runNationDiplomacy } from "./intents/diplomacyIntents";
 import { runIntentForEachNation } from "./intents/executeIntents";
 import { mailsExpire } from "./mails";
 import { getPlayerNation, updatePlayerUI } from "./player";
 import { nationsUpdateManpower } from "./resources/manpower";
-import { addBaseNationGold } from "./genNations";
-import { BuildingOutputState } from "./buildings/types";
-import { runBuildingsSystem } from "./buildings/production";
+import { ActionBuckets, categorizeActions } from "@repo/shared";
 
 export function runGameSimulation(gameCtx: GameCtx, input: NextTurnType) {
   const playerNation = getPlayerNation(gameCtx);
   if (!playerNation) throw new TRPCError({ code: "NOT_FOUND" });
 
-  const playerIntentCtx: IntentInput = {
-    ...input.playerIntents,
-  };
+  const playerActions = categorizeActions(input.actions);
 
   // step 1: execute player diplomacy first
-  runNationDiplomacy(gameCtx, playerNation, playerIntentCtx);
+  runNationDiplomacy(gameCtx, playerNation, playerActions);
 
   // step 2: calculate ai decisions (build, attack, move)
   // merge ai intents in here later
-  const intents: { input: IntentInput; nationId: string }[] = [
-    { input: playerIntentCtx, nationId: playerNation.id },
+  const actions: { actions: ActionBuckets; nationId: string }[] = [
+    { actions: playerActions, nationId: playerNation.id },
   ];
 
   for (const nation of gameCtx.nations) {
     if (nation.isPlayer) continue;
 
     try {
-      const aiIntents = runAIPipeline(gameCtx, nation);
-      intents.push({
-        input: {
-          ...emptyIntentCtx,
-          ...aiIntents,
+      const aiActions = runAIPipeline(gameCtx, nation);
+      actions.push({
+        actions: {
+          ...aiActions,
         },
         nationId: nation.id,
       });
@@ -48,10 +45,10 @@ export function runGameSimulation(gameCtx: GameCtx, input: NextTurnType) {
   }
 
   // step 3: run ai diplomacy
-  runAIDiplomacy(gameCtx, intents);
+  runAIDiplomacy(gameCtx, actions);
 
   // step 4: apply intents
-  runIntentForEachNation(gameCtx, intents);
+  runIntentForEachNation(gameCtx, actions);
 
   // step 5: calculate battle outcomes
   calcWars(gameCtx);
@@ -78,7 +75,7 @@ export function runGameSimulation(gameCtx: GameCtx, input: NextTurnType) {
   mailsExpire(gameCtx);
 
   // step 14: update player UI states
-  updatePlayerUI(gameCtx, playerIntentCtx, playerNation);
+  updatePlayerUI(gameCtx, playerActions, playerNation);
 
   // step 14: increase turn
   gameCtx.turn++;

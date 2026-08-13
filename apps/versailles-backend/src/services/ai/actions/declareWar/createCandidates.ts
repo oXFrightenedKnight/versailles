@@ -1,8 +1,8 @@
 import { DeclareWarIntent } from "#services/ai/intents/types.js";
 import { AIPlanningState } from "#services/ai/planning/types.js";
-import { getHexIdMap, getNationArmyFromHex, getNationBorderHexes } from "#services/map.js";
+import { getNationArmyFromHex, getNationBorderHexes } from "#services/map.js";
 import { GameCtx } from "#trpc/index.js";
-import { Nation, findNeighbors } from "@repo/shared";
+import { Nation, findNeighbors, getHexIdMap } from "@repo/shared";
 import { createTargets, revalidateTargets } from "./targets";
 import { WAR_CONSIDERATION_RATIO } from "./policy";
 import { deleteAttackTarget } from "#services/ai/planning/goals/attackTargets.js";

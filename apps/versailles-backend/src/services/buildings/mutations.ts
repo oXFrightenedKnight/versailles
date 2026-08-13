@@ -1,12 +1,22 @@
 import { adjustNationResource } from "#services/resources/production.js";
 import { GameCtx } from "#trpc/index.js";
-import { Nation, BUILDINGS, BASE_HEX_POPULATION, getBuildingName } from "@repo/shared";
+import {
+  Nation,
+  BUILDINGS,
+  BASE_HEX_POPULATION,
+  getBuildingName,
+  ActionOfType,
+} from "@repo/shared";
 
-export function cancelBuilding(ctx: GameCtx, hexIds: number[], nation: Nation) {
+export function cancelBuilding(
+  ctx: GameCtx,
+  cancelActions: ActionOfType<"building.cancel">[],
+  nation: Nation
+) {
   const hexIdMap = new Map(ctx.mapHexes.filter((h) => h.build_queue).map((h) => [h.id, h]));
   const buildingIdMap = new Map(ctx.buildings.map((b) => [b.id, b]));
 
-  for (const id of hexIds) {
+  for (const { hexId: id } of cancelActions) {
     const hex = hexIdMap.get(id);
     if (!hex || !hex.build_queue) continue;
     if (hex.owner !== nation.id) continue;
@@ -30,13 +40,17 @@ export function cancelBuilding(ctx: GameCtx, hexIds: number[], nation: Nation) {
 }
 
 // delete buildings by their id
-export function deleteBuilding(ctx: GameCtx, deleteIds: string[], nation: Nation) {
+export function deleteBuilding(
+  ctx: GameCtx,
+  deleteActions: ActionOfType<"building.delete">[],
+  nation: Nation
+) {
   const buildingHexMap = new Map(
     ctx.mapHexes.filter((h) => h.buildingId).map((h) => [h.buildingId!, h])
   );
   const buildingIdMap = new Map(ctx.buildings.map((b) => [b.id, b]));
 
-  for (const id of deleteIds) {
+  for (const { buildingId: id } of deleteActions) {
     const building = buildingIdMap.get(id);
     const hex = buildingHexMap.get(id);
     if (!building || !hex) continue;

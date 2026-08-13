@@ -1,82 +1,53 @@
-import { Nation, ServerContractUpdate } from "@repo/shared";
-import { GameCtx, IntentInput } from "../../trpc";
-import {
-  newContract,
-  submitDeleteContracts,
-  submitNewContracts,
-  updateContracts,
-} from "../contracts";
-import { newBuildings } from "../genNations";
-import { buildNationRoads, cancelRoadBuild } from "../road";
 import { cancelArmyTraining, queueArmyTraining } from "#services/army/training.js";
-import { moveArmy } from "#services/army/units.js";
-import { cancelBuilding, deleteBuilding } from "#services/buildings/mutations.js";
+import { executeArmyMoveActions } from "#services/army/units.js";
 import { buildNewIntentBuildings } from "#services/buildings/construction.js";
+import { cancelBuilding, deleteBuilding } from "#services/buildings/mutations.js";
+import { ActionBuckets, getActions, Nation } from "@repo/shared";
+import { GameCtx } from "../../trpc";
+import { submitDeleteContracts, submitNewContracts, updateContracts } from "../contracts";
+import { buildNationRoads, cancelRoadBuild } from "../road";
 
-export function executeIntents(ctx: GameCtx, nation: Nation, intentCtx: IntentInput) {
+export function executeIntents(ctx: GameCtx, nation: Nation, actions: ActionBuckets) {
   if (nation.isDefeated) return;
-  const roadsToBuild = intentCtx.buildRoads.map((r) => ({
-    ...r,
-    points: r.points.map((p) => ({
-      ...p,
-      isConstructing: true,
-    })),
-    constructing: null,
-  }));
 
   // 1. Cancel Army Training
-  cancelArmyTraining(ctx, intentCtx.deleteArmyTrain, nation);
+  cancelArmyTraining(ctx, getActions(actions, "army.train.delete"), nation);
   // 2. delete contracts
-  submitDeleteContracts(ctx, intentCtx.deleteContracts, nation);
+  submitDeleteContracts(ctx, getActions(actions, "contract.delete"), nation);
   // 3. cancel building
-  cancelBuilding(ctx, intentCtx.buildingCancel, nation);
+  cancelBuilding(ctx, getActions(actions, "building.cancel"), nation);
   // 4. cancel road building
-  cancelRoadBuild(ctx, intentCtx.cancelRoadBuild, nation);
+  cancelRoadBuild(ctx, getActions(actions, "road.cancel"), nation);
   // 5. delete buildings
-  deleteBuilding(ctx, intentCtx.buildingDelete, nation);
+  deleteBuilding(ctx, getActions(actions, "building.delete"), nation);
 
   // 6. update contracts
-  updateContracts(ctx, intentCtx.updateContracts as ServerContractUpdate[], nation);
+  updateContracts(ctx, getActions(actions, "contract.update"), nation);
 
   // 9. queue buildings
-  buildNewIntentBuildings({
-    gameCtx: ctx,
-    newBuildings: intentCtx.newQueuedBuildings as newBuildings,
-    nation: nation,
-  });
+  buildNewIntentBuildings(ctx, nation, getActions(actions, "building.build"));
   // 10. queue roads
-  buildNationRoads({ gameCtx: ctx, buildRoads: roadsToBuild, nationId: nation.id });
+  buildNationRoads(ctx, nation.id, getActions(actions, "road.build"));
   // 11. queue army training
-  queueArmyTraining({ trainNewArmy: intentCtx.trainNewArmy, nationId: nation.id, gameCtx: ctx });
+  queueArmyTraining(ctx, nation.id, getActions(actions, "army.train"));
 
   // 12. move nation army
-  for (const hexObj of intentCtx.movePlayerArmy) {
-    moveArmy({
-      hexId: hexObj.hexId,
-      amount: hexObj.amount,
-      direction: hexObj.direction,
-      nationId: nation.id,
-      gameCtx: ctx,
-    });
-  }
+  executeArmyMoveActions(ctx, nation.id, getActions(actions, "army.move"));
+
   // 13. create new contracts
-  submitNewContracts({
-    contracts: intentCtx.createNewContracts as newContract[],
-    gameCtx: ctx,
-    nation,
-  });
+  submitNewContracts(ctx, nation, getActions(actions, "contract.create"));
 }
 
 export function runIntentForEachNation(
   ctx: GameCtx,
-  intentCtx: { input: IntentInput; nationId: string }[]
+  actionsCtx: { actions: ActionBuckets; nationId: string }[]
 ) {
   const nationMap = new Map(ctx.nations.map((n) => [n.id, n]));
 
-  for (const intentObj of intentCtx) {
-    const nation = nationMap.get(intentObj.nationId);
+  for (const { actions, nationId } of actionsCtx) {
+    const nation = nationMap.get(nationId);
     if (!nation) continue;
 
-    executeIntents(ctx, nation, intentObj.input);
+    executeIntents(ctx, nation, actions);
   }
 }

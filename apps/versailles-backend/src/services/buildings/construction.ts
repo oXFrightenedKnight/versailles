@@ -1,13 +1,15 @@
 import { newBuildings } from "#services/genNations.js";
-import { getHexById, getHexIdMap } from "#services/map.js";
+import { getHexById } from "#services/map.js";
 import { GameCtx } from "#trpc/index.js";
 import {
+  ActionOfType,
   Building,
   building_categoires,
   BUILDINGS,
   BUILDINGS_CATEGORY,
   getBuilding,
   getBuildingName,
+  getHexIdMap,
   Hex,
   Nation,
   topLevelsByCategory,
@@ -86,28 +88,17 @@ export function giveProgressBuilding(ctx: GameCtx) {
   }
 }
 
-export function buildNewIntentBuildings({
-  gameCtx,
-  newBuildings,
-  nation,
-}: {
-  gameCtx: GameCtx;
-  newBuildings: newBuildings;
-  nation: Nation;
-}) {
-  const hexIdMap = getHexIdMap(gameCtx);
-  const buildingIdMap = new Map(gameCtx.buildings.map((b) => [b.id, b]));
+export function buildNewIntentBuildings(
+  ctx: GameCtx,
+  nation: Nation,
+  newBuildings: ActionOfType<"building.build">[]
+) {
+  const hexIdMap = getHexIdMap(ctx);
+  const buildingIdMap = new Map(ctx.buildings.map((b) => [b.id, b]));
 
   const successfulIds = new Set<number>();
   for (const intent of newBuildings) {
-    const result = validateBuildIntent(
-      gameCtx,
-      nation,
-      intent,
-      hexIdMap,
-      buildingIdMap,
-      successfulIds
-    );
+    const result = validateBuildIntent(ctx, nation, intent, hexIdMap, buildingIdMap, successfulIds);
     if (!result.ok) {
       console.warn(`${result.issue}`);
       continue;

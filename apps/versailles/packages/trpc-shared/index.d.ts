@@ -3,28 +3,11 @@ import {
   Building,
   Hex,
   Mail,
-  MODIFIER,
   Nation,
   Road,
   SupplyContract,
 } from "@repo/shared";
-import { inferProcedureInput } from "@trpc/server";
-import { MemoryCtx } from "../services/ai/memory/types.js";
-export type GameCtx = {
-  mapHexes: Hex[];
-  nations: Nation[];
-  turn: number;
-  roads: Road[];
-  buildings: Building[];
-  modifiers: MODIFIER[];
-  mails: Mail[];
-  contracts: SupplyContract[];
-  armyTraining: ArmyTrainingObject[];
-  aiMemory: MemoryCtx;
-};
-export declare const emptyIntentCtx: IntentInput;
-export type NextTurnType = inferProcedureInput<AppRouter["nextTurn"]>;
-export type IntentInput = NextTurnType["playerIntents"];
+
 export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
   {
     ctx: {
@@ -48,67 +31,114 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
         buildings: Building[];
         contracts: SupplyContract[];
         armyTraining: ArmyTrainingObject[];
-      } | null;
+      };
       meta: object;
     }>;
     nextTurn: import("@trpc/server").TRPCMutationProcedure<{
       input: {
         gameId: string;
-        playerIntents: {
-          newQueuedBuildings: {
-            hexId: number;
-            buildingType: string;
-            levelsToUpgrade: number;
-          }[];
-          buildingCancel: number[];
-          buildingDelete: string[];
-          movePlayerArmy: {
-            hexId: number;
-            amount: number;
-            direction: {
-              dq: number;
-              dr: number;
-            };
-          }[];
-          buildRoads: {
-            id: string;
-            points: {
-              q: number;
-              r: number;
-              d1: number;
-              d2: number;
-            }[];
-          }[];
-          cancelRoadBuild: string[];
-          createNewContracts: {
-            startBuildingId: string;
-            endBuildingId: string;
-            amount: number;
-            resource: string;
-            autoAdjust: boolean;
-          }[];
-          deleteContracts: string[];
-          updateContracts: {
-            contractId: string;
-            changes: {
-              amount?: number | undefined;
-              resource?: string | undefined;
-              autoAdjust?: boolean | undefined;
-            };
-          }[];
-          trainNewArmy: {
-            amount: number;
-            barrackId: string;
-          }[];
-          deleteArmyTrain: string[];
-          declareWar: string[];
-          readMails: string[];
-          answeredMails: {
-            id: string;
-            answer: boolean;
-          }[];
-          signPeaceReq: string[];
-        };
+        actions: (
+          | {
+              id: string;
+              type: "building.build";
+              hexId: number;
+              buildingType: "CIVILIAN" | "BARRACK" | "FARM" | "WATCHTOWER" | "WOODCAMP";
+              levelsToUpgrade: number;
+            }
+          | {
+              id: string;
+              type: "road.build";
+              points: {
+                q: number;
+                r: number;
+                d1: number;
+                d2: number;
+              }[];
+            }
+          | {
+              id: string;
+              type: "contract.create";
+              contractId: string;
+              startBuildingId: string;
+              endBuildingId: string;
+              amount: number;
+              resource: "wheat" | "wood";
+              autoAdjust: boolean;
+            }
+          | {
+              id: string;
+              type: "contract.update";
+              contractId: string;
+              changes: {
+                amount?: number | undefined;
+                resource?: "wheat" | "wood" | undefined;
+                autoAdjust?: boolean | undefined;
+              };
+            }
+          | {
+              id: string;
+              type: "mails.answer";
+              mailId: string;
+              answer: boolean;
+            }
+          | {
+              id: string;
+              type: "mails.read";
+              mailId: string;
+            }
+          | {
+              id: string;
+              type: "diplomacy.peace";
+              nationId: string;
+            }
+          | {
+              id: string;
+              type: "diplomacy.war";
+              nationId: string;
+            }
+          | {
+              id: string;
+              type: "army.move";
+              nationId: string;
+              hexId: number;
+              amount: number;
+              direction: {
+                dq: number;
+                dr: number;
+              };
+            }
+          | {
+              id: string;
+              type: "road.cancel";
+              roadId: string;
+            }
+          | {
+              id: string;
+              type: "building.cancel";
+              hexId: number;
+            }
+          | {
+              id: string;
+              type: "building.delete";
+              buildingId: string;
+            }
+          | {
+              id: string;
+              type: "contract.delete";
+              contractId: string;
+            }
+          | {
+              id: string;
+              type: "army.train.delete";
+              trainingId: string;
+            }
+          | {
+              id: string;
+              type: "army.train";
+              amount: number;
+              barrackId: string;
+            }
+        )[];
       };
       output: {
         mails: Mail[];
@@ -119,7 +149,7 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
         buildings: Building[];
         contracts: SupplyContract[];
         armyTraining: ArmyTrainingObject[];
-      } | null;
+      };
       meta: object;
     }>;
     createNewGame: import("@trpc/server").TRPCMutationProcedure<{
@@ -149,7 +179,6 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
           playerNationId: string | undefined;
           nationsLeft: number;
         };
-        data: GameCtx;
       }[];
       meta: object;
     }>;

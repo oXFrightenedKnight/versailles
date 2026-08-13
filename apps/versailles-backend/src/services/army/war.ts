@@ -2,7 +2,7 @@ import { assignNewCapital, getNationById, setDefeated } from "#services/genNatio
 import { addMail, createWarMail } from "#services/mails.js";
 import { transferHexOwnership } from "#services/map.js";
 import { GameCtx } from "#trpc/index.js";
-import { Hex, Nation } from "@repo/shared";
+import { ActionOfType, Hex, Nation } from "@repo/shared";
 
 export function calculateHexWar(ctx: GameCtx, hex: Hex) {
   if (!hex.owner) return;
@@ -86,7 +86,11 @@ export function checkDefeated(ctx: GameCtx, nationId: string) {
   return { defeated: false };
 }
 
-export function declareWar(ctx: GameCtx, declareWar: string[], nation: Nation) {
+export function declareWar(
+  ctx: GameCtx,
+  warActions: ActionOfType<"diplomacy.war">[],
+  nation: Nation
+) {
   const nationIdMap = new Map(ctx.nations.map((n) => [n.id, n]));
   const warSet = getNationWarSet(ctx);
 
@@ -97,7 +101,7 @@ export function declareWar(ctx: GameCtx, declareWar: string[], nation: Nation) {
     return false;
   }
 
-  for (const id of declareWar) {
+  for (const { nationId: id } of warActions) {
     if (nation.id === id) continue; // no declaring war on self
 
     const enemy = nationIdMap.get(id);

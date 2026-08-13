@@ -42,8 +42,3 @@ export type PeaceSignedMail = BaseMail & {
   };
 };
 export type Mail = WarEventMail | PeaceOfferMail | PeaceSignedMail;
-
-export type MailAnswer = {
-  id: string;
-  answer: boolean;
-};

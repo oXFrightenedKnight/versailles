@@ -6,10 +6,15 @@ import { availableResourcesInBuildings } from "#services/ai/planning/queries/res
 import { AIPlanningState } from "#services/ai/planning/types.js";
 import { uniqueRoadSegments } from "#services/ai/world/roads.js";
 import { buildRoadGraph, hasRoadPath } from "#services/algorithms/bfs.js";
-import { getHexAxialMap, getHexIdMap } from "#services/map.js";
 import { Point, getNationRoads } from "#services/road.js";
 import { GameCtx } from "#trpc/index.js";
-import { NATION_RESOURCE, Nation, calculateRoadCost } from "@repo/shared";
+import {
+  NATION_RESOURCE,
+  Nation,
+  calculateRoadCost,
+  getHexAxialMap,
+  getHexIdMap,
+} from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { hasShortageResource, producingBuildsPath } from "./supplyRoute";
 

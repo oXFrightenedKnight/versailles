@@ -3,6 +3,7 @@ import { addModifier } from "#services/modifiers.js";
 import { trySpendNationResource } from "#services/resources/production.js";
 import { GameCtx } from "#trpc/index.js";
 import {
+  ActionOfType,
   ArmyTrainingObject,
   baseTrainingProgress,
   Building,
@@ -15,16 +16,12 @@ import {
 import { addArmy } from "./units";
 
 // create army training object in a barrack
-export function queueArmyTraining({
-  trainNewArmy,
-  nationId,
-  gameCtx,
-}: {
-  trainNewArmy: { amount: number; barrackId: string }[];
-  nationId: string;
-  gameCtx: GameCtx;
-}) {
-  const { mapHexes, buildings, nations } = gameCtx;
+export function queueArmyTraining(
+  ctx: GameCtx,
+  nationId: string,
+  trainActions: ActionOfType<"army.train">[]
+) {
+  const { mapHexes, buildings, nations } = ctx;
 
   const buildingsById = new Map<string, Building>(buildings.map((b) => [b.id, b]));
   const hexByBuilding = new Map<string | null, Hex>(mapHexes.map((hex) => [hex.buildingId, hex]));
@@ -32,37 +29,41 @@ export function queueArmyTraining({
   if (!nation) return;
 
   // map over every request and create a queue
-  for (const newArmy of trainNewArmy) {
-    if (getNationResource(nation, "manpower") < newArmy.amount) continue; // continue if now enough manpower
+  for (const action of trainActions) {
+    if (getNationResource(nation, "manpower") < action.amount) continue; // continue if now enough manpower
 
-    const barrack = buildingsById.get(newArmy.barrackId);
-    const hex = hexByBuilding.get(newArmy.barrackId);
+    const barrack = buildingsById.get(action.barrackId);
+    const hex = hexByBuilding.get(action.barrackId);
     if (!barrack || !hex || !hex.population) continue;
 
     // check ownership
     if (hex.owner !== nationId) continue;
 
     // subtract gold
-    const cost = getArmyTrainCost(newArmy.amount);
+    const cost = getArmyTrainCost(action.amount);
     const success = trySpendNationResource(nation, "gold", cost);
     if (!success) continue;
 
-    trainArmy(gameCtx, { ...newArmy, barrackId: barrack.id, nationId });
+    trainArmy(ctx, { ...action, barrackId: barrack.id, nationId });
 
     // create flat manpower modifier to decrease manpower
     addModifier({
-      gameCtx,
+      gameCtx: ctx,
       category: "manpower",
       nationId: nation.id,
       type: "flat",
-      value: -newArmy.amount,
+      value: -action.amount,
     });
   }
 }
 
 // cancel army training by the object id
-export function cancelArmyTraining(ctx: GameCtx, cancelIds: string[], nation: Nation) {
-  const cancelIdsSet = new Set(cancelIds);
+export function cancelArmyTraining(
+  ctx: GameCtx,
+  cancelActions: ActionOfType<"army.train.delete">[],
+  nation: Nation
+) {
+  const cancelIdsSet = new Set(cancelActions.map((a) => a.trainingId));
   const newTraining: ArmyTrainingObject[] = [];
 
   for (const trainingInstance of ctx.armyTraining) {

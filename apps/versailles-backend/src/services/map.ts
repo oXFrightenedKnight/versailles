@@ -11,6 +11,9 @@ import {
   findNeighbors,
   getBuilding,
   getBuildingName,
+  getBuildingsByIdMap,
+  getHexAxialMap,
+  getHexIdMap,
   Hex,
   HEX_DIRECTIONS,
   MAP_RADIUS,
@@ -22,7 +25,6 @@ import { GameCtx } from "../trpc/index.js";
 import { addArmy, removeArmy } from "./army/units.js";
 import { bfs, reconstructPath } from "./algorithms/bfs.js";
 import { BuildBuilding } from "./buildings/construction.js";
-import { getBuildingsByIdMap } from "./buildings/queries.js";
 import { deleteContract, getBuildingContractsMap } from "./contracts.js";
 
 // DO NOT CHANGE THIS FUNCTION TO ACCEPT GAMECTX
@@ -281,13 +283,6 @@ export function getNationBorderHexes(ctx: GameCtx, nationId: string) {
 
 export function getNationArmyFromHex(hex: Hex, nationId: string) {
   return hex.army.find((obj) => obj.nationId === nationId)?.amount ?? 0;
-}
-
-export function getHexAxialMap({ mapHexes }: { mapHexes: Hex[] }) {
-  return new Map(mapHexes.map((h) => [`${h.q},${h.r}`, h]));
-}
-export function getHexIdMap(ctx: GameCtx) {
-  return new Map(ctx.mapHexes.map((h) => [h.id, h]));
 }
 
 // returns hexIds in which nation army is allowed to walk into

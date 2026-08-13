@@ -2,57 +2,24 @@
 
 import { Progress } from "@/components/ui/progress";
 import { BuildingIcons } from "@/lib/data";
-import { useGameStore } from "@/lib/stores/gameStore";
-import { useIntentStore } from "@/lib/stores/intentStore";
-import {
-  BuildingConstructionVM,
-  cancelClientBuildingIntent,
-  cancelServerBuildingIntent,
-  getUIBuildings,
-} from "@/lib/UI/mergeData/uiBuildings";
-import { getBuilding, getBuildingConfig } from "@repo/shared/helpers/buildings";
+import { BuildingConstructionProjection } from "@/lib/UI/mergeData/construction/types";
 import { Hammer, SquareArrowUp, X } from "lucide-react";
-import { useCallback } from "react";
 
-export default function ConstructingBuilding({ building }: { building: BuildingConstructionVM }) {
-  const mapHexes = useGameStore((s) => s.mapHexes);
-  const buildings = useGameStore((s) => s.buildings);
-  const serverBuildingsDelete = useIntentStore((s) => s.serverBuildingsDelete);
-
-  const uiBuildings = getUIBuildings(buildings, serverBuildingsDelete);
-
-  const Icon = BuildingIcons[building.buildingType];
-  const hex = mapHexes.find((h) => h.id === building.hexId);
-
-  // find buildCost of next level of this building category and compare to current progress
-  const existingBuilding =
-    hex && hex?.buildingId
-      ? getBuilding({ buildings: uiBuildings, id: hex.buildingId })
-      : undefined;
-
-  const config = getBuildingConfig({
-    category: building.buildingType,
-    level: existingBuilding?.level ? existingBuilding.level + 1 : 1,
-  });
-  const buildTime = config?.buildTime ?? 0;
-
-  const progress = buildTime > 0 ? (building.progress / buildTime) * 100 : 0;
-
-  // FUNCTIONS
-  const cancelMergedConstruction = useCallback(() => {
-    if (building.fromServer) {
-      cancelServerBuildingIntent(building.hexId);
-    } else {
-      cancelClientBuildingIntent(building.hexId);
-    }
-  }, [building]);
+export default function ConstructingBuilding({
+  projection,
+  onCancel,
+}: {
+  projection: BuildingConstructionProjection;
+  onCancel: (projection: BuildingConstructionProjection) => void;
+}) {
+  const Icon = BuildingIcons[projection.buildingType];
 
   return (
     <div className="w-full h-[75px] flex justify-center items-center text-white">
       <div className="flex flex-row w-full h-full bg-gray-900 rounded-md p-1 gap-1">
         {/* Display City Name/HexId */}
         <div className="flex justify-center items-center p-1 w-1/5 bg-gray-800 rounded-md">
-          {building.hexId}
+          {projection.hexId}
         </div>
         {/* Icon, progress and to which level the building is being built */}
         <div className="flex justify-between items-center w-full gap-2 p-2 bg-gray-800 rounded-md">
@@ -61,24 +28,26 @@ export default function ConstructingBuilding({ building }: { building: BuildingC
             <div className="absolute bottom-0.5 right-0.5 border border-gray-600 rounded-[6px] flex justify-center items-center w-4 h-4 bg-gray-800">
               <Hammer className=" w-full h-full"></Hammer>
             </div>
-            {/* Uncomment when you fix tailwind/css rendering issue */}
           </div>
 
           <div className="flex flex-col w-full h-full justify-between items-center gap-1">
             <div className=" flex justify-center items-center w-full h-[50%]">
-              <Progress className="bg-gray-600" value={progress}></Progress>
+              <Progress
+                className="bg-gray-600"
+                value={projection.confirmed?.progress ?? 0}
+              ></Progress>
             </div>
 
             <div className="flex bg-gray-900 border border-gray-600 p-1 gap-1 rounded-md text-amber-200 justify-center items-center w-full h-[50%]">
               <SquareArrowUp className="w-5 h-5 shrink-0"></SquareArrowUp>
-              <span className="text-md text-white">{building.levelsToUpgrade}</span>
+              <span className="text-md text-white">{projection.totalLevels}</span>
             </div>
           </div>
 
           <div
             className="flex bg-gray-900 border border-gray-600 p-1 gap-1 rounded-md text-amber-200 h-full justify-center items-center"
             onClick={() => {
-              cancelMergedConstruction();
+              onCancel(projection);
             }}
           >
             <X className="w-6 h-6 shrink-0"></X>

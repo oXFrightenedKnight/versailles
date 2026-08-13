@@ -1,8 +1,9 @@
 import { graphObj, Hex } from "#data/hex_map";
-import { Road } from "#data/roads";
+import { RoadPoint } from "#data/roads";
 import { hasBuilding } from "./buildings";
 import { axialToCube, cubeDistance, getHexByAxial } from "./hex_map";
 
+export type RoadsInput = { points: RoadPoint[] }[];
 // Consider re-using the graph
 export function startDijkstrasAlgo({
   startingHex,
@@ -14,7 +15,7 @@ export function startDijkstrasAlgo({
   startingHex: Hex;
   endHex: Hex;
   mapHexes: Hex[];
-  roads: Road[];
+  roads: RoadsInput;
   useSimpleGraph?: boolean;
 }) {
   const weightedGraph = useSimpleGraph
@@ -119,13 +120,13 @@ function createWeightedGraph({
   startingHex,
 }: {
   mapHexes: Hex[];
-  roads: Road[];
+  roads: RoadsInput;
   startingHex: Hex;
 }) {
   const weightedGraph = new Map<string, graphObj>();
 
   // find hexes that have multiple roads intersecting to use as nodes
-  const pointRoadMap = new Map<string, Road[]>();
+  const pointRoadMap = new Map<string, RoadsInput>();
   for (const road of roads) {
     for (const point of road.points) {
       const prevRoads = pointRoadMap.get(`${point.q},${point.r}`) ?? [];
@@ -134,7 +135,7 @@ function createWeightedGraph({
   }
 
   // filter out points with buildings
-  const buildingPoints = new Map<string, Road[]>();
+  const buildingPoints = new Map<string, RoadsInput>();
   for (const [key, roads] of pointRoadMap) {
     if (hasBuilding(key, mapHexes)) {
       buildingPoints.set(key, roads);
@@ -155,7 +156,7 @@ function createWeightedGraph({
   // get building points
   // find all hexes that have buildings AND have road(s)
   const nodes = new Set<string>();
-  const nodePointMap = new Map<string, Road[]>();
+  const nodePointMap = new Map<string, RoadsInput>();
 
   for (const [key, roads] of pointRoadMap) {
     const hasRoad = roads.length > 0;

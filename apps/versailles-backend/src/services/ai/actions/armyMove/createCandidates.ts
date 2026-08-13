@@ -33,7 +33,7 @@ export function generateArmyMoveCandidates(
     amount: number,
     reason?: string
   ) => {
-    const intent = planArmyMove(planning, path[0], path[1], amount, score);
+    const intent = planArmyMove(planning, path[0], path[1], amount, nation.id, score);
     if (!intent)
       return {
         ok: false,

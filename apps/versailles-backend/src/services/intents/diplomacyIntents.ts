@@ -1,28 +1,32 @@
-import { Nation } from "@repo/shared";
-import { GameCtx, IntentInput } from "../../trpc";
+import { ActionBuckets, ActionOfType, getActions, Nation } from "@repo/shared";
+import { GameCtx } from "../../trpc";
 import { addMail, createPeaceOfferMail, executeMailsAnswers } from "../mails";
 import { declareWar } from "#services/army/war.js";
 
-export function runNationDiplomacy(ctx: GameCtx, nation: Nation, intent: IntentInput) {
+export function runNationDiplomacy(ctx: GameCtx, nation: Nation, actions: ActionBuckets) {
   if (nation.isDefeated) return;
   // 1. Resolve answered mails
-  executeMailsAnswers(ctx, intent.answeredMails, nation);
+  executeMailsAnswers(ctx, getActions(actions, "mails.answer"), nation);
 
   // 2. Create peace requests
-  createPeaceRequests(ctx, nation.id, intent.signPeaceReq);
+  createPeaceRequests(ctx, nation.id, getActions(actions, "diplomacy.peace"));
 
   // 3. declare wars on others
-  declareWar(ctx, intent.declareWar, nation);
+  declareWar(ctx, getActions(actions, "diplomacy.war"), nation);
 }
 
-export function createPeaceRequests(ctx: GameCtx, nationId: string, peaceNations: string[]) {
+export function createPeaceRequests(
+  ctx: GameCtx,
+  nationId: string,
+  peaceActions: ActionOfType<"diplomacy.peace">[]
+) {
   const nationMap = new Map(ctx.nations.map((n) => [n.id, n]));
   const reqNation = nationMap.get(nationId);
   if (!reqNation) return;
 
   const requested = new Set<string>();
 
-  for (const nationId of peaceNations) {
+  for (const { nationId } of peaceActions) {
     if (requested.has(nationId)) continue;
     const peaceNation = nationMap.get(nationId);
     if (!peaceNation) continue;
@@ -34,14 +38,17 @@ export function createPeaceRequests(ctx: GameCtx, nationId: string, peaceNations
   }
 }
 
-export function runAIDiplomacy(ctx: GameCtx, intents: { input: IntentInput; nationId: string }[]) {
-  const intentMap = new Map(intents.map((i) => [i.nationId, i.input]));
+export function runAIDiplomacy(
+  ctx: GameCtx,
+  intents: { actions: ActionBuckets; nationId: string }[]
+) {
+  const actionMap = new Map(intents.map((i) => [i.nationId, i.actions]));
   for (const aiNation of ctx.nations) {
     if (aiNation.isPlayer) continue;
 
-    const intent = intentMap.get(aiNation.id);
-    if (!intent) continue;
+    const actions = actionMap.get(aiNation.id);
+    if (!actions) continue;
 
-    runNationDiplomacy(ctx, aiNation, intent);
+    runNationDiplomacy(ctx, aiNation, actions);
   }
 }

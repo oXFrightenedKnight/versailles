@@ -13,11 +13,12 @@ import {
   BUILDINGS,
   getBuildingName,
   getBuildingConfig,
+  NationResourceTable,
+  getBuildingsByIdMap,
 } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { proposalPriority } from "../armyMove/policy";
 import { calcOptimisticDeficit } from "#services/ai/planning/queries/army.js";
-import { getBuildingsByIdMap } from "#services/buildings/queries.js";
 
 export function generateArmyTrainCandidates(
   ctx: GameCtx,
@@ -33,7 +34,7 @@ export function generateArmyTrainCandidates(
     barrackId: string,
     amount: number,
     score: number,
-    cost: Partial<Record<NATION_RESOURCE, number>>
+    cost: NationResourceTable
   ) => {
     for (const [resource, amount] of typedEntries(cost)) {
       if (amount === undefined) return null;

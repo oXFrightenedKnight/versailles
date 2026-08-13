@@ -14,18 +14,21 @@ import {
 import { AIPlanningState, BuildSavingGoalType } from "#services/ai/planning/types.js";
 import { getHexesBuildings } from "#services/ai/world/buildings.js";
 import { getHexesWithRoads } from "#services/ai/world/map.js";
-import { getHexAxialMap, getHexIdMap } from "#services/map.js";
 import { GameCtx } from "#trpc/index.js";
 import {
   building_categoires,
   BUILDINGS_CATEGORY,
   findNeighbors,
   getBuildingConfig,
+  getBuildingsByIdMap,
+  getHexAxialMap,
+  getHexIdMap,
   getNationResource,
   getTopCategoryLevel,
   isBaseResource,
   Nation,
   NATION_RESOURCE,
+  NationResourceTable,
 } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import {
@@ -40,7 +43,7 @@ import { trySpendBudget } from "#services/ai/budget/ledger.js";
 import { revalidateBuildSaving } from "./buildSaving";
 import { createPlanningBuildIntent } from "#services/ai/planning/mutations/buildings.js";
 import { selectClosestOpeningHexes } from "./foundation";
-import { getBuildingsByIdMap, getOptimisticBuildInHex } from "#services/buildings/queries.js";
+import { getOptimisticBuildInHex } from "#services/buildings/queries.js";
 
 type SubmissionStatus = "FAILED" | "SAVING" | "QUEUED";
 
@@ -58,7 +61,7 @@ export function generateBuildCandidates(
     category: BUILDINGS_CATEGORY,
     hexId: number,
     score: number,
-    cost: Partial<Record<NATION_RESOURCE, number>>,
+    cost: NationResourceTable,
     targetLevel: number,
     reasons?: AIScoreReasons[]
   ) => {

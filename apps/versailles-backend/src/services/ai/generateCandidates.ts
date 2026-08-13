@@ -1,6 +1,6 @@
 import { getBorderBFSMap } from "#services/algorithms/bfs.js";
 import { GameCtx } from "#trpc/index.js";
-import { Nation } from "@repo/shared";
+import { getHexByAxial, Nation } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { generateArmyMoveCandidates } from "./actions/armyMove/createCandidates";
 import { generateArmyTrainCandidates } from "./actions/armyTrain/createCandidates";
@@ -49,7 +49,11 @@ export function getCandidates(ctx: GameCtx, analysis: WorldAnalysis, nation: Nat
   // 4. Run road building
   const roadBudget = new Map([...budgetMap].map(([res, a]) => [res, a.get("roadBuild") ?? 0]));
   const buildRoads = generateBuildRoadCandidates(ctx, planning, roadBudget, nation);
-  console.log(`${nation.id} road build intents:`, buildRoads);
+  console.log(
+    `${nation.id} road build intents:`,
+    buildRoads,
+    buildRoads.map((b) => b.path.map((p) => getHexByAxial(p.q, p.r, ctx.mapHexes)))
+  );
 
   // 5. Generate new contracts
   const contractIntents = generateContractCandidates(ctx, nation);
