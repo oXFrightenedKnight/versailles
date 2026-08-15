@@ -1,23 +1,24 @@
+import { StoreType } from "@/lib/stores/intentStore";
 import { PendingAction } from "@/lib/types/actions";
 import {
-  ActionOfType,
   Building,
   BUILDINGS_CATEGORY,
   calcTotalBuildingCost,
   getBuildingsByIdMap,
+  getConstructionProgress,
   Hex,
   invertResourceTable,
   NationResourceTable,
 } from "@repo/shared";
 import { BuildingConstructionProjection } from "./types";
-import { StoreType } from "@/lib/stores/intentStore";
 
 export function selectBuildingConstructions(
   hexes: Hex[],
   buildings: Building[],
+  playerNationId: string | undefined,
   pendingActions: PendingAction[]
 ): BuildingConstructionProjection[] {
-  const byHexId = new Map<number, BuildingConstructionProjection>();
+  const byKey = new Map<string, BuildingConstructionProjection>();
 
   const buildingIdMap = getBuildingsByIdMap(buildings);
 
@@ -43,15 +44,23 @@ export function selectBuildingConstructions(
     );
     const refund = Math.max(0, confirmedCost - existingCost);
 
-    byHexId.set(hex.id, {
+    const finishedPercentage =
+      getConstructionProgress(queue.progress, queue.building, existing) * 100;
+
+    const key = `${hex.id},${queue.owner}`;
+
+    byKey.set(key, {
       key: `construction:${hex.id}`,
       hexId: hex.id,
       buildingType: queue.building,
+
+      ownerId: queue.owner,
 
       confirmed: {
         levels: queue.levels,
         progress: queue.progress,
         optimisticRefund: { gold: refund },
+        finishedPercentage,
       },
 
       pending: {
@@ -65,6 +74,8 @@ export function selectBuildingConstructions(
 
   // Overlay pending building actions.
   for (const pendingAction of pendingActions) {
+    if (!playerNationId) break;
+
     const action = pendingAction.action;
 
     if (action.type !== "building.build") {
@@ -76,7 +87,9 @@ export function selectBuildingConstructions(
       continue;
     }
 
-    const existing = byHexId.get(action.hexId);
+    const key = `${action.hexId},${playerNationId}`;
+
+    const existing = byKey.get(key);
 
     if (existing) {
       if (existing.buildingType !== action.buildingType) {
@@ -90,7 +103,7 @@ export function selectBuildingConstructions(
       continue;
     }
 
-    byHexId.set(action.hexId, {
+    byKey.set(key, {
       key: `construction:${action.hexId}`,
       hexId: action.hexId,
       buildingType: action.buildingType,
@@ -103,10 +116,12 @@ export function selectBuildingConstructions(
       },
 
       totalLevels: action.levelsToUpgrade,
+
+      ownerId: playerNationId,
     });
   }
 
-  return [...byHexId.values()];
+  return [...byKey.values()];
 }
 
 export function cancelBuildingConstruction(
@@ -139,7 +154,12 @@ export function createBuildingConstruction(
     category,
     levels,
     cost,
-  }: { hexId: number; category: BUILDINGS_CATEGORY; levels: number; cost: NationResourceTable },
+  }: {
+    hexId: number;
+    category: BUILDINGS_CATEGORY;
+    levels: number;
+    cost: NationResourceTable;
+  },
   pendingActions: PendingAction[],
   createGameAction: StoreType["createGameAction"],
   updateGameAction: StoreType["updateGameAction"]
@@ -147,13 +167,12 @@ export function createBuildingConstruction(
   const existing = pendingActions.find(
     (a) => a.action.type === "building.build" && a.action.hexId === hexId
   );
-  if (existing?.action.type !== "building.build") return;
 
-  if (existing) {
+  if (existing && existing.action.type === "building.build") {
     updateGameAction(existing.action.id, "building.build", {
       levelsToUpgrade: existing.action.levelsToUpgrade + levels,
     });
-  } else {
+  } else if (!existing) {
     createGameAction({
       action: {
         type: "building.build",

@@ -14,6 +14,7 @@ import { StoreType } from "@/lib/stores/intentStore";
 export function selectRoadConstructions(
   hexes: Hex[],
   roads: Road[],
+  playerNationId: string | undefined,
   pendingActions: PendingAction[]
 ): RoadConstructionProjection[] {
   const byRoadId = new Map<string, RoadConstructionProjection>();
@@ -31,6 +32,12 @@ export function selectRoadConstructions(
     }
 
     const constructing = road.points.filter((p) => p.isConstructing);
+
+    // do not add if road is fully finished
+    if (constructing.length === 0 || road.constructing === null) {
+      continue;
+    }
+
     const finished = road.points.length - constructing.length;
     const refund = calculateRoadCost(constructing.length);
 
@@ -45,12 +52,16 @@ export function selectRoadConstructions(
       progress: (finished / road.points.length) * 100,
       hexIds: road.points.flatMap((p) => axialMap.get(`${p.q},${p.r}`)?.id ?? []),
 
+      ownerId: road.constructing.owner,
+
       optimisticRefund: { gold: refund },
     });
   }
 
   // Create road construction from pending actions
   for (const pendingAction of pendingActions) {
+    if (!playerNationId) break;
+
     const action = pendingAction.action;
 
     if (action.type !== "road.build") {
@@ -68,6 +79,8 @@ export function selectRoadConstructions(
       totalPoints: action.points.length,
       constructingPoints: action.points.length,
       hexIds: action.points.flatMap((p) => axialMap.get(`${p.q},${p.r}`)?.id ?? []),
+
+      ownerId: playerNationId,
     });
   }
 

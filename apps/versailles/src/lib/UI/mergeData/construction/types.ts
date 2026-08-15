@@ -1,13 +1,16 @@
-import { BUILDINGS_CATEGORY, NATION_RESOURCE, NationResourceTable } from "@repo/shared";
+import { BUILDINGS_CATEGORY, NationResourceTable } from "@repo/shared";
 
 export type BuildingConstructionProjection = {
   key: string;
   hexId: number;
   buildingType: BUILDINGS_CATEGORY;
 
+  ownerId: string;
+
   confirmed: {
     levels: number;
     progress: number;
+    finishedPercentage: number;
     optimisticRefund: NationResourceTable;
   } | null;
 
@@ -25,6 +28,8 @@ type RoadConstructionBase = {
 
   totalPoints: number;
   constructingPoints: number;
+
+  ownerId: string;
 };
 
 export type RoadConstructionProjection =

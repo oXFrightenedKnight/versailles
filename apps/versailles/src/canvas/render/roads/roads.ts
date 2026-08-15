@@ -161,12 +161,6 @@ function drawRoad({
     return;
   }
 
-  // -----------------------------
-  // Через центр, но БЕЗ излома
-  // -----------------------------
-
-  // Общее направление в узле:
-  // касательная в центре должна смотреть примерно от start к end
   const tdx = x2 - x1;
   const tdy = y2 - y1;
   const tLen = Math.hypot(tdx, tdy);
@@ -175,27 +169,20 @@ function drawRoad({
   const tux = tdx / tLen;
   const tuy = tdy / tLen;
 
-  // Перпендикуляр для небольшого смещения "живости"
   const tpx = tuy;
   const tpy = -tux;
 
   const distStartToCenter = Math.hypot(cenX - x1, cenY - y1);
   const distCenterToEnd = Math.hypot(x2 - cenX, y2 - cenY);
 
-  // Длины ручек — умеренные, чтобы не было перегиба
   const h1 = Math.min(distStartToCenter * 0.45, 18);
   const h2 = Math.min(distCenterToEnd * 0.45, 18);
 
-  // Контрольные точки около центра.
-  // Они симметричны по одной касательной => гладкий стык.
   const centerInX = cenX - tux * h1;
   const centerInY = cenY - tuy * h1;
 
   const centerOutX = cenX + tux * h2;
   const centerOutY = cenY + tuy * h2;
-
-  // Контрольная точка у старта:
-  // направляем ее в сторону центра, но добавляем боковой шум
 
   const sdx = cenX - x1;
   const sdy = cenY - y1;
@@ -206,9 +193,6 @@ function drawRoad({
   const startHandleLen = Math.min(distStartToCenter * 0.35, 16);
   const c1x = x1 + sux * startHandleLen + tpx * d1;
   const c1y = y1 + suy * startHandleLen + tpy * d1;
-
-  // Контрольная точка у конца:
-  // аналогично, только смотрим из конца к центру
 
   const edx = cenX - x2;
   const edy = cenY - y2;
@@ -230,10 +214,8 @@ function drawRoad({
       ctx.beginPath();
       ctx.moveTo(x1, y1);
 
-      // Первая cubic до центра
       ctx.bezierCurveTo(c1x, c1y, centerInX, centerInY, cenX, cenY);
 
-      // Вторая cubic от центра
       ctx.bezierCurveTo(centerOutX, centerOutY, c4x, c4y, x2, y2);
     },
   });
@@ -301,7 +283,6 @@ export function drawAllRoads({
 
     const points = [];
 
-    // добавляем последнюю завершённую
     if (firstConstructingIndex > 0) {
       const prev = r.points[firstConstructingIndex - 1];
       if (!prev.isConstructing) {
@@ -309,7 +290,6 @@ export function drawAllRoads({
       }
     }
 
-    // добавляем все constructing
     points.push(...r.points.slice(firstConstructingIndex).filter((p) => p.isConstructing));
 
     return {

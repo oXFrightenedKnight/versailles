@@ -15,7 +15,7 @@ export type GameCanvasProps = {
   setIsContractSelected: Dispatch<React.SetStateAction<boolean>>;
 
   selectedHexId: number | null;
-  setSelectedHex: Dispatch<React.SetStateAction<Hex | null>>;
+  selectHex: (hex: Hex | null) => void;
 
   barValue: number;
   setBarValue: Dispatch<React.SetStateAction<number>>;
@@ -88,7 +88,7 @@ export type CanvasRuntime = {
 };
 
 export type CanvasCommands = {
-  selectHex: Dispatch<React.SetStateAction<Hex | null>>;
+  selectHex: (hex: Hex | null) => void;
 
   setBuildMode: (mode: BuildModeType) => void;
 
@@ -108,7 +108,7 @@ export type CanvasCommands = {
 };
 
 export type CanvasEngine = {
-  start: () => void;
+  start: () => Promise<void>;
   destroy: () => void;
   draw: () => void;
 };

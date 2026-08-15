@@ -128,3 +128,21 @@ export function getRequiredByBuildingMap(buildings: Building[]) {
 
   return map;
 }
+
+// returns construction progress on a scale of 0 to 1
+export function getConstructionProgress(
+  progress: number,
+  category: BUILDINGS_CATEGORY,
+  currentBuilding?: {
+    category: BUILDINGS_CATEGORY;
+    level: number;
+  }
+) {
+  const config = getBuildingConfig({
+    category: currentBuilding?.category ?? category,
+    level: (currentBuilding?.level ?? 0) + 1,
+  });
+  if (!config) return 0;
+
+  return progress / config.buildTime;
+}

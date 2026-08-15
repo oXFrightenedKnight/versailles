@@ -1,7 +1,6 @@
 import { PendingAction } from "@/lib/types/actions";
-import { invertResourceTable, NationResourceTable, Road, RoadPoint } from "@repo/shared";
+import { Road } from "@repo/shared";
 import { RenderRoad } from "./types";
-import { StoreType } from "@/lib/stores/intentStore";
 
 export function selectRenderRoads(roads: Road[], pendingActions: PendingAction[]) {
   const byRoadId = new Map<string, RenderRoad>();
@@ -50,7 +49,7 @@ export function selectRenderRoads(roads: Road[], pendingActions: PendingAction[]
       actionId: action.id,
 
       points: action.points.map((p) => ({
-        q: p.r,
+        q: p.q,
         r: p.r,
         d1: p.d1,
         d2: p.d2,

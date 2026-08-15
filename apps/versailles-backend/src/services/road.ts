@@ -4,6 +4,7 @@ import {
   calculateRoadCost,
   findNeighbors,
   getHexAxialMap,
+  getHexIdMap,
   hasSegment,
   Hex,
   Nation,
@@ -100,40 +101,7 @@ export function buildNationRoads(
     const result = trySpendNationResource(nation, "gold", cost);
     if (result.ok) {
       // add road to approved roads for building
-      roads.push(road);
-    }
-  }
-
-  // add progress to every road that is currently constructing
-  for (const road of roads) {
-    if (!road.constructing) continue;
-    const points = road.points;
-    const currentPoint = points.find((p) => p.isConstructing); // take first constructing
-    if (!currentPoint) continue;
-
-    // if current built point does not belong to construction owner - stop building
-    const hexOfPoint = hexMap.get(`${currentPoint.q},${currentPoint.r}`);
-    if (!hexOfPoint) continue;
-
-    if (!hexOfPoint.owner || (hexOfPoint.owner && hexOfPoint.owner !== road.constructing.owner)) {
-      road.constructing = null;
-      road.points = road.points.filter((p) => !p.isConstructing); // filter out road parts that were in construction stage
-      continue;
-    }
-
-    // add progress
-    if (!road.constructing) continue;
-    road.constructing.progress++;
-
-    if (road.constructing.progress >= 1) {
-      currentPoint.isConstructing = false;
-
-      road.constructing.progress = 0;
-
-      // if no more points left to construct - set constructing status to null
-      if (road.points.every((p) => !p.isConstructing)) {
-        road.constructing = null;
-      }
+      ctx.roads.push(road);
     }
   }
 }
@@ -318,4 +286,48 @@ export function pointsToHexIds(segment: Point[], axialMap: Map<string, Hex>) {
 
     return [hex.id];
   });
+}
+
+export function filterNationRoads(roads: Road[], nationId: string) {
+  return roads.flatMap((r) =>
+    r.constructing?.owner === nationId
+      ? r
+      : { ...r, points: r.points.filter((p) => !p.isConstructing) }
+  );
+}
+
+export function progressRoadConstruction(ctx: GameCtx) {
+  const axialMap = getHexAxialMap(ctx);
+  // add progress to every road that is currently constructing
+  for (const road of ctx.roads) {
+    if (!road.constructing) continue;
+    const points = road.points;
+    const currentPoint = points.find((p) => p.isConstructing); // take first constructing
+    if (!currentPoint) continue;
+
+    // if current built point does not belong to construction owner - stop building
+    const hexOfPoint = axialMap.get(`${currentPoint.q},${currentPoint.r}`);
+    if (!hexOfPoint) continue;
+
+    if (!hexOfPoint.owner || (hexOfPoint.owner && hexOfPoint.owner !== road.constructing.owner)) {
+      road.constructing = null;
+      road.points = road.points.filter((p) => !p.isConstructing); // filter out road parts that were in construction stage
+      continue;
+    }
+
+    // add progress
+    if (!road.constructing) continue;
+    road.constructing.progress++;
+
+    if (road.constructing.progress >= 1) {
+      currentPoint.isConstructing = false;
+
+      road.constructing.progress = 0;
+
+      // if no more points left to construct - set constructing status to null
+      if (road.points.every((p) => !p.isConstructing)) {
+        road.constructing = null;
+      }
+    }
+  }
 }

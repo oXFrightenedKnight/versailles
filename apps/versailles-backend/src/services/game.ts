@@ -12,6 +12,7 @@ import { mailsExpire } from "./mails";
 import { getPlayerNation, updatePlayerUI } from "./player";
 import { nationsUpdateManpower } from "./resources/manpower";
 import { ActionBuckets, categorizeActions } from "@repo/shared";
+import { progressRoadConstruction } from "./road";
 
 export function runGameSimulation(gameCtx: GameCtx, input: NextTurnType) {
   const playerNation = getPlayerNation(gameCtx);
@@ -53,8 +54,9 @@ export function runGameSimulation(gameCtx: GameCtx, input: NextTurnType) {
   // step 5: calculate battle outcomes
   calcWars(gameCtx);
 
-  // step 6: give progress to buildings in queue
+  // step 6: give progress to constructing buildings and roads
   giveProgressBuilding(gameCtx);
+  progressRoadConstruction(gameCtx);
 
   // step 7: calculate base gold income
   addBaseNationGold(gameCtx);

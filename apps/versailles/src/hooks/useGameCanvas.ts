@@ -62,7 +62,7 @@ export function useGameCanvas(props: GameCanvasProps) {
     if (!commandsRef.current) {
       commandsRef.current = {
         selectHex(hex) {
-          propsRef.current.setSelectedHex(hex);
+          propsRef.current.selectHex(hex);
         },
 
         setBuildMode(mode) {

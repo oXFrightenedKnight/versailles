@@ -45,13 +45,17 @@ export default function BuildMenu({
   const mapHexes = useGameStore((s) => s.mapHexes);
   const buildings = useGameStore((s) => s.buildings);
   const roads = useGameStore((s) => s.roads);
+  const playerNation = useGameStore((s) => s.playerNation);
 
   const actions = useIntentStore((s) => s.gameActions);
   const createGameAction = useIntentStore((s) => s.createGameAction);
   const deleteGameAction = useIntentStore((s) => s.deleteGameAction);
 
   // --- BUILDINGS ---
-  const constructing = selectBuildingConstructions(mapHexes, buildings, actions);
+  const constructing = selectBuildingConstructions(mapHexes, buildings, playerNation?.id, actions);
+  const playerConstructions = playerNation
+    ? constructing.filter((c) => c.ownerId === playerNation.id)
+    : [];
   const cancelConstruction = useCallback(
     (projection: BuildingConstructionProjection) => {
       cancelBuildingConstruction(projection, createGameAction, deleteGameAction);
@@ -60,7 +64,10 @@ export default function BuildMenu({
   );
 
   // --- ROADS ---
-  const constructingRoads = selectRoadConstructions(mapHexes, roads, actions);
+  const constructingRoads = selectRoadConstructions(mapHexes, roads, playerNation?.id, actions);
+  const playerRoads = playerNation
+    ? constructingRoads.filter((r) => r.ownerId === playerNation.id)
+    : [];
   const cancelConstructingRoad = useCallback(
     (projection: RoadConstructionProjection) => {
       cancelRoadConstruction(projection, createGameAction, deleteGameAction);
@@ -100,9 +107,9 @@ export default function BuildMenu({
           </div>
           <div className="w-full h-[70%] flex flex-col justify-start items-center  bg-gray-900 shadow-md shadow-black rounded-[8px] overflow-y-auto no-scrollbar gap-2">
             <div
-              className={`flex flex-col gap-2 w-full ${constructing.length > 0 && constructingRoads.length > 0 ? "border-b pb-2" : ""}`}
+              className={`flex flex-col gap-2 w-full ${constructing.length > 0 && playerRoads.length > 0 ? "border-b pb-2" : ""}`}
             >
-              {constructing.map((p) => (
+              {playerConstructions.map((p) => (
                 <ConstructingBuilding
                   key={p.key}
                   projection={p}
@@ -112,7 +119,7 @@ export default function BuildMenu({
             </div>
 
             <div className="flex flex-col gap-2 w-full">
-              {constructingRoads.map((p) => (
+              {playerRoads.map((p) => (
                 <ConstructingRoad
                   key={p.key}
                   projection={p}

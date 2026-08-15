@@ -1,6 +1,6 @@
 import { getFlagImage } from "@/lib/helpers/flags";
 import { numberConverter } from "@/lib/utils";
-import { Biome, Hex } from "@repo/shared/data/hex_map";
+import { Biome, BIOMES, Hex } from "@repo/shared/data/hex_map";
 import { Nation } from "@repo/shared/data/nations";
 import { findNeighbors } from "@repo/shared/helpers/hex_map";
 import { drawAllRoads } from "./roads/roads";
@@ -8,41 +8,41 @@ import { ArmyMoveProjection } from "@/lib/UI/mergeData/armyMove/types";
 import { RoadDraft } from "@/lib/types/game";
 import { RenderRoad } from "@/lib/UI/mergeData/roads(belongs render)/types";
 import { BIOME_COLOR, HEX_SIZE } from "./policy";
+import { getBiomeTexture, getTextureImage } from "@/lib/data";
 
 const biomePatterns: Partial<Record<Biome, CanvasPattern>> = {};
 const texturePatterns: Partial<Record<string, CanvasPattern>> = {};
 
 export function initBiomePatterns(ctx: CanvasRenderingContext2D): Promise<void> {
-  return new Promise((resolve) => {
-    const images: Record<Biome, HTMLImageElement> = {
-      forest: new window.Image(),
-      desert: new window.Image(),
-      plains: new window.Image(),
-      mountains: new window.Image(),
-    };
+  return Promise.all(
+    BIOMES.map(
+      (biome) =>
+        new Promise<void>((resolve, reject) => {
+          const img = new window.Image();
 
-    let loaded = 0;
-    const total = Object.keys(images).length;
+          img.onload = () => {
+            const pattern = ctx.createPattern(img, "repeat");
 
-    for (const biome in images) {
-      const img = images[biome as Biome];
-      img.src = `/biomes/${biome}.png`;
+            if (!pattern) {
+              reject(new Error(`Could not create pattern for ${biome}`));
+              return;
+            }
 
-      const SCALE = 0.1;
+            pattern.setTransform(new DOMMatrix().translate(32, 32).scale(0.1));
 
-      img.onload = () => {
-        const pattern = ctx.createPattern(img, "repeat")!;
-        pattern.setTransform(new DOMMatrix().translate(32, 32).scale(SCALE));
-        biomePatterns[biome as Biome] = pattern;
+            biomePatterns[biome] = pattern;
+            resolve();
+          };
 
-        loaded++;
+          img.onerror = () => {
+            reject(new Error(`Could not load texture for ${biome}`));
+          };
 
-        if (loaded === total) {
-          resolve();
-        }
-      };
-    }
-  });
+          // Assign after registering the handlers.
+          img.src = getBiomeTexture(biome);
+        })
+    )
+  ).then(() => undefined);
 }
 
 export function initTextures(ctx: CanvasRenderingContext2D): Promise<void> {
@@ -56,7 +56,7 @@ export function initTextures(ctx: CanvasRenderingContext2D): Promise<void> {
 
     for (const texture in images) {
       const img = images[texture];
-      img.src = `/textures/${texture}.png`;
+      img.src = getTextureImage(texture);
 
       const SCALE = 0.1;
 
@@ -121,7 +121,7 @@ function drawPolygon({
 
   Object.keys(BIOME_COLOR).forEach((key) => {
     if (key === biome) {
-      ctx.fillStyle = biomePatterns[biome as Biome]!;
+      ctx.fillStyle = biomePatterns[biome]!;
       ctx.strokeStyle = BIOME_COLOR[key];
     }
   });

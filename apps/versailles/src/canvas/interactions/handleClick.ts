@@ -31,7 +31,6 @@ import {
   topLevelsByCategory,
 } from "@repo/shared";
 import { eventToWorldPoint } from "../coordinates";
-import { findHexPathBetween } from "../pathfinding";
 import { pixelToHex } from "../render/render";
 import { CanvasCommands, CanvasRuntime, CanvasSnapshot } from "../types";
 
@@ -98,6 +97,10 @@ export function handleCanvasClick({
   }
 
   commands.selectHex(hex);
+  if (snapshot.playerNation) {
+    const playerArmy = getNationArmyInHex(hex, snapshot.playerNation.id);
+    commands.setBarValue(Math.max(0, playerArmy / 2));
+  }
 }
 
 // RIGHT CLICK
@@ -142,7 +145,7 @@ function handleRightClick({
       {
         direction: dir,
         amount: snapshot.barValue,
-        hexId: hex.id,
+        hexId: selectedHex.id,
         nationId: snapshot.playerNation.id,
       },
       commands.createGameAction
@@ -429,6 +432,7 @@ function handleBuildingClick({
   const optimisticConstruction = selectBuildingConstructions(
     snapshot.mapHexes,
     snapshot.buildings,
+    snapshot.playerNation.id,
     snapshot.gameActions
   );
   const constructingBuilding = optimisticConstruction.find((obj) => obj.hexId === hex.id);
@@ -459,13 +463,18 @@ function handleBuildingClick({
   // check cost
   const cost = getBuildingCost(snapshot.buildMode, total + 1);
 
-  if (snapshot.effectiveResources.gold ?? 0 < cost) {
+  if ((snapshot.effectiveResources.gold ?? 0) < cost) {
     createNewPopup(commands.setPopup, "missing_gold");
     return;
   }
 
   createBuildingConstruction(
-    { hexId: hex.id, levels: 1, category: snapshot.buildMode, cost: { gold: cost } },
+    {
+      hexId: hex.id,
+      levels: 1,
+      category: snapshot.buildMode,
+      cost: { gold: cost },
+    },
     snapshot.gameActions,
     commands.createGameAction,
     commands.updateGameAction

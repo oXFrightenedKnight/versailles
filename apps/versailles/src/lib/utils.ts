@@ -31,9 +31,9 @@ export function resolveValue<T>(value: T | ((prev: T) => T), prev: T): T {
 
 export function numberConverter(number: number) {
   if (number >= 1000000) {
-    return `${(number / 1000000).toFixed(1)}M`;
+    return `${Math.floor((number / 1000000) * 10) / 10}M`;
   } else if (Number(number) >= 1000) {
-    return `${(number / 1000).toFixed(1)}k`;
+    return `${Math.floor((number / 1000) * 10) / 10}k`;
   }
 
   return `${number}`; // return unchanged if not a number

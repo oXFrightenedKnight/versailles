@@ -1,7 +1,7 @@
 import { PendingAction } from "@/lib/types/actions";
 import { Hex, HexArmy } from "@repo/shared";
 
-export function selectHexes(hexes: Hex[], pendingActions: PendingAction[]) {
+export function selectHexes(hexes: Hex[], pendingActions: PendingAction[]): Hex[] {
   const deletedBuildingMap = new Set(
     pendingActions.flatMap((a) =>
       a.action.type === "building.delete" ? [a.action.buildingId] : []
@@ -12,15 +12,19 @@ export function selectHexes(hexes: Hex[], pendingActions: PendingAction[]) {
 
   return hexes.map((h) => {
     const optimisticArmy = availableArmyInHexes.get(h.id);
-    if (optimisticArmy) {
-      h.army = optimisticArmy;
-    }
-    if (h.buildingId && deletedBuildingMap.has(h.buildingId)) {
-      h.population = 0;
-      h.buildingId = null;
-    }
+    const nationArmy = optimisticArmy ?? h.army;
 
-    return h;
+    const isDeletedBuilding = h.buildingId ? deletedBuildingMap.has(h.buildingId) : false;
+
+    const optimisticPopulation = isDeletedBuilding ? 0 : h.population;
+    const buildingId = isDeletedBuilding ? null : h.buildingId;
+
+    return {
+      ...h,
+      army: nationArmy,
+      population: optimisticPopulation,
+      buildingId,
+    };
   });
 }
 
@@ -36,9 +40,15 @@ export function getAvailableArmyInHexes(hexes: Hex[], pendingActions: PendingAct
 
     availableByHex.set(
       action.hexId,
-      availableArmies.flatMap((a) =>
-        a.nationId === action.nationId ? { ...a, amount: a.amount - action.amount } : a
-      )
+      availableArmies.flatMap((a) => {
+        const armyleft = Math.max(0, a.amount - action.amount);
+
+        if (a.nationId !== action.nationId) {
+          return a;
+        }
+
+        return armyleft > 0 ? { ...a, amount: armyleft } : [];
+      })
     );
   }
 

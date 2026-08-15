@@ -15,7 +15,7 @@ import {
   topLevelsByCategory,
 } from "@repo/shared";
 import { ValidationResult, ValidBuildIntentData } from "./types";
-import { adjustNationResource } from "#services/resources/production.js";
+import { adjustNationResource, trySpendNationResource } from "#services/resources/production.js";
 
 // Function is used to execute player intent to build new building (subtracts gold)
 export function BuildBuilding({
@@ -111,7 +111,7 @@ export function buildNewIntentBuildings(
     if (!nextBuildingName) continue;
 
     const cost = BUILDINGS[nextBuildingName].buildCost;
-    if (adjustNationResource(nation, "gold", -cost)) {
+    if (trySpendNationResource(nation, "gold", cost)) {
       const currentProgress = data.hex.build_queue ? data.hex.build_queue.progress : 0;
       data.hex.build_queue = {
         building: intent.buildingType,
@@ -127,7 +127,7 @@ export function buildNewIntentBuildings(
 function validateBuildIntent(
   ctx: GameCtx,
   nation: Nation,
-  intent: newBuildings[number],
+  intent: ActionOfType<"building.build">,
   hexIdMap: Map<number, Hex>,
   buildingIdMap: Map<string, Building>,
   successfulIds: Set<number>

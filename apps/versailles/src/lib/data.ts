@@ -1,6 +1,6 @@
 import { PRODUCIBLE_RESOURCE } from "@repo/shared";
 import { BUILDINGS, BUILDINGS_CATEGORY } from "@repo/shared/data/buildings";
-import {} from "@repo/shared/data/hex_map";
+import { Biome } from "@repo/shared/data/hex_map";
 import { PeaceOfferMail, PeaceSignedMail, WarEventMail } from "@repo/shared/data/mail";
 import {
   Axe,
@@ -31,13 +31,9 @@ export const BuildingDescriptions: Record<"road" | BUILDINGS_CATEGORY, string> =
   WOODCAMP: "Construct a woodcamp",
 };
 export function getResourceImage(resource: PRODUCIBLE_RESOURCE) {
-  return customResourceImages[resource] ?? `/icons/resources/${resource}.png`;
+  return `/icons/resources/${resource}.png`;
 }
-export const customResourceImages: Partial<Record<PRODUCIBLE_RESOURCE, string>> = {
-  wheat: "/icons/resources/wheat.png",
-  wood: "/icons/resources/wood.png",
-  gold: "/icons/gold_coin.png",
-};
+
 export function getBuildingIconImage(name: BuildingNames) {
   return customBuildingIconImages[name] ?? `/icons/urban/${name}.png`;
 }
@@ -47,6 +43,22 @@ export function getBuildingImage(name: BuildingNames) {
   return customBuildingImages[name] ?? `/urban/${name}.png`;
 }
 export const customBuildingImages: Record<BuildingNames, string> = {};
+
+export function getBiomeTexture(biome: Biome) {
+  return `/biomes/${biome}.png`;
+}
+
+export function getBiomePreview(biome: Biome) {
+  return `/biome_types/${biome}.png`;
+}
+
+export function getTextureImage(texture: string) {
+  return `/textures/${texture}.png`;
+}
+
+export function getNationFlag(nationId: string | undefined) {
+  return `/flags/${nationId?.toLowerCase() ?? "tribes"}.png`;
+}
 
 export const Descriptions: Record<string, string> = {
   manpower: "All people in your nation that can serve in military.",

@@ -1,5 +1,6 @@
 import { drawFrame, resizeCanvas, startAnimation, stopAnimation } from "./animation";
 import { attachCanvasEvents } from "./events";
+import { initBiomePatterns } from "./render/render";
 import { CanvasEngine, CanvasRuntime, CreateCanvasEngineOptions } from "./types";
 
 export function createCanvasEngine(options: CreateCanvasEngineOptions): CanvasEngine {
@@ -55,8 +56,17 @@ export function createCanvasEngine(options: CreateCanvasEngineOptions): CanvasEn
     drawFrame(runtime, options.getSnapshot());
   };
 
-  const start = () => {
+  let started = false;
+
+  const start = async () => {
+    if (started || runtime.destroyed) return;
+    started = true;
+
     resizeCanvas(runtime);
+
+    await initBiomePatterns(runtime.canvas.mainContext);
+
+    if (runtime.destroyed) return;
 
     detachEvents = attachCanvasEvents({
       runtime,

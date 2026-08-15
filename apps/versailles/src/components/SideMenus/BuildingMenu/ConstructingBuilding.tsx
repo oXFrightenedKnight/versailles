@@ -34,7 +34,7 @@ export default function ConstructingBuilding({
             <div className=" flex justify-center items-center w-full h-[50%]">
               <Progress
                 className="bg-gray-600"
-                value={projection.confirmed?.progress ?? 0}
+                value={projection.confirmed?.finishedPercentage ?? 0}
               ></Progress>
             </div>
 

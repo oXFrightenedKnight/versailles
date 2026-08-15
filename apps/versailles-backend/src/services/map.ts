@@ -386,3 +386,7 @@ export function transferHexOwnership(ctx: GameCtx, hexId: number, toNationId: st
   hex.owner = nation.id;
   return { ok: true };
 }
+
+export function filterNationHexes(mapHexes: Hex[], nationId: string) {
+  return mapHexes.flatMap((h) => (h.owner === nationId ? h : { ...h, build_queue: null }));
+}

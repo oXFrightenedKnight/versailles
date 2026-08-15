@@ -157,6 +157,7 @@ export function beginPointerGesture(runtime: CanvasRuntime, event: MouseEvent) {
 }
 
 // returns confirmation whether the gesture was a click or a drag
+// true - drag, false - click
 export const endPointerGesture = (runtime: CanvasRuntime): boolean => {
   const pointer = runtime.pointer;
 
@@ -164,11 +165,17 @@ export const endPointerGesture = (runtime: CanvasRuntime): boolean => {
     return false;
   }
 
+  let wasDragging = true;
+
+  if (!pointer.isDragging) {
+    wasDragging = false;
+  }
+
   pointer.isDown = false;
   pointer.isDragging = false;
   pointer.button = null;
 
-  return true;
+  return wasDragging;
 };
 
 export function cancelPointerGesture(runtime: CanvasRuntime) {
