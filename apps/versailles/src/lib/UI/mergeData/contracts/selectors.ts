@@ -68,6 +68,21 @@ export function selectContracts(
     highestOrder++;
   }
 
+  // update server contracts with contract update actions
+  for (const pendingAction of pendingActions) {
+    const action = pendingAction.action;
+
+    if (action.type !== "contract.update") continue;
+
+    const existing = byContractId.get(action.contractId);
+    if (!existing) continue;
+
+    byContractId.set(action.contractId, {
+      ...existing,
+      ...action.changes,
+    });
+  }
+
   return [...byContractId.values()];
 }
 

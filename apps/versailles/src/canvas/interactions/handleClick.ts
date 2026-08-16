@@ -113,7 +113,7 @@ function handleRightClick({
   snapshot: CanvasSnapshot;
   commands: CanvasCommands;
 }) {
-  if (!snapshot.selectedHexId || !snapshot.playerNation) return;
+  if (snapshot.selectedHexId === null || !snapshot.playerNation) return;
   const selectedHex = getHexById(snapshot.selectedHexId, snapshot.mapHexes);
 
   if (snapshot.selectedHexId === hex.id || !selectedHex) return;
@@ -177,7 +177,7 @@ export function handleBarDrag({
   const rect = barElement.getBoundingClientRect();
   if (!rect) return;
 
-  if (!snapshot.selectedHexId) return;
+  if (snapshot.selectedHexId === null) return;
 
   const playerNation = snapshot.playerNation;
   const selectedHex = getHexById(snapshot.selectedHexId, snapshot.mapHexes);
@@ -299,13 +299,6 @@ export function updateRoadDraft({
   if (!neighborIds.includes(lastHexOfRoad.id)) {
     // fill distance with hex path
 
-    {
-      /* const path = findHexPathBetween(
-      { q: lastHexOfRoad.q, r: lastHexOfRoad.r },
-      { q: targetHex.q, r: targetHex.r }
-    ); */
-    }
-
     const path =
       startDijkstrasAlgo({
         startingHex: lastHexOfRoad,
@@ -374,7 +367,7 @@ function handleRoadClick({
   if (hex.owner !== snapshot.playerNation?.id) return;
 
   // set selected hex to be road start
-  if (!runtime.road.startHexId) {
+  if (runtime.road.startHexId === null) {
     runtime.road.startHexId = hex.id;
 
     const d = generateRoadDs();
@@ -490,7 +483,7 @@ function handleContractClick({
   snapshot: CanvasSnapshot;
   commands: CanvasCommands;
 }) {
-  if (!snapshot.selectedHexId) return;
+  if (snapshot.selectedHexId === null) return;
   const selectedHex = getHexById(snapshot.selectedHexId, snapshot.mapHexes);
   const startId = selectedHex?.buildingId;
   const endId = hex.buildingId;

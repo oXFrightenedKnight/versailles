@@ -58,6 +58,8 @@ export function attachCanvasEvents({
 
     const snapshot = getSnapshot();
 
+    if (snapshot.barDragging) return;
+
     handleCanvasClick({
       event,
       runtime,

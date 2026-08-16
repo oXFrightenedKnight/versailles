@@ -54,6 +54,9 @@ export function runGameSimulation(gameCtx: GameCtx, input: NextTurnType) {
   // step 5: calculate battle outcomes
   calcWars(gameCtx);
 
+  // step 6: recalculate contracts amounts
+  recalculateContractsAmounts(gameCtx);
+
   // step 6: give progress to constructing buildings and roads
   giveProgressBuilding(gameCtx);
   progressRoadConstruction(gameCtx);

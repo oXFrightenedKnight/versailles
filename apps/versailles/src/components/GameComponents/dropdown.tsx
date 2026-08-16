@@ -33,23 +33,25 @@ export function Dropdown<T>({
       <DropdownMenuTrigger asChild>
         {renderButton ? renderButton() : <Button variant="outline">Open</Button>}
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-40 bg-gray-800 border-gray-600" align="start">
-        <DropdownMenuGroup>
-          {items.map((item) => {
-            const isSelected = item.value === value;
+      {items.length > 0 && (
+        <DropdownMenuContent className="w-40 bg-gray-800 border-gray-600" align="start">
+          <DropdownMenuGroup>
+            {items.map((item) => {
+              const isSelected = item.value === value;
 
-            return (
-              <DropdownMenuItem
-                key={item.id}
-                className="cursor-pointer focus:bg-gray-700"
-                onClick={() => updaterFn(item.value)}
-              >
-                {renderItem ? renderItem(item, isSelected) : item.label}
-              </DropdownMenuItem>
-            );
-          })}
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
+              return (
+                <DropdownMenuItem
+                  key={item.id}
+                  className="cursor-pointer focus:bg-gray-700"
+                  onClick={() => updaterFn(item.value)}
+                >
+                  {renderItem ? renderItem(item, isSelected) : item.label}
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      )}
     </DropdownMenu>
   );
 }

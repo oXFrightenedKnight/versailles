@@ -1,17 +1,19 @@
 import {
   BASE_RESOURCE,
-  baseResources,
   Building,
   getAvailableResources,
   getBuildingConfig,
   getBuildingsByIdMap,
 } from "@repo/shared";
-import { MergedContract } from "../types/game";
 import { ContractProjection } from "../UI/mergeData/contracts/types";
 
-export function getOptimisticImportedResources(contracts: ContractProjection[]) {
+export function getOptimisticImportedResources(
+  contracts: ContractProjection[],
+  toBuildingId?: string
+) {
   const map = new Map<BASE_RESOURCE, number>();
   for (const contract of contracts) {
+    if (toBuildingId && toBuildingId !== contract.toBuildingId) continue;
     const currImported = map.get(contract.resource) ?? 0;
 
     map.set(contract.resource, currImported + contract.amount);
@@ -20,21 +22,19 @@ export function getOptimisticImportedResources(contracts: ContractProjection[]) 
   return map;
 }
 
-export function calcResourceExport(
-  toBuilding: Building,
-  resource: BASE_RESOURCE,
-  mergedContracts: MergedContract[]
+export function getOptimisticExportedResources(
+  contracts: ContractProjection[],
+  fromBuildingId?: string
 ) {
-  const importing = mergedContracts
-    .filter((c) => c.endBuildingId === toBuilding.id && c.resource === resource)
-    .reduce((acc, c) => acc + c.amount, 0);
+  const map = new Map<BASE_RESOURCE, number>();
+  for (const contract of contracts) {
+    if (fromBuildingId && fromBuildingId !== contract.fromBuildingId) continue;
+    const currExported = map.get(contract.resource) ?? 0;
 
-  const config = getBuildingConfig(toBuilding);
-  const required = config?.consuming?.[resource]?.amount ?? 0;
+    map.set(contract.resource, currExported + contract.amount);
+  }
 
-  const needed = Math.max(0, required - importing);
-
-  return needed;
+  return map;
 }
 
 export function getAvailableResourcesByContract(
@@ -72,6 +72,8 @@ export function getAvailableResourcesByContract(
       startConfig.producing ?? {},
       endConfig.consuming ?? {}
     );
+    // set currently selected resource as available
+    availableResources.add(contract.resource);
 
     resourcesByContract.set(contract.contractId, availableResources);
   }

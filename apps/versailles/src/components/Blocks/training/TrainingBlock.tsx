@@ -51,8 +51,8 @@ export default function TrainingBlock({ building }: { building: Building }) {
   );
 
   return (
-    <div className="w-full bg-gray-800 rounded-xl">
-      <div className="flex flex-col w-full justify-between bg-gray-700 p-2 rounded-t-xl gap-1">
+    <div className="w-full bg-gray-800 rounded-xl overflow-hidden shrink-0">
+      <div className="flex flex-col w-full justify-between bg-gray-700 p-2 gap-1">
         <p>Army Training</p>
         <div className="flex w-full items-center justify-center gap-1">
           {/* Subtract */}
@@ -109,7 +109,7 @@ export default function TrainingBlock({ building }: { building: Building }) {
       </div>
       <div>
         {training && training.length > 0 ? (
-          <div className="w-full flex flex-col gap-2">
+          <div className="w-full flex flex-col gap-1 p-1">
             {training.map((p) => (
               <TrainingComponent
                 key={p.key}

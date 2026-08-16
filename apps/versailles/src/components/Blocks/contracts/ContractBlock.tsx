@@ -53,8 +53,8 @@ export default function ContractBlock({
   );
 
   return (
-    <div className="w-full bg-gray-800 rounded-xl">
-      <div className="flex w-full justify-between items-center bg-gray-700 p-2 rounded-t-xl">
+    <div className="w-full bg-gray-800 rounded-xl overflow-hidden shrink-0">
+      <div className="flex w-full justify-between items-center bg-gray-700 p-2">
         <p>Contracts</p>
         <div
           className={`flex justify-center items-center p-2 border-gray-700 border rounded-xl 
@@ -65,10 +65,11 @@ export default function ContractBlock({
         </div>
       </div>
       <div className="w-full">
-        {contracts.length > 0 ? (
-          <div>
+        {buildingContracts.length > 0 ? (
+          <>
             {buildingContracts.map((contract) => {
-              const availableResources = availableResourcesMap.get(contract.resource) ?? [];
+              const availableResources = availableResourcesMap.get(contract.contractId) ?? [];
+
               return (
                 <ContractComponent
                   key={contract.key}
@@ -79,10 +80,10 @@ export default function ContractBlock({
                 ></ContractComponent>
               );
             })}
-          </div>
+          </>
         ) : (
           <div className="w-full h-10 flex items-center justify-center text-sm">
-            No supply contracts added
+            No contracts added
           </div>
         )}
       </div>

@@ -23,6 +23,7 @@ export default function ContractComponent({
     changes: ActionOfType<"contract.update">["changes"]
   ) => void;
 }) {
+  console.log("available resources", availableResources);
   const dropdownItems: DropdownItem<typeof contract.resource>[] = availableResources.map((r) => ({
     id: crypto.randomUUID(),
     label: r,
@@ -40,36 +41,8 @@ export default function ContractComponent({
   }));
 
   return (
-    <div className="w-full h-[110px] bg-gray-800 rounded-xl flex justify-center items-center gap-0.5 p-1">
+    <div className="w-full h-auto bg-gray-800 flex justify-center items-center gap-0.5 p-1">
       <div className="flex flex-col justify-center items-center h-full w-full gap-0.5 max-h-full">
-        <div className="flex justify-center items-center bg-gray-900 p-1 rounded-md w-full gap-1 flex-1">
-          <div className="w-full flex justify-between items-center">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="w-full flex justify-center items-center">
-                  <div className="flex justify-center items-center gap-1 bg-gray-900 rounded-md">
-                    <span className="text-xs bg-gray-800 p-0.5 rounded">0/{contract.amount}</span>
-                    <Image
-                      src={
-                        contract.resource
-                          ? getResourceImage(contract.resource)
-                          : "/icons/unknown.png"
-                      }
-                      width={64}
-                      height={64}
-                      className="w-3.5 h-3.5"
-                      alt="Resource Icon"
-                    ></Image>
-                  </div>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <span>{"Stored vs Needed"}</span>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        </div>
-
         <div className="flex justify-center items-center bg-gray-900 p-1 rounded-md w-full gap-1 h-[50%]">
           <div
             className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"

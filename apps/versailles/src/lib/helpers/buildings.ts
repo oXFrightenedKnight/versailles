@@ -1,7 +1,12 @@
-import { Building, building_categoires, BUILDINGS_CATEGORY } from "@repo/shared/data/buildings";
+import {
+  Building,
+  building_categoires,
+  BUILDINGS_CATEGORY,
+  ConsumedResource,
+} from "@repo/shared/data/buildings";
 import { Hex } from "@repo/shared/data/hex_map";
 import { BuildModeType } from "../types/game";
-import { BASE_RESOURCE, getBuildingConfig } from "@repo/shared";
+import { BASE_RESOURCE, getBuildingConfig, typedEntries } from "@repo/shared";
 import { ContractProjection } from "../UI/mergeData/contracts/types";
 
 // allows to additionally filter by nationId if provided with nationId and hexes
@@ -71,4 +76,28 @@ export function calculateContractAmount(
   const available = fromBuilding.availableResources[resource] ?? 0;
 
   return Math.max(0, Math.min(needed, available));
+}
+
+export function getResourceEfficiencyMap(
+  consumption: Partial<Record<"wheat" | "wood", ConsumedResource>>,
+  importedMap: Map<"wheat" | "wood", number>
+) {
+  const totalWeight = typedEntries(consumption ?? {}).reduce(
+    (acc, [_, c]) => (c ? acc + c.weight : acc),
+    0
+  );
+  const efficiencyMap = new Map(
+    typedEntries(consumption).flatMap(([r, c]) => {
+      if (!c || c.amount <= 0 || totalWeight <= 0) return [];
+
+      const needed = c.amount;
+      const weight = c.weight;
+
+      const imported = importedMap.get(r) ?? 0;
+
+      return [[r, (imported / needed) * (weight / totalWeight)]];
+    })
+  );
+
+  return efficiencyMap;
 }

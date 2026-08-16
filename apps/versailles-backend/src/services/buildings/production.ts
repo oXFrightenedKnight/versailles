@@ -83,6 +83,8 @@ export function calcAllocatedContractResources(ctx: GameCtx) {
     const allocated = Math.min(avialableAmount, contract.amount);
     allocatedResource[contract.resource] = prevAllocated + allocated;
     available[contract.resource] = Math.max(0, avialableAmount - allocated);
+
+    allocatedResources.set(contract.toBuildingId, allocatedResource);
   }
 
   return allocatedResources;

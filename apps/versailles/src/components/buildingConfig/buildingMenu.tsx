@@ -63,7 +63,7 @@ export default function BuildingMenu({
             setIsContractSelected={setIsContractSelected}
             building={building}
           ></ContractBlock>
-          <AvailableBlock></AvailableBlock>
+          <AvailableBlock building={building}></AvailableBlock>
         </>
       )}
 

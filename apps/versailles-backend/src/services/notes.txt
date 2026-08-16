@@ -3,42 +3,31 @@
    SHARED PACKAGE TO DIST **
 
 list of changes to make next:
-put contract recalculation after submission and before execution
-add availableResources to contract projection
+reject non-auto-adjust contracts that require more resource than currently available AFTER all contracts are resolved
+and reject contract updates if they are switched to non-auto-adjust and require more resource than available
+
 fix ai not training army
-add cost to each client action and have one hook to calculate optimistic nation resource based on that
 don't forget to revalidate training when running game simulation (function already ready)
 make sure you revalidate contracts every turn
-fix contract amounts
 fix fractional numbers in contracts and exports
 possible reason why small armies don't train: something rounds the values which prevents small armies from training. 
-consider rewriting contracts. instead of storing resources, make them always available (like lumina points)
-only allocate road building if you are sure there is available producing building of that resource
 10. setup a database to store game state in ( or redis )
-12. bug fixes + ui polishment + refactor clicking handler on client, clean up architecture
+12. bug fixes + ui polishment, clean up architecture
 13. Music, sound effects, reusable components
 14. deploy
 
 --- NON-URGENT TASKS ---
-1. Rethink how building contracts work (let the building calculate consumption,
-and contract to adjust based on required resource and % of efficiency. Ex: 
-50 wheat needed, 0.3 efficiency, so you update contract to compensate required .7)
 1. Make sure nation flags and assets are pre-loaded so player doesn't wait
 for them to load (which can take up to a second)
 2. Implement modifier support for other variables
-3. Make UI store to store changes
 4. Transfer building construction state from hexes into separate objects
 5. Create a single function for creating and validating instead of having multiple
 sources where its required to validate every time.
 6. Reduce amount of building levels on building if right click has happened on hex
 7. Instead of transferring hexes directly during war, mark them as occupied (de facto/de jure owner)
 and calculate surrender percentage based off of that.
-8. Figure out what to do with roads and that +1 gold refund if you only got one
-point when cancelling building. Think about refactoring how roads work. maybe make 
-them a union of buildings. BuildNationRoads as well
 9. Make win/lose menu to and allow player to start new game or continue in spectator
 10. Change how paths work to make sure moving goals armies in hex are always reserved no matter the order they run
-11. Update analysis to include more relevant data about nation vs neighbors
 12. Skip invalid intents that don't pass domain validation. Aim for architecture to be 
 client data => copy db data => run logic and update data => if error - log and skip, else update db
 13. Update ai road building so it builds towards closest road segment that leads to producing building
