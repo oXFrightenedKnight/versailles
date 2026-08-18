@@ -6,8 +6,8 @@ import { useIntentStore } from "@/lib/stores/intentStore";
 import { selectContracts } from "@/lib/UI/mergeData/contracts/selectors";
 import { Building, getBuildingConfig, isBaseResource, typedEntries } from "@repo/shared";
 import AvailableComponent from "./AvailableComponent";
-import { selectContractPredictions } from "@/lib/UI/predictions/contracts";
 import { selectBuildings } from "@/lib/UI/mergeData/buildings/selectors";
+import { selectContractPredictions } from "@/lib/UI/predictions/contracts/selectors";
 
 export default function AvailableBlock({ building }: { building: Building }) {
   // gather optimistic contracts from store
@@ -17,8 +17,7 @@ export default function AvailableBlock({ building }: { building: Building }) {
 
   const buildings = selectBuildings(serverBuildings, gameActions);
 
-  const contractProjections = selectContracts(serverContracts, gameActions);
-  const contractPredictions = selectContractPredictions(contractProjections, buildings);
+  const contractPredictions = selectContractPredictions(serverContracts, buildings, gameActions);
   const exportedResources = getOptimisticExportedResources(contractPredictions, building.id);
 
   const config = getBuildingConfig(building);

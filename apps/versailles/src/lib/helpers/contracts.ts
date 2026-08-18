@@ -6,13 +6,15 @@ import {
   getBuildingsByIdMap,
 } from "@repo/shared";
 import { ContractProjection } from "../UI/mergeData/contracts/types";
+import { ContractPrediction } from "../UI/predictions/contracts/types";
 
 export function getOptimisticImportedResources(
-  contracts: ContractProjection[],
+  contracts: ContractPrediction[],
   toBuildingId?: string
 ) {
   const map = new Map<BASE_RESOURCE, number>();
   for (const contract of contracts) {
+    if (contract.blocked) continue;
     if (toBuildingId && toBuildingId !== contract.toBuildingId) continue;
     const currImported = map.get(contract.resource) ?? 0;
 
@@ -23,11 +25,12 @@ export function getOptimisticImportedResources(
 }
 
 export function getOptimisticExportedResources(
-  contracts: ContractProjection[],
+  contracts: ContractPrediction[],
   fromBuildingId?: string
 ) {
   const map = new Map<BASE_RESOURCE, number>();
   for (const contract of contracts) {
+    if (contract.blocked) continue;
     if (fromBuildingId && fromBuildingId !== contract.fromBuildingId) continue;
     const currExported = map.get(contract.resource) ?? 0;
 

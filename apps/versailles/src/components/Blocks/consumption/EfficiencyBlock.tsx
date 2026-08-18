@@ -1,14 +1,13 @@
 "use client";
 
+import { getResourceEfficiencyMap } from "@/lib/helpers/buildings";
 import { getOptimisticImportedResources } from "@/lib/helpers/contracts";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
-import { selectContracts } from "@/lib/UI/mergeData/contracts/selectors";
+import { selectBuildings } from "@/lib/UI/mergeData/buildings/selectors";
+import { selectContractPredictions } from "@/lib/UI/predictions/contracts/selectors";
 import { Building, getBuildingConfig, typedEntries } from "@repo/shared";
 import EfficiencyComponent from "./EfficiencyComponent";
-import { getResourceEfficiencyMap } from "@/lib/helpers/buildings";
-import { selectContractPredictions } from "@/lib/UI/predictions/contracts";
-import { selectBuildings } from "@/lib/UI/mergeData/buildings/selectors";
 
 export default function EfficiencyBlock({ building }: { building: Building }) {
   // gather optimistic contracts from store
@@ -17,16 +16,18 @@ export default function EfficiencyBlock({ building }: { building: Building }) {
   const gameActions = useIntentStore((s) => s.gameActions);
 
   const buildings = selectBuildings(serverBuildings, gameActions);
-
-  const contractProjections = selectContracts(serverContracts, gameActions);
-  const contracts = selectContractPredictions(contractProjections, buildings);
+  const contracts = selectContractPredictions(serverContracts, buildings, gameActions);
   const importedResources = getOptimisticImportedResources(contracts, building.id);
 
   const config = getBuildingConfig(building);
   const consuming = config?.consuming;
 
   const efficiencyMap = getResourceEfficiencyMap(consuming ?? {}, importedResources);
-  const totalEfficiency = [...efficiencyMap].reduce((acc, [_, e]) => acc + e, 0) * 100;
+  const totalEfficiency =
+    Math.min(
+      1,
+      [...efficiencyMap].reduce((acc, [_, e]) => acc + e, 0)
+    ) * 100;
 
   return (
     <>
@@ -42,7 +43,7 @@ export default function EfficiencyBlock({ building }: { building: Building }) {
 
               const needed = consumedObject?.amount ?? 0;
 
-              const efficiency = (efficiencyMap.get(resource) ?? 0) * 100;
+              const efficiency = Math.min(1, efficiencyMap.get(resource) ?? 0) * 100;
 
               return (
                 <EfficiencyComponent

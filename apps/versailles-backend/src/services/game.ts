@@ -13,6 +13,7 @@ import { getPlayerNation, updatePlayerUI } from "./player";
 import { nationsUpdateManpower } from "./resources/manpower";
 import { ActionBuckets, categorizeActions } from "@repo/shared";
 import { progressRoadConstruction } from "./road";
+import { revalidateTraining } from "./army/training";
 
 export function runGameSimulation(gameCtx: GameCtx, input: NextTurnType) {
   const playerNation = getPlayerNation(gameCtx);
@@ -57,18 +58,18 @@ export function runGameSimulation(gameCtx: GameCtx, input: NextTurnType) {
   // step 6: recalculate contracts amounts
   recalculateContractsAmounts(gameCtx);
 
-  // step 6: give progress to constructing buildings and roads
+  // step 7: revalidate training
+  revalidateTraining(gameCtx);
+
+  // step 8: give progress to constructing buildings and roads
   giveProgressBuilding(gameCtx);
   progressRoadConstruction(gameCtx);
 
-  // step 7: calculate base gold income
+  // step 9: calculate base gold income
   addBaseNationGold(gameCtx);
 
-  // step 9: calculate building systems
+  // step 10: calculate building systems
   runBuildingsSystem(gameCtx);
-
-  // step 10: recalculate all auto-adjust contracts to match new state
-  recalculateContractsAmounts(gameCtx);
 
   // step 11: recalculate manpower
   nationsUpdateManpower(gameCtx);
@@ -82,6 +83,6 @@ export function runGameSimulation(gameCtx: GameCtx, input: NextTurnType) {
   // step 14: update player UI states
   updatePlayerUI(gameCtx, playerActions, playerNation);
 
-  // step 14: increase turn
+  // step 15: increase turn
   gameCtx.turn++;
 }

@@ -9,6 +9,7 @@ import { createCanvasEngine } from "@/canvas/createCanvasEngine";
 import { selectHexes } from "@/lib/UI/mergeData/hexes/selectors";
 import { selectContracts } from "@/lib/UI/mergeData/contracts/selectors";
 import { useOptimisticResources } from "./useOptimisticResources";
+import { selectContractPredictions } from "@/lib/UI/predictions/contracts/selectors";
 
 export function useGameCanvas(props: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -31,7 +32,7 @@ export function useGameCanvas(props: GameCanvasProps) {
   const roads = selectRenderRoads(serverRoads, gameActions);
   const buildings = selectBuildings(serverBuildings, gameActions);
   const mapHexes = selectHexes(serverHexes, gameActions);
-  const contracts = selectContracts(serverContracts, gameActions);
+  const contracts = selectContractPredictions(serverContracts, buildings, gameActions);
 
   const effectiveResources = useOptimisticResources();
 

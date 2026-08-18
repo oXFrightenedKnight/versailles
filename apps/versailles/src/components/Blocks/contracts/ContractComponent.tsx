@@ -4,10 +4,20 @@ import { getResourceImage } from "@/lib/data";
 import { ContractProjection } from "@/lib/UI/mergeData/contracts/types";
 import { numberConverter } from "@/lib/utils";
 import { ActionOfType, BASE_RESOURCE } from "@repo/shared";
-import { Calculator, Check, ChevronDown, CircleMinus, CirclePlus, Trash2, X } from "lucide-react";
+import {
+  Calculator,
+  Check,
+  ChevronDown,
+  CircleMinus,
+  CirclePlus,
+  Trash2,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 import Image from "next/image";
 import { Dropdown, DropdownItem } from "../../GameComponents/dropdown";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
+import { ContractPrediction } from "@/lib/UI/predictions/contracts/types";
 
 export default function ContractComponent({
   contract,
@@ -15,7 +25,7 @@ export default function ContractComponent({
   deleteContract,
   updateContract,
 }: {
-  contract: ContractProjection;
+  contract: ContractPrediction;
   availableResources: BASE_RESOURCE[];
   deleteContract: (projection: ContractProjection) => void;
   updateContract: (
@@ -68,9 +78,14 @@ export default function ContractComponent({
             )}
           </div>
           {/* Display amount */}
-          <div className="bg-gray-800 text-white rounded-md p-1 w-15 flex justify-center items-center">
-            {numberConverter(contract.amount)}
+          <div
+            className={`flex justify-center items-center w-15 rounded-md overflow-hidden shrink-0 ${contract.blocked ? "opacity-50" : ""}`}
+          >
+            <div className="bg-gray-800 text-white w-full p-1 flex justify-center items-center">
+              {numberConverter(contract.amount)}
+            </div>
           </div>
+
           {/* Addition */}
           <div
             className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
@@ -146,6 +161,22 @@ export default function ContractComponent({
               ></Dropdown>
             )}
           </div>
+
+          {contract.blocked && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className=" flex justify-center items-center">
+                  <TriangleAlert className="text-red-700 w-5 h-5"></TriangleAlert>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-50">
+                <span>
+                  This contract will not get executed due to insufficient remaining resource in
+                  building!
+                </span>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
     </div>

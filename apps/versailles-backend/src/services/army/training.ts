@@ -10,10 +10,13 @@ import {
   getArmyTrainCost,
   getBuildingConfig,
   getNationResource,
+  getTrainingResourceCost,
   Hex,
   Nation,
+  typedEntries,
 } from "@repo/shared";
 import { addArmy } from "./units";
+import { checkIsDecimal } from "#lib/helpers.js";
 
 // create army training object in a barrack
 export function queueArmyTraining(
@@ -31,6 +34,8 @@ export function queueArmyTraining(
   // map over every request and create a queue
   for (const action of trainActions) {
     if (getNationResource(nation, "manpower") < action.amount) continue; // continue if now enough manpower
+    if (action.amount <= 0) continue;
+    if (checkIsDecimal(action.amount)) continue;
 
     const barrack = buildingsById.get(action.barrackId);
     const hex = hexByBuilding.get(action.barrackId);
@@ -40,8 +45,10 @@ export function queueArmyTraining(
     if (hex.owner !== nationId) continue;
 
     // subtract gold
-    const cost = getArmyTrainCost(action.amount);
-    const success = trySpendNationResource(nation, "gold", cost);
+    const cost = getTrainingResourceCost(action.amount);
+    const success = typedEntries(cost).every(
+      ([r, amount]) => trySpendNationResource(nation, r, amount ?? 0).ok
+    );
     if (!success) continue;
 
     trainArmy(ctx, { ...action, barrackId: barrack.id, nationId });
@@ -64,18 +71,11 @@ export function cancelArmyTraining(
   nation: Nation
 ) {
   const cancelIdsSet = new Set(cancelActions.map((a) => a.trainingId));
-  const newTraining: ArmyTrainingObject[] = [];
+  if (cancelIdsSet.size === 0) return;
 
-  for (const trainingInstance of ctx.armyTraining) {
-    if (!trainingInstance) continue;
-    if (trainingInstance.nationId !== nation.id) continue;
-
-    if (!cancelIdsSet.has(trainingInstance.id)) {
-      newTraining.push(trainingInstance);
-    }
-  }
-
-  ctx.armyTraining = newTraining;
+  ctx.armyTraining = ctx.armyTraining.filter(
+    (training) => training.nationId !== nation.id || !cancelIdsSet.has(training.id)
+  );
 }
 
 // gives training progress and deploys ready armies
@@ -99,7 +99,7 @@ export function runBuildingTraining(
       if (amountTrained >= maxTraining) break;
 
       const trainingAvailable = Math.min(trainInstance.amount, maxTraining - amountTrained);
-      const progress = Math.round(baseTrainingProgress * amountTrained * efficiency);
+      const progress = baseTrainingProgress * trainingAvailable * efficiency;
 
       trainInstance.progress += progress;
       amountTrained += trainingAvailable;
@@ -168,10 +168,7 @@ export function trainArmy(
 
   return obj;
 }
-export function deleteTrainInstance(
-  { armyTraining }: { armyTraining: ArmyTrainingObject[] },
-  id: string
-) {
-  armyTraining = armyTraining.filter((i) => i.id !== id);
+export function deleteTrainInstance(ctx: GameCtx, id: string) {
+  ctx.armyTraining = ctx.armyTraining.filter((i) => i.id !== id);
   return { ok: true };
 }

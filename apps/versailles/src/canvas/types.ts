@@ -4,6 +4,7 @@ import { PendingAction } from "@/lib/types/actions";
 import { BuildModeType, RoadDraft } from "@/lib/types/game";
 import { ContractProjection } from "@/lib/UI/mergeData/contracts/types";
 import { RenderRoad } from "@/lib/UI/mergeData/roads(belongs render)/types";
+import { ContractPrediction } from "@/lib/UI/predictions/contracts/types";
 import { Building, Hex, Nation, NationResourceTable } from "@repo/shared";
 import { Dispatch, RefObject } from "react";
 
@@ -33,7 +34,7 @@ export type CanvasSnapshot = {
 
   roads: RenderRoad[];
   buildings: Building[];
-  contracts: ContractProjection[];
+  contracts: ContractPrediction[];
   gameActions: PendingAction[];
 
   buildMode: BuildModeType;

@@ -16,7 +16,7 @@ const armyTrainActionSchema = z.object({
   id: actionIdSchema,
   type: z.literal("army.train"),
 
-  amount: z.int(),
+  amount: z.int().min(1),
   barrackId: z.string(),
 });
 const trainingDeleteActionSchema = z.object({

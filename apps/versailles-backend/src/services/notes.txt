@@ -2,16 +2,14 @@
 ** PRODUCTION MUST RESOLVE PACKAGE.JSON IN
    SHARED PACKAGE TO DIST **
 
-list of changes to make next:
-reject non-auto-adjust contracts that require more resource than currently available AFTER all contracts are resolved
-and reject contract updates if they are switched to non-auto-adjust and require more resource than available
+--- KNOWN ISSUES ---
+- Armies with an amount of 1 do not spawn at the barracks after they finish training
+- Wrong mail ordering (earlier mails end up at the top)
+- Mails do not stop highlighting until "read" marker has reached the server
+- Every turn red marker above mail icon refreshes and shows all mails as unread
 
-fix ai not training army
-don't forget to revalidate training when running game simulation (function already ready)
-make sure you revalidate contracts every turn
-fix fractional numbers in contracts and exports
-possible reason why small armies don't train: something rounds the values which prevents small armies from training. 
-10. setup a database to store game state in ( or redis )
+list of changes to make next:
+10. setup a database ( or redis )
 12. bug fixes + ui polishment, clean up architecture
 13. Music, sound effects, reusable components
 14. deploy
@@ -38,6 +36,7 @@ and pull army from other hexes to create enough army for attack.
 16. Deprecate world analysis object. Instead invoke every non-expensive selector manually, and keep only expensive
 calculcations.
 17. Think how AI intents validate after simulation runs.
+18. Add mobile support
 
 --- RULES ---
 1. Delete/Update first, Build/Add second.

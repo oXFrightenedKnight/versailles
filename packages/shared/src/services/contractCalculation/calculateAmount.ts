@@ -12,8 +12,14 @@ function compareContractOrder(a: ContractCalculationInput, b: ContractCalculatio
 export function calculateContracts(
   contracts: readonly ContractCalculationInput[],
   input: ContractCalculationContext
-): ContractCalculationResult[] {
+): {
+  result: ContractCalculationResult[];
+  blocked: Set<string>;
+  received: Map<string, Partial<Record<BASE_RESOURCE, number>>>;
+} {
   const result: ContractCalculationResult[] = [];
+  const blocked = new Set<string>();
+
   const ordered = [...contracts].sort(compareContractOrder);
 
   const deliveredMap = new Map<string, Partial<Record<BASE_RESOURCE, number>>>();
@@ -47,7 +53,13 @@ export function calculateContracts(
 
       result.push({ contractId: contract.contractId, calculatedAmount: send });
     } else {
-      const send = Math.max(0, Math.min(availableResource, contract.amount));
+      // do not execute non-auto-adjust contract if a building does not have enough resources left
+      if (availableResource < contract.amount) {
+        blocked.add(contract.contractId);
+        continue;
+      }
+
+      const send = Math.max(0, contract.amount);
 
       delivered[contract.resource] = deliveredResource + send;
       available[contract.resource] = Math.max(0, availableResource - send);
@@ -58,5 +70,5 @@ export function calculateContracts(
     }
   }
 
-  return result;
+  return { result, blocked, received: deliveredMap };
 }

@@ -2,6 +2,7 @@ import {
   ActionOfType,
   BASE_RESOURCE,
   baseResources,
+  Building,
   calculateContracts,
   ContractCalculationInput,
   getAvailableByBuildingMap,
@@ -16,6 +17,7 @@ import {
 } from "@repo/shared";
 import { GameCtx } from "../trpc/index.js";
 import { pointKey } from "./road.js";
+import { checkIsDecimal } from "#lib/helpers.js";
 
 export type newContract = {
   startBuildingId: string;
@@ -76,6 +78,10 @@ export function submitNewContracts(
     );
     if (!availableResources.has(action.resource)) continue;
 
+    // check for decimal
+    const isDecimal = checkIsDecimal(action.amount);
+    if (isDecimal) continue;
+
     // --- CREATE ---
     const points = startDijkstrasAlgo({ startingHex: startingHex, endHex, mapHexes, roads });
     if (!points) continue;
@@ -105,21 +111,16 @@ export function createContract(contracts: SupplyContract[], newContract: SupplyC
 }
 
 export function updateContract(ctx: GameCtx, contractId: string, changes: Partial<SupplyContract>) {
-  ctx.contracts = ctx.contracts.flatMap((c) =>
-    c.id === contractId ? [{ ...c, changes }] : [{ ...c }]
+  ctx.contracts = ctx.contracts.map((contract) =>
+    contract.id === contractId ? { ...contract, ...changes } : contract
   );
+
   return { ok: true };
 }
 
-// this function only recalculates contracts which have "autoAdjust" feature enabled
+// recalculates contracts which have "autoAdjust" feature enabled
 export function recalculateContractsAmounts(ctx: GameCtx) {
-  const availableByBuilding = getAvailableByBuildingMap(ctx.buildings);
-  const requiredByBuilding = getRequiredByBuildingMap(ctx.buildings);
-
-  const adjustable = ctx.contracts.filter((c) => c.autoAdjust);
-  const converted = convertContractInput(adjustable);
-
-  const result = calculateContracts(converted, { availableByBuilding, requiredByBuilding });
+  const { result } = getContractCalculation(ctx.contracts, ctx.buildings);
 
   for (const { contractId, calculatedAmount } of result) {
     updateContract(ctx, contractId, { amount: calculatedAmount });
@@ -140,6 +141,12 @@ export function updateContracts(
     if (!contract) continue;
 
     if (contract.ownerId !== nation.id) continue;
+
+    const amount = contractUpdate.changes.amount;
+    if (amount) {
+      const isDecimal = checkIsDecimal(amount);
+      if (isDecimal) continue;
+    }
 
     updateContract(ctx, contract.id, { ...contractUpdate.changes });
   }
@@ -239,4 +246,42 @@ export function convertContractInput(contracts: SupplyContract[]): ContractCalcu
     resource: c.resource,
     autoAdjust: c.autoAdjust,
   }));
+}
+
+export function getContractCalculation(contracts: SupplyContract[], buildings: Building[]) {
+  const availableByBuilding = getAvailableByBuildingMap(buildings);
+  const requiredByBuilding = getRequiredByBuildingMap(buildings);
+
+  const converted = convertContractInput(contracts);
+
+  return calculateContracts(converted, { availableByBuilding, requiredByBuilding });
+}
+
+// strict executor that either executes contracts or rejects them
+export function runContractExecutor(contracts: SupplyContract[], buildings: Building[]) {
+  const availableByBuilding = getAvailableByBuildingMap(buildings);
+
+  const deilvered = new Map<string, Partial<Record<BASE_RESOURCE, number>>>();
+  const blocked = new Set<string>();
+
+  for (const contract of contracts) {
+    const available = availableByBuilding.get(contract.fromBuildingId);
+    const availableResource = available?.[contract.resource];
+
+    if (!available || availableResource === undefined || availableResource < contract.amount) {
+      blocked.add(contract.id);
+      continue;
+    }
+
+    const deliveredStorage = deilvered.get(contract.toBuildingId) ?? {};
+    const deliveredResource = deliveredStorage?.[contract.resource] ?? 0;
+
+    deliveredStorage[contract.resource] = Math.max(0, deliveredResource + contract.amount);
+    available[contract.resource] = availableResource - contract.amount;
+
+    deilvered.set(contract.toBuildingId, deliveredStorage);
+    availableByBuilding.set(contract.fromBuildingId, available);
+  }
+
+  return deilvered;
 }

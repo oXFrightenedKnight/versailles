@@ -14,18 +14,20 @@ import {
 } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { calculateEfficiency } from "./consumption";
+import { getContractCalculation, runContractExecutor } from "#services/contracts.js";
 
 // calculates building efficiency and updates production/available resources
 export function runBuildingsSystem(gameCtx: GameCtx) {
   // map over every contract and create a map of available resources allocated to each building
-  const allocatedResources = calcAllocatedContractResources(gameCtx);
+  const received = runContractExecutor(gameCtx.contracts, gameCtx.buildings);
+
   const nationMap = new Map(gameCtx.nations.map((n) => [n.id, n]));
   const buildingHexMap = new Map(
     gameCtx.mapHexes.filter((h) => h.buildingId).map((h) => [h.buildingId!, h])
   );
 
   for (const building of gameCtx.buildings) {
-    const recievedResources = allocatedResources.get(building.id) ?? {};
+    const recievedResources = received.get(building.id) ?? {};
 
     const hex = buildingHexMap.get(building.id);
     if (!hex) continue;
@@ -54,8 +56,6 @@ export function runBuildingProduction(building: Building, nation: Nation, effici
   const availableResources = BUILDINGS[buildingName].producing ?? {};
 
   for (const [resource, _] of typedEntries(availableResources)) {
-    if (!isBaseResource(resource)) continue;
-
     const produced = calculateResourceOutput(resource, buildingName, efficiency);
 
     if (isBaseResource(resource)) {

@@ -12,8 +12,11 @@ import { ActionOfType, Building } from "@repo/shared";
 import { SquarePen } from "lucide-react";
 import { useCallback } from "react";
 import ContractComponent from "./ContractComponent";
-import { selectContractPredictions } from "@/lib/UI/predictions/contracts";
 import { getAvailableResourcesByContract } from "@/lib/helpers/contracts";
+import {
+  projectionToContractInput,
+  selectContractPredictions,
+} from "@/lib/UI/predictions/contracts/selectors";
 
 export default function ContractBlock({
   isContractSelected,
@@ -32,9 +35,10 @@ export default function ContractBlock({
   const createGameAction = useIntentStore((s) => s.createGameAction);
   const deleteGameAction = useIntentStore((s) => s.deleteGameAction);
 
-  const contractProjections = selectContracts(serverContracts, gameActions);
-  const contracts = selectContractPredictions(contractProjections, buildings);
-  const buildingContracts = contracts.filter((c) => c.fromBuildingId === building.id);
+  const contracts = selectContractPredictions(serverContracts, buildings, gameActions);
+  const buildingContracts = contracts
+    .filter((c) => c.fromBuildingId === building.id)
+    .sort((a, b) => a.executionOrder - b.executionOrder);
 
   const availableResourcesMap = getAvailableResourcesByContract(contracts, buildings);
 

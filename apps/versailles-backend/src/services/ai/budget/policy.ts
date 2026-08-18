@@ -5,6 +5,10 @@ export const BASE_GOLD_WEIGHTS = {
   reserve: 0.15,
 };
 
+export const BASE_MANPOWER_WEIGHTS = {
+  train: 1,
+};
+
 export const GOLD_PRESSURE_MULTIPLIERS = {
   enemyStrengthToTraining: 1.2,
   enemyStrengthToBuilding: -0.6,

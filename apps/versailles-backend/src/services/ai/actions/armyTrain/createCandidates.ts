@@ -3,22 +3,23 @@ import { BorderNeed } from "#services/ai/analysis/military/types.js";
 import { WorldAnalysis } from "#services/ai/analysis/types.js";
 import { sortCandidates } from "#services/ai/generateCandidates.js";
 import { ArmyTrain } from "#services/ai/intents/types.js";
+import { calcOptimisticDeficit } from "#services/ai/planning/queries/army.js";
 import { AIPlanningState } from "#services/ai/planning/types.js";
+import { reconstructPath } from "#services/algorithms/bfs.js";
 import { GameCtx } from "#trpc/index.js";
 import {
+  Hex,
   NATION_RESOURCE,
   Nation,
-  getArmyTrainCost,
-  Hex,
-  BUILDINGS,
-  getBuildingName,
-  getBuildingConfig,
   NationResourceTable,
+  getArmyTrainCost,
+  getBuildingConfig,
   getBuildingsByIdMap,
+  getTrainingResourceCost,
 } from "@repo/shared";
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { proposalPriority } from "../armyMove/policy";
-import { calcOptimisticDeficit } from "#services/ai/planning/queries/army.js";
+import { getMaxAffordableAmount } from "#lib/helpers.js";
 
 export function generateArmyTrainCandidates(
   ctx: GameCtx,
@@ -27,39 +28,58 @@ export function generateArmyTrainCandidates(
   budget: Map<NATION_RESOURCE, number>,
   nation: Nation
 ): ArmyTrain[] {
-  const budgetUsed = new Map(Object.keys(budget).map((key) => [key, 0]));
+  const budgetUsed = new Map<NATION_RESOURCE, number>();
 
   const armyTrainIntents: ArmyTrain[] = [];
-  const addTrainIntent = (
-    barrackId: string,
-    amount: number,
-    score: number,
-    cost: NationResourceTable
-  ) => {
+
+  const getEffectiveResource = (res: NATION_RESOURCE) => {
+    const resBudget = budget.get(res) ?? 0;
+    const resUsed = budgetUsed.get(res) ?? 0;
+    return Math.max(0, resBudget - resUsed);
+  };
+  const addTrainIntent = (barrackId: string, amount: number, score: number) => {
+    // adjust intent amount by gold and manpower
+    const effectiveGold = getEffectiveResource("gold");
+    const effectiveManpower = getEffectiveResource("manpower");
+
+    const affordableArmy = Math.min(
+      amount,
+      getMaxAffordableAmount(effectiveGold, getArmyTrainCost),
+      effectiveManpower
+    );
+    if (affordableArmy <= 0) return null;
+
+    const cost = getTrainingResourceCost(affordableArmy);
+
+    // validate all resources
     for (const [resource, amount] of typedEntries(cost)) {
       if (amount === undefined) return null;
 
-      const resBudget = budget.get(resource) ?? 0;
-      if (!resBudget) return null;
+      const effectiveRes = getEffectiveResource(resource);
 
+      if (amount > effectiveRes) return null;
+    }
+    // apply resource usage
+    for (const [resource, amount] of typedEntries(cost)) {
       const prevUsed = budgetUsed.get(resource) ?? 0;
-
-      const total = prevUsed + amount;
-      if (total > resBudget) return null;
-
-      budgetUsed.set(resource, total);
+      budgetUsed.set(resource, prevUsed + (amount ?? 0));
     }
 
-    armyTrainIntents.push({ id: crypto.randomUUID(), amount, score, type: "armyTrain", barrackId });
+    armyTrainIntents.push({
+      id: crypto.randomUUID(),
+      amount: affordableArmy,
+      score,
+      type: "armyTrain",
+      barrackId,
+    });
   };
 
   const borderAnalysis = analyzeNationBorder(ctx, analysis, planning, nation);
 
   // remember to include manpower as a limit
-  const deficitTrainIntents = calcArmyTrain(ctx, analysis, planning, borderAnalysis);
+  const deficitTrainIntents = calcArmyTrain(ctx, nation, analysis, planning, borderAnalysis);
   for (const intent of deficitTrainIntents) {
-    const goldCost = getArmyTrainCost(intent.amount);
-    addTrainIntent(intent.barrackId, intent.amount, intent.score, { gold: goldCost });
+    addTrainIntent(intent.barrackId, intent.amount, intent.score);
   }
 
   return sortCandidates(armyTrainIntents);
@@ -68,6 +88,7 @@ export function generateArmyTrainCandidates(
 // REMEMBER TO INCLUDE MOVING AI ARMY
 function calcArmyTrain(
   ctx: GameCtx,
+  nation: Nation,
   analysis: WorldAnalysis,
   planning: AIPlanningState,
   borderNeed: BorderNeed[]
@@ -87,8 +108,8 @@ function calcArmyTrain(
 
     const hexDist: { hex: Hex; dist: number }[] = [];
     for (const hex of ctx.mapHexes) {
-      if (!hex || !hex.buildingId) continue;
-      const distToBorder = cameFrom.get(hex.id);
+      if (!hex || !hex.buildingId || hex.owner !== nation.id) continue;
+      const distToBorder = reconstructPath(cameFrom, hex.id)?.length;
       if (!distToBorder) continue;
 
       const building = buildingIdMap.get(hex.buildingId);
@@ -120,7 +141,7 @@ function calcArmyTrain(
       });
       const max = config?.systems?.armyTraining?.maxTraining ?? 0;
 
-      const amount = Math.min(max, deficit);
+      const amount = Math.min(max, deficit - trained);
       trained += amount;
 
       trainIntents.push({

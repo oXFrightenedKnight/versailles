@@ -8,14 +8,15 @@ import { getNextOpeningBuilding } from "../planning/queries/buildings";
 import { AIPlanningState } from "../planning/types";
 import { calcGoldBudget } from "./allocation/gold";
 import { GOLD_ALLOCATION_PRIORITY } from "./policy";
-import { BudgetAllocationRequest, ResourceBudget } from "./types";
+import { BudgetAllocationRequest } from "./types";
+import { calcManpowerBudget } from "./allocation/manpower";
 
 export function createAIBudget(
   ctx: GameCtx,
   analysis: WorldAnalysis,
   planning: AIPlanningState,
   nation: Nation
-): ResourceBudget {
+) {
   const pressure = analyzeAIPressure(ctx, analysis, nation);
 
   const foundationComplete = getNextOpeningBuilding(ctx, planning, nation.id) === undefined;
@@ -44,5 +45,6 @@ export function createAIBudget(
 
   return {
     gold: calcGoldBudget(budgetCtx, getNationResource(nation, "gold"), pressure, requests).goldMap,
+    manpower: calcManpowerBudget(getNationResource(nation, "manpower")).manpowerMap,
   };
 }
