@@ -81,11 +81,6 @@ export function generateBuildRoadCandidates(
 
     // sort by closest
     const sortedNodes = [...producingNodes].sort((a, b) => a[1].path.length - b[1].path.length);
-    console.log(
-      `${nation.id} sorted nodes:`,
-      sortedNodes,
-      sortedNodes.map((s) => s[1].path)
-    );
 
     for (const [_, node] of sortedNodes) {
       const startHex = hexIdMap.get(build.hexId);

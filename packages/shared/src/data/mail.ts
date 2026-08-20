@@ -8,6 +8,7 @@ export type BaseMail = {
   id: string;
   visibleTo: string[] | "ALL";
   createdAt: number; // turn
+  creationIndex: number;
   read: boolean;
   requireAnswer?: boolean;
   expire?: number; // number of turns before expires
@@ -42,3 +43,4 @@ export type PeaceSignedMail = BaseMail & {
   };
 };
 export type Mail = WarEventMail | PeaceOfferMail | PeaceSignedMail;
+export type MailDraft<T extends Mail = Mail> = Omit<T, "creationIndex">;

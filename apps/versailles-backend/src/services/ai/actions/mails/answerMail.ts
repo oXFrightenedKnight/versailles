@@ -5,6 +5,7 @@ import { getNationArmy } from "#services/genNations.js";
 import { GameCtx } from "#trpc/index.js";
 import { Nation } from "@repo/shared";
 import { PEACE_TARGET_RATIO } from "./policy";
+import { getBorderHexes } from "#services/map.js";
 
 // generate peace request mails
 export function generateAnswerPeaceReqCandidates(ctx: GameCtx, nation: Nation): AnswerMail[] {
@@ -32,17 +33,27 @@ export function generateAnswerPeaceReqCandidates(ctx: GameCtx, nation: Nation): 
     .filter((enemy) => isAtWar(warSet, nation.id, enemy))
     .reduce((acc, enemy) => acc + (getNationArmy(ctx, enemy) ?? 0), 0);
 
+  const bordering = getBorderHexes(ctx, nation.id);
+  const borderingNations = new Set(bordering.map((h) => h.owner));
+
   for (const mail of sortedMails) {
-    if (!isAtWar(warSet, nation.id, mail.metadata.fromNation)) continue;
+    const fromNationId = mail.metadata.fromNation;
+
+    if (!isAtWar(warSet, nation.id, fromNationId)) continue;
 
     // stop accepting peace reqs once the rato is achieved
     if (totalEnemyArmy > ownArmy * PEACE_TARGET_RATIO) {
       submitMailAnswer(mail.id, true);
 
-      const enemyArmy = getNationArmy(ctx, mail.metadata.fromNation) ?? 0;
+      const enemyArmy = getNationArmy(ctx, fromNationId) ?? 0;
       totalEnemyArmy -= enemyArmy;
     } else {
       submitMailAnswer(mail.id, false);
+    }
+
+    // accept peace request if doesn't have direct border with enemy
+    if (!borderingNations.has(fromNationId)) {
+      submitMailAnswer(mail.id, true);
     }
   }
 

@@ -13,23 +13,23 @@ export function calculateEfficiency(
   if (!consuming) return 1; // return 100% efficiency if building does not consume anything
 
   const totalWeight = typedEntries(consuming).reduce((acc, [_, c]) => acc + (c?.weight ?? 0), 0);
+  if (totalWeight === 0) return 1;
 
-  let totalEfficiency = 0;
+  let weightedEfficiency = 0;
 
   for (const [resource, c] of typedEntries(consuming)) {
     const weight = c?.weight ?? 0;
-    const normalized = weight / totalWeight;
 
     const receivedResource = receivedResources[resource] ?? 0;
     const neededResource = consuming[resource]?.amount ?? 0;
 
-    const ratio = neededResource > 0 ? receivedResource / neededResource : 1;
+    // cap efficiency at 1
+    const ratio = neededResource > 0 ? Math.min(1, receivedResource / neededResource) : 1;
 
-    const f = Math.max(0, normalized * ratio);
-    totalEfficiency += f;
+    weightedEfficiency += weight * Math.max(0, ratio);
   }
 
-  return totalEfficiency;
+  return weightedEfficiency / totalWeight;
 }
 
 export function addConsumptionStat(

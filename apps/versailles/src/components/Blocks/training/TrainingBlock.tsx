@@ -35,6 +35,7 @@ export default function TrainingBlock({ building }: { building: Building }) {
   const deleteGameAction = useIntentStore((s) => s.deleteGameAction);
 
   const training = selectTrainings(serverArmyTraining, gameActions);
+  const buildingTrainings = training.filter((t) => t.barrackId === building.id);
 
   const handleArmyTraining = useCallback(
     (barrackId: string, amount: number) => {
@@ -108,9 +109,9 @@ export default function TrainingBlock({ building }: { building: Building }) {
         </div>
       </div>
       <div>
-        {training && training.length > 0 ? (
+        {buildingTrainings && buildingTrainings.length > 0 ? (
           <div className="w-full flex flex-col gap-1 p-1">
-            {training.map((p) => (
+            {buildingTrainings.map((p) => (
               <TrainingComponent
                 key={p.key}
                 projection={p}

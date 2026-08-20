@@ -25,10 +25,11 @@ export default function MailBlock({
   }, [mail, playerNation]);
 
   if (!text) return null;
+
   return (
     <div className="w-full h-auto p-1">
       <div
-        className={`flex flex-col justify-center items-center p-2 gap-1 bg-gray-800 text-white border border-gray-600 ${!mail.read ? "border-2 shadow-[0_0_5px_rgba(255,255,255,1)]" : ""} rounded-lg`}
+        className={`flex flex-col justify-center items-center p-2 gap-1 bg-gray-800 text-white border border-gray-600 ${!projection.read ? "border-2 shadow-[0_0_5px_rgba(255,255,255,1)]" : ""} rounded-lg`}
       >
         {/* Header */}
         <div className="w-full flex justify-start items-center">

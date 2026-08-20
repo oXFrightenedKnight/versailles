@@ -23,11 +23,12 @@ export default function EfficiencyBlock({ building }: { building: Building }) {
   const consuming = config?.consuming;
 
   const efficiencyMap = getResourceEfficiencyMap(consuming ?? {}, importedResources);
-  const totalEfficiency =
+  const totalEfficiency = Math.floor(
     Math.min(
       1,
       [...efficiencyMap].reduce((acc, [_, e]) => acc + e, 0)
-    ) * 100;
+    ) * 100
+  );
 
   return (
     <>
@@ -43,7 +44,7 @@ export default function EfficiencyBlock({ building }: { building: Building }) {
 
               const needed = consumedObject?.amount ?? 0;
 
-              const efficiency = Math.min(1, efficiencyMap.get(resource) ?? 0) * 100;
+              const efficiency = Math.floor(Math.min(1, efficiencyMap.get(resource) ?? 0) * 100);
 
               return (
                 <EfficiencyComponent

@@ -6,6 +6,7 @@ import { GameCtx } from "#trpc/index.js";
 import { Nation } from "@repo/shared";
 import { MAX_RESIST_ARMY_RATIO } from "./policy";
 import { getSortedEnemyArmies } from "#services/ai/world/armies.js";
+import { getBorderHexes } from "#services/map.js";
 
 // generate peace request mails
 export function generatePeaceReqCandidates(ctx: GameCtx, nation: Nation): SignPeaceReqIntent[] {
@@ -45,6 +46,18 @@ export function generatePeaceReqCandidates(ctx: GameCtx, nation: Nation): SignPe
     submitPeaceIntent(enemy);
 
     totalEnemyArmy -= enemyArmy;
+  }
+
+  // submit peace intents if doesn't border the nation at war
+  const bordering = getBorderHexes(ctx, nation.id);
+  const borderingNations = new Set(bordering.map((h) => h.owner));
+
+  for (const other of ctx.nations) {
+    if (!isAtWar(warSet, nation.id, other.id)) continue;
+
+    if (borderingNations.has(other.id)) continue;
+
+    submitPeaceIntent(other.id);
   }
 
   return peaceIntents;

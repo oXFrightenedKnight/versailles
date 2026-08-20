@@ -43,7 +43,6 @@ export function runAIPipeline(ctx: GameCtx, nation: Nation) {
   aiActionBuckets["diplomacy.peace"] = signPeaceReq;
   aiActionBuckets["mails.answer"] = answeredMails;
 
-  console.log("armyMoveIntents", armyMove);
   console.log("trainArmyIntents", armyTrain);
   console.dir(`buildRoads: ${buildRoads}`, { depth: null });
 

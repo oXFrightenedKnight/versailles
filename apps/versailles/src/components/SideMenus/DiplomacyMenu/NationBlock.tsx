@@ -127,8 +127,8 @@ export default function NationInfo({
             <div className="flex flex-1 min-h-0 items-center justify-center w-full ">
               <div className="w-full h-full flex flex-col gap-2 p-2 overflow-y-auto no-scrollbar">
                 {/* Nations at war */}
-                <NationsAtWar atWar={atWar} nations={nations}></NationsAtWar>
-                <NationsAtPeace atPeace={atPeace} nations={nations}></NationsAtPeace>
+                <NationsAtWar atWar={atWar}></NationsAtWar>
+                <NationsAtPeace atPeace={atPeace}></NationsAtPeace>
                 <NumberOfTiles numberOfTiles={nationHexes.length}></NumberOfTiles>
                 <TotalArmy totalArmy={totalArmy}></TotalArmy>
                 <GoldAmount gold={gold}></GoldAmount>

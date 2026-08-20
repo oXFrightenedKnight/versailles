@@ -16,7 +16,7 @@ export function selectMails(mails: Mail[], pendingActions: PendingAction[]) {
   for (const mail of mails) {
     if (answeredMailsIds.has(mail.id)) continue;
 
-    const read = readMailsIds.has(mail.id);
+    const read = mail.read || readMailsIds.has(mail.id);
 
     byMailId.set(mail.id, {
       mail: mail,

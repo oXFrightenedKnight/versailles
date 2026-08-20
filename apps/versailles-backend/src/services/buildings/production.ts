@@ -15,6 +15,7 @@ import {
 import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { calculateEfficiency } from "./consumption";
 import { getContractCalculation, runContractExecutor } from "#services/contracts.js";
+import { getBuildingHexMap } from "./queries";
 
 // calculates building efficiency and updates production/available resources
 export function runBuildingsSystem(gameCtx: GameCtx) {
@@ -22,9 +23,7 @@ export function runBuildingsSystem(gameCtx: GameCtx) {
   const received = runContractExecutor(gameCtx.contracts, gameCtx.buildings);
 
   const nationMap = new Map(gameCtx.nations.map((n) => [n.id, n]));
-  const buildingHexMap = new Map(
-    gameCtx.mapHexes.filter((h) => h.buildingId).map((h) => [h.buildingId!, h])
-  );
+  const buildingHexMap = getBuildingHexMap(gameCtx);
 
   for (const building of gameCtx.buildings) {
     const recievedResources = received.get(building.id) ?? {};

@@ -17,6 +17,7 @@ export default function MailMenu() {
   const serverMails = useGameStore((s) => s.mails);
 
   const mails = selectMails(serverMails, gameActions);
+  const sortedMails = mails.sort((a, b) => b.mail.creationIndex - a.mail.creationIndex);
   const unreadMails = mails.filter((m) => !m.read);
 
   const handleMailAnswer = useCallback(
@@ -98,8 +99,8 @@ export default function MailMenu() {
               ref={rootDiv}
               className="flex flex-col justify-start items-center w-full h-full overflow-y-auto no-scrollbar"
             >
-              {mails.length > 0 ? (
-                mails.map((projection) => (
+              {sortedMails.length > 0 ? (
+                sortedMails.map((projection) => (
                   <div
                     key={projection.mail.id}
                     ref={(element) => {

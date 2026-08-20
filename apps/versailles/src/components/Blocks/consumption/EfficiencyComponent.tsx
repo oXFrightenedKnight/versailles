@@ -17,7 +17,7 @@ export default function EfficiencyComponent({
   totalImported: number;
   efficiency: number;
 }) {
-  const progress = (totalImported / totalNeeded) * 100;
+  const progress = Math.floor((totalImported / totalNeeded) * 100);
 
   return (
     <>

@@ -42,10 +42,8 @@ export function generateArmyTrainCandidates(
     const effectiveGold = getEffectiveResource("gold");
     const effectiveManpower = getEffectiveResource("manpower");
 
-    const affordableArmy = Math.min(
-      amount,
-      getMaxAffordableAmount(effectiveGold, getArmyTrainCost),
-      effectiveManpower
+    const affordableArmy = Math.floor(
+      Math.min(amount, getMaxAffordableAmount(effectiveGold, getArmyTrainCost), effectiveManpower)
     );
     if (affordableArmy <= 0) return null;
 

@@ -1,6 +1,7 @@
 import {
   ActionOfType,
   Mail,
+  MailDraft,
   Nation,
   PeaceOfferMail,
   PeaceSignedMail,
@@ -9,10 +10,15 @@ import {
 import { GameCtx } from "../trpc/index.js";
 import { signPeace } from "./army/war.js";
 
-export function addMail(ctx: GameCtx, mail: Mail) {
+export function addMail(ctx: GameCtx, mailDraft: MailDraft) {
   // add any additional mailbox logic here to check before adding mail
-  if (!canInsertMail(ctx, mail)) return;
+  const nextIndex = ctx.counters.nextMailCreationIndex;
+
+  const mail = { ...mailDraft, creationIndex: nextIndex } as Mail;
+  if (!canInsertMail(ctx, { ...mail, creationIndex: nextIndex })) return;
+
   ctx.mails.push(mail);
+  updateMailCreationIdx(ctx);
 }
 
 function canInsertMail(ctx: GameCtx, mail: Mail): boolean {
@@ -36,7 +42,11 @@ export function deleteMail(ctx: GameCtx, mailId: string) {
   ctx.mails = ctx.mails.filter((m) => m.id !== mailId);
 }
 
-export function createWarMail(ctx: GameCtx, attacker: string, defender: string) {
+export function createWarMail(
+  ctx: GameCtx,
+  attacker: string,
+  defender: string
+): MailDraft<WarEventMail> {
   return {
     id: crypto.randomUUID(),
     visibleTo: "ALL",
@@ -47,10 +57,14 @@ export function createWarMail(ctx: GameCtx, attacker: string, defender: string) 
       attackerNation: attacker,
       defenderNation: defender,
     },
-  } as WarEventMail;
+  };
 }
 
-export function createPeaceOfferMail(ctx: GameCtx, fromNation: string, toNation: string) {
+export function createPeaceOfferMail(
+  ctx: GameCtx,
+  fromNation: string,
+  toNation: string
+): MailDraft<PeaceOfferMail> {
   return {
     id: crypto.randomUUID(),
     visibleTo: [toNation],
@@ -63,10 +77,14 @@ export function createPeaceOfferMail(ctx: GameCtx, fromNation: string, toNation:
       fromNation,
       toNation,
     },
-  } as PeaceOfferMail;
+  };
 }
 
-export function createPeaceSignedMail(ctx: GameCtx, fromNation: string, toNation: string) {
+export function createPeaceSignedMail(
+  ctx: GameCtx,
+  fromNation: string,
+  toNation: string
+): MailDraft<PeaceSignedMail> {
   return {
     id: crypto.randomUUID(),
     visibleTo: "ALL",
@@ -77,7 +95,7 @@ export function createPeaceSignedMail(ctx: GameCtx, fromNation: string, toNation
       fromNation,
       toNation,
     },
-  } as PeaceSignedMail;
+  };
 }
 
 export function filterNationMails(mails: Mail[], nationId: string) {
@@ -108,12 +126,12 @@ export function executeMailsAnswers(
   nation: Nation
 ) {
   const answerMails = ctx.mails.filter((m) => m.requireAnswer);
-  const answeredMap = new Map(answeredMails.map((obj) => [obj.id, obj.answer]));
+  const answeredMap = new Map(answeredMails.map((obj) => [obj.mailId, obj.answer]));
 
   for (const mail of answerMails) {
     if (mail.expire !== undefined && mail.expire <= 0) continue;
-    if (!mail.visibleTo.includes(nation.id) && mail.visibleTo !== "ALL") continue;
     if (!answeredMap.has(mail.id)) continue;
+    if (!mail.visibleTo.includes(nation.id) && mail.visibleTo !== "ALL") continue;
 
     const answerYes = answeredMap.get(mail.id)!;
     switch (mail.type) {
@@ -152,4 +170,12 @@ export function hasExistingPeaceRequest(mails: Mail[], fromNation: string, toNat
         m.expire > 0
     ) !== undefined
   );
+}
+
+export function getLastCreationIndex(mails: Mail[]) {
+  return mails.reduce((acc, m) => (acc >= m.creationIndex ? acc : m.creationIndex), 0);
+}
+
+export function updateMailCreationIdx(ctx: GameCtx) {
+  ctx.counters.nextMailCreationIndex++;
 }

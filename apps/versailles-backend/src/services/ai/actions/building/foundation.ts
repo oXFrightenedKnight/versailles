@@ -17,7 +17,9 @@ export function selectClosestOpeningHexes(ctx: GameCtx, target: OpeningTarget, n
 
     if (building && building.category !== target.category) continue;
 
-    const buildingLevel = building ? building.level : 0;
+    const queued = hex.build_queue?.levels ?? 0;
+    const existing = building?.level ?? 0;
+    const buildingLevel = existing + queued;
 
     // skip buildings that already meet the target level
     if (buildingLevel >= target.level) continue;

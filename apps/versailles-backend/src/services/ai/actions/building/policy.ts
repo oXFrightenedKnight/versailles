@@ -44,7 +44,6 @@ export const MAX_SAVING_TURNS = 20;
 export const EARLY_BUILDING_TARGET_SCHEMA: { category: BUILDINGS_CATEGORY; level: number }[] = [
   { category: "CIVILIAN", level: 2 },
   { category: "FARM", level: 1 },
-  { category: "FARM", level: 1 },
   { category: "BARRACK", level: 1 },
   { category: "FARM", level: 1 },
   { category: "WATCHTOWER", level: 1 },

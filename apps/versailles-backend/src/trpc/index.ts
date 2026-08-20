@@ -30,6 +30,11 @@ export type GameCtx = {
   contracts: SupplyContract[];
   armyTraining: ArmyTrainingObject[];
   aiMemory: MemoryCtx;
+  counters: ServerSequnceState;
+};
+export type ServerSequnceState = {
+  nextMailCreationIndex: number;
+  nextContractExecutionOrder: number;
 };
 
 export type NextTurnType = inferProcedureInput<AppRouter["nextTurn"]>;

@@ -37,10 +37,6 @@ export function submitNewContracts(
   const buildingContractMap = getBuildingContractsMap(ctx);
 
   const contractIds = new Set(ctx.contracts.map((c) => c.id));
-  let currHighestOrder = ctx.contracts.reduce(
-    (acc, c) => (c.executionOrder > acc ? c.executionOrder : acc),
-    0
-  );
 
   // check whether starting building is allowed to have contracts
   for (const action of createContracts) {
@@ -98,9 +94,9 @@ export function submitNewContracts(
       resource: action.resource,
       autoAdjust: action.autoAdjust,
       ownerId: nation.id,
-      executionOrder: currHighestOrder + 1,
+      executionOrder: ctx.counters.nextContractExecutionOrder,
     });
-    currHighestOrder++;
+    updateContractOrderIdx(ctx);
     contractIds.add(action.contractId);
   }
 }
@@ -284,4 +280,8 @@ export function runContractExecutor(contracts: SupplyContract[], buildings: Buil
   }
 
   return deilvered;
+}
+
+export function updateContractOrderIdx(ctx: GameCtx) {
+  ctx.counters.nextContractExecutionOrder++;
 }

@@ -101,6 +101,11 @@ export function runBuildingTraining(
       const trainingAvailable = Math.min(trainInstance.amount, maxTraining - amountTrained);
       const progress = baseTrainingProgress * trainingAvailable * efficiency;
 
+      console.log(
+        `training progress gain at ${hex.id} for amount ${trainingAvailable} of ${trainInstance.nationId} with eff ${efficiency}: `,
+        progress
+      );
+
       trainInstance.progress += progress;
       amountTrained += trainingAvailable;
 

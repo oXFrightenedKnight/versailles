@@ -2,13 +2,9 @@
 ** PRODUCTION MUST RESOLVE PACKAGE.JSON IN
    SHARED PACKAGE TO DIST **
 
---- KNOWN ISSUES ---
-- Armies with an amount of 1 do not spawn at the barracks after they finish training
-- Wrong mail ordering (earlier mails end up at the top)
-- Mails do not stop highlighting until "read" marker has reached the server
-- Every turn red marker above mail icon refreshes and shows all mails as unread
-
 list of changes to make next:
+9.5. Hide province info side bar if no hex selected
+9.75. Create 2 map modes: diplomatic and building
 10. setup a database ( or redis )
 12. bug fixes + ui polishment, clean up architecture
 13. Music, sound effects, reusable components
@@ -37,18 +33,9 @@ and pull army from other hexes to create enough army for attack.
 calculcations.
 17. Think how AI intents validate after simulation runs.
 18. Add mobile support
+19. Rethink training progression system. Training the same amount of manpower at different levels with the same supply
+should not be radically different in their speed (which is controlled by efficiency)
 
 --- RULES ---
 1. Delete/Update first, Build/Add second.
 
-keep in mind that when you apply optimistic update to deleted buildings on client,
-a hex that this building belonged to still holds the reference to it.
-
-Resource/Building pipeline:
-
-1. Turns starts, contracts get updated. Client sees optimistic ui of its contracts being working.
-new contracts must be working optimsitically, right after creation since player works with previous turn state
-2. calcAllocationResource allocates resources using the new updated contracts but prev turn state
-3. each building calculates its output based on efficiency which is gathered from allocated resources
-4. After every building calculated its new output, we run the allocation again and update each 
-building's available resources with new efficiency

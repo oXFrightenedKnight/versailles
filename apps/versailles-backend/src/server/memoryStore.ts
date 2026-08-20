@@ -53,6 +53,10 @@ export function createNewGame(userId: string) {
     aiMemory: {},
     contracts: [],
     armyTraining: [],
+    counters: {
+      nextContractExecutionOrder: 0,
+      nextMailCreationIndex: 0,
+    },
   };
   populateWorld(ctx);
 
