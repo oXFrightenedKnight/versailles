@@ -1,15 +1,14 @@
+import { createCanvasEngine } from "@/canvas/createCanvasEngine";
 import { CanvasCommands, CanvasEngine, CanvasSnapshot, GameCanvasProps } from "@/canvas/types";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
 import { useUIStore } from "@/lib/stores/uiStore";
 import { selectBuildings } from "@/lib/UI/mergeData/buildings/selectors";
-import { selectRenderRoads } from "@/lib/UI/mergeData/roads(belongs render)/selectors";
-import { useEffect, useRef } from "react";
-import { createCanvasEngine } from "@/canvas/createCanvasEngine";
 import { selectHexes } from "@/lib/UI/mergeData/hexes/selectors";
-import { selectContracts } from "@/lib/UI/mergeData/contracts/selectors";
-import { useOptimisticResources } from "./useOptimisticResources";
+import { selectRenderRoads } from "@/lib/UI/mergeData/roads(belongs render)/selectors";
 import { selectContractPredictions } from "@/lib/UI/predictions/contracts/selectors";
+import { useEffect, useRef } from "react";
+import { useOptimisticResources } from "./useOptimisticResources";
 
 export function useGameCanvas(props: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -53,6 +52,8 @@ export function useGameCanvas(props: GameCanvasProps) {
 
     barValue: props.barValue,
     barDragging: props.barDragging,
+
+    openMenu: props.openMenu,
   };
 
   const snapshotRef = useRef(snapshot);

@@ -5,7 +5,7 @@ import { GameSave } from "../_trpc/client";
 import { Button } from "@/components/ui/button";
 import { redirect } from "next/navigation";
 import Image from "next/image";
-import { getNationFlagURL } from "@/lib/helpers/flags";
+import { getNationFlagURL } from "@/lib/helpers/imageCache/flags";
 import { format, formatDistanceToNow } from "date-fns";
 
 export default function GameSaveBlock({ save, idx }: { save: GameSave; idx: number }) {

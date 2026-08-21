@@ -1,14 +1,12 @@
-import { getFlagImage } from "@/lib/helpers/flags";
+import { getBiomeTexture, getBuildingCategoryIcon, getTextureImage } from "@/lib/data";
 import { numberConverter } from "@/lib/utils";
 import { Biome, BIOMES, Hex } from "@repo/shared/data/hex_map";
 import { Nation } from "@repo/shared/data/nations";
 import { findNeighbors } from "@repo/shared/helpers/hex_map";
-import { drawAllRoads } from "./roads/roads";
-import { ArmyMoveProjection } from "@/lib/UI/mergeData/armyMove/types";
-import { RoadDraft } from "@/lib/types/game";
-import { RenderRoad } from "@/lib/UI/mergeData/roads(belongs render)/types";
+import { CanvasRuntime, CanvasSnapshot } from "../types";
+import { renderEconomyMap } from "./modes/economy";
+import { renderMilitaryMap } from "./modes/military";
 import { BIOME_COLOR, HEX_SIZE } from "./policy";
-import { getBiomeTexture, getTextureImage } from "@/lib/data";
 
 const biomePatterns: Partial<Record<Biome, CanvasPattern>> = {};
 const texturePatterns: Partial<Record<string, CanvasPattern>> = {};
@@ -208,7 +206,7 @@ function drawClickPolygon({
   ctx.restore();
 }
 
-function drawArrow(
+export function drawArrow(
   ctx: CanvasRenderingContext2D,
   x1: number,
   y1: number,
@@ -311,106 +309,75 @@ export function pixelToHex({ x, y, mapHexes }: { x: number; y: number; mapHexes:
 }
 
 export function renderMap(
-  ctx: CanvasRenderingContext2D,
-  clickCtx: CanvasRenderingContext2D,
   mapCenterX: number,
   mapCenterY: number,
-  selectedHexId: number | null,
-  blinkTime: number,
-  mapHexes: Hex[],
-  nations: Nation[],
-  armyMove: ArmyMoveProjection[],
-  tempRoad: RoadDraft | null,
-  roads: RenderRoad[]
+  snapshot: CanvasSnapshot,
+  runtime: CanvasRuntime
 ) {
   // set of neighbor ids
   const neighbors = new Set<number>();
 
   // if selected hex has player army highlight bordering hexes
-  const selectedHex = mapHexes.find((hex) => hex.id === selectedHexId);
-  const player = nations.find((nation) => nation.isPlayer);
+  const selectedHex = snapshot.mapHexes.find((hex) => hex.id === snapshot.selectedHexId);
+  const player = snapshot.nations.find((nation) => nation.isPlayer);
   // if hex, player exist and player has army in selected hex...
   if (selectedHex && player && selectedHex.army.some((obj) => obj.nationId === player.id)) {
-    const find = findNeighbors(selectedHex, mapHexes);
+    const find = findNeighbors(selectedHex, snapshot.mapHexes);
     // add all neighbouring hexes to the Set to highlight after
     find.forEach((hex) => neighbors.add(hex.id));
   }
 
-  // draw arrows for army intent
-  for (const obj of armyMove) {
-    const originalHex = mapHexes.find((hex) => hex.id === obj.hexId);
-    if (!originalHex) {
-      console.error("Could not find matching original hex!");
-      continue;
-    }
-
-    const targetQ = originalHex.q + obj.direction.dq;
-    const targetR = originalHex.r + obj.direction.dr;
-
-    const destinationHex = mapHexes.find((hex) => hex.q === targetQ && hex.r === targetR);
-
-    if (!destinationHex) continue;
-
-    const { x: x2, y: y2 } = hexToPixel(destinationHex.q, destinationHex.r);
-    const { x, y } = hexToPixel(originalHex.q, originalHex.r);
-    drawArrow(clickCtx, x, y, x2, y2, "black", 8, 0, 0, 12, 16, 0.1);
-    drawArrow(clickCtx, x, y, x2, y2, "red", 4.5, -3, 2, 8, 11, 0);
-    // drawArrow(clickCtx, x, y, x2, y2, "red", 4, 12);
-  }
-
-  mapHexes.map((hex) => {
+  snapshot.mapHexes.map((hex) => {
     const { x, y } = hexToPixel(hex.q, hex.r);
 
     drawPolygon({
-      ctx: ctx,
+      ctx: runtime.canvas.mainContext,
       centerX: mapCenterX + x,
       centerY: mapCenterY + y,
       radius: HEX_SIZE - 1,
       rotation: Math.PI / 6,
       biome: hex.biome,
       id: hex.id,
-      nations: nations,
-      mapHexes: mapHexes,
+      nations: snapshot.nations,
+      mapHexes: snapshot.mapHexes,
     });
   });
 
   // draw invisible click map
-  mapHexes.map((hex) => {
+  snapshot.mapHexes.map((hex) => {
     const { x, y } = hexToPixel(hex.q, hex.r);
     let isSelected: boolean = false;
 
     // code to run if there is any selected hex
-    if (selectedHexId !== null) {
-      // select only hexes that is selected by player or neighbor
-      isSelected = hex.id === selectedHexId || neighbors.has(hex.id);
-    }
-
-    if (hex.army.length !== 0) {
-      const array = hex.army.map((obj) => ({
-        text: obj.amount.toString(),
-        icon: getFlagImage(obj.nationId), // getting image from cash to avoid
-        // creating too many images
-      }));
-      drawLabelArray(ctx, array, mapCenterX + x, mapCenterY + y);
+    if (snapshot.selectedHexId !== null) {
+      // select only hexes that are selected by player or neighbor
+      isSelected = hex.id === snapshot.selectedHexId || neighbors.has(hex.id);
     }
 
     drawClickPolygon({
-      ctx: clickCtx,
+      ctx: runtime.canvas.hitContext,
       centerX: mapCenterX + x,
       centerY: mapCenterY + y,
       radius: HEX_SIZE - 1,
       rotation: Math.PI / 6,
       isSelected: isSelected,
-      blinkTime: blinkTime,
+      blinkTime: runtime.animation.blinkTime,
     });
   });
 
-  drawAllRoads({
-    ctx: clickCtx,
-    mapHexes,
-    tempRoad,
-    roads,
-  });
+  switch (snapshot.openMenu) {
+    case "build":
+      console.log("try to render economy map");
+      renderEconomyMap(mapCenterX, mapCenterY, snapshot, runtime);
+      break;
+    case "diplo":
+      console.log("try to render economy map");
+      renderMilitaryMap(mapCenterX, mapCenterY, snapshot, runtime);
+      break;
+    default:
+      renderMilitaryMap(mapCenterX, mapCenterY, snapshot, runtime);
+      break;
+  }
 }
 
 function drawLabel(
@@ -450,7 +417,7 @@ function drawLabel(
   ctx.fillText(numberConverter(Number(text)), boxX + paddingX + iconSize + gap, centerY);
 }
 
-function drawLabelArray(
+export function drawLabelArray(
   ctx: CanvasRenderingContext2D,
   array: {
     text: string;

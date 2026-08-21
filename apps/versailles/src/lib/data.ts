@@ -60,6 +60,10 @@ export function getNationFlag(nationId: string | undefined) {
   return `/flags/${nationId?.toLowerCase() ?? "tribes"}.png`;
 }
 
+export function getBuildingCategoryIcon(category: BUILDINGS_CATEGORY) {
+  return `/icons/buildings/${category.toLowerCase()}.png`;
+}
+
 export const Descriptions: Record<string, string> = {
   manpower: "All people in your nation that can serve in military.",
   gold: "Your nation's exchange currency.",

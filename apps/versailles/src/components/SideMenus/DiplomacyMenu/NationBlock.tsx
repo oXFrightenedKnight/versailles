@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { BuildingIcons } from "@/lib/data";
 import { allBuildingsPerCategory } from "@/lib/helpers/buildings";
-import { getNationFlagURL } from "@/lib/helpers/flags";
+import { getNationFlagURL } from "@/lib/helpers/imageCache/flags";
 import { getNationName, isAtWar, totalNationArmy } from "@/lib/helpers/nations";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";

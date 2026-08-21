@@ -2,7 +2,7 @@
 
 import BuildingMenu from "@/components/buildingConfig/buildingMenu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { getNationFlagURL } from "@/lib/helpers/flags";
+import { getNationFlagURL } from "@/lib/helpers/imageCache/flags";
 import { getNationName } from "@/lib/helpers/nations";
 import { Hex } from "@repo/shared/data/hex_map";
 import { getBuilding, getBuildingName } from "@repo/shared/helpers/buildings";

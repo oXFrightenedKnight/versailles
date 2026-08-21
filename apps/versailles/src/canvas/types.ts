@@ -1,8 +1,8 @@
+import { OpenMenus } from "@/lib/data";
 import { StoreType } from "@/lib/stores/intentStore";
 import { Popup, SetStateAction } from "@/lib/stores/uiStore";
 import { PendingAction } from "@/lib/types/actions";
 import { BuildModeType, RoadDraft } from "@/lib/types/game";
-import { ContractProjection } from "@/lib/UI/mergeData/contracts/types";
 import { RenderRoad } from "@/lib/UI/mergeData/roads(belongs render)/types";
 import { ContractPrediction } from "@/lib/UI/predictions/contracts/types";
 import { Building, Hex, Nation, NationResourceTable } from "@repo/shared";
@@ -25,6 +25,8 @@ export type GameCanvasProps = {
   setBarDragging: Dispatch<React.SetStateAction<boolean>>;
 
   barRef: RefObject<HTMLDivElement | null>;
+
+  openMenu: OpenMenus;
 };
 
 export type CanvasSnapshot = {
@@ -45,6 +47,8 @@ export type CanvasSnapshot = {
 
   barValue: number;
   barDragging: boolean;
+
+  openMenu: OpenMenus;
 };
 
 export type CanvasRuntime = {

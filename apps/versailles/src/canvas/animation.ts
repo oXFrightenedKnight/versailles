@@ -34,19 +34,7 @@ export function drawFrame(runtime: CanvasRuntime, snapshot: CanvasSnapshot) {
     context.translate(runtime.camera.x, runtime.camera.y);
   }
 
-  renderMap(
-    mainContext,
-    hitContext,
-    0,
-    0,
-    snapshot.selectedHexId,
-    runtime.animation.blinkTime,
-    snapshot.mapHexes,
-    snapshot.nations,
-    selectArmyMoves(snapshot.gameActions),
-    runtime.road.draft,
-    snapshot.roads
-  );
+  renderMap(0, 0, snapshot, runtime);
 
   mainContext.restore();
   hitContext.restore();
