@@ -31,7 +31,7 @@ export const BuildingDescriptions: Record<"road" | BUILDINGS_CATEGORY, string> =
   WOODCAMP: "Construct a woodcamp",
 };
 export function getResourceImage(resource: PRODUCIBLE_RESOURCE) {
-  return `/icons/resources/${resource}.png`;
+  return `/icons/resources/${resource.toLowerCase()}.png`;
 }
 
 export function getBuildingIconImage(name: BuildingNames) {
@@ -49,19 +49,23 @@ export function getBiomeTexture(biome: Biome) {
 }
 
 export function getBiomePreview(biome: Biome) {
-  return `/biome_types/${biome}.png`;
+  return `/biome_types/${biome.toLowerCase()}.png`;
 }
 
 export function getTextureImage(texture: string) {
-  return `/textures/${texture}.png`;
+  return `/textures/${texture.toLowerCase()}.png`;
 }
 
-export function getNationFlag(nationId: string | undefined) {
+export function getNationFlagURL(nationId: string | undefined) {
   return `/flags/${nationId?.toLowerCase() ?? "tribes"}.png`;
 }
 
 export function getBuildingCategoryIcon(category: BUILDINGS_CATEGORY) {
   return `/icons/buildings/${category.toLowerCase()}.png`;
+}
+
+export function getMiscIcons(icon: string) {
+  return `/icons/misc/${icon.toLowerCase()}.png`;
 }
 
 export const Descriptions: Record<string, string> = {

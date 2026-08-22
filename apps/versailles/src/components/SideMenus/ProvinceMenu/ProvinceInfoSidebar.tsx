@@ -2,7 +2,6 @@
 
 import BuildingMenu from "@/components/buildingConfig/buildingMenu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { getNationFlagURL } from "@/lib/helpers/imageCache/flags";
 import { getNationName } from "@/lib/helpers/nations";
 import { Hex } from "@repo/shared/data/hex_map";
 import { getBuilding, getBuildingName } from "@repo/shared/helpers/buildings";
@@ -12,6 +11,7 @@ import NoBuilding from "../../buildingConfig/noBuilding";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { selectBuildings } from "@/lib/UI/mergeData/buildings/selectors";
 import { useIntentStore } from "@/lib/stores/intentStore";
+import { getNationFlagURL } from "@/lib/data";
 
 export default function ProvinceInfoSidebar({
   selectedHex,

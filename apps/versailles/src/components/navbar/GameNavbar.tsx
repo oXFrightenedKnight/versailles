@@ -1,4 +1,4 @@
-import { getNationFlag, OpenMenus } from "@/lib/data";
+import { getNationFlagURL, OpenMenus } from "@/lib/data";
 import { typedEntries } from "@repo/shared";
 import { Menu } from "lucide-react";
 import Image from "next/image";
@@ -38,7 +38,7 @@ export default function GameNavbar({
       <div className="flex justify-start items-center h-full bg-gray-800">
         <div className="flex justify-between items-center w-full h-full p-1">
           <Image
-            src={getNationFlag(playerNation?.id)}
+            src={getNationFlagURL(playerNation?.id)}
             alt="nation flag"
             width={1463}
             height={962}

@@ -434,3 +434,28 @@ export function drawLabelArray(
     drawLabel(ctx, item.text, item.icon, centerX, startY + i * lineHeight);
   });
 }
+
+export function fitText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  maxFontSize = 16,
+  minFontSize = 6,
+  fontFamily = "TrajanPro"
+) {
+  let fontSize = maxFontSize;
+
+  while (fontSize > minFontSize) {
+    ctx.font = `${fontSize}px ${fontFamily}`;
+
+    if (ctx.measureText(text).width <= maxWidth) {
+      break;
+    }
+
+    fontSize--;
+  }
+
+  ctx.font = `${fontSize}px ${fontFamily}`;
+
+  return fontSize;
+}

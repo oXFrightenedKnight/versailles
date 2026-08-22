@@ -1,4 +1,4 @@
-import { getNationFlagURL } from "@/lib/helpers/imageCache/flags";
+import { getNationFlagURL } from "@/lib/data";
 import { TooltipTrigger, TooltipContent, Tooltip } from "../ui/tooltip";
 import Image from "next/image";
 

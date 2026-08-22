@@ -1,7 +1,7 @@
 import { CanvasRuntime, CanvasSnapshot } from "@/canvas/types";
-import { getFlagImage } from "@/lib/helpers/imageCache/flags";
 import { drawArrow, drawLabelArray, hexToPixel } from "../render";
 import { selectArmyMoves } from "@/lib/UI/mergeData/armyMove/selectors";
+import { getFlagImage } from "@/lib/helpers/imageCache/cache";
 
 export function renderMilitaryMap(
   mapCenterX: number,
@@ -35,11 +35,19 @@ export function renderMilitaryMap(
     if (h.army.length !== 0) {
       const { x, y } = hexToPixel(h.q, h.r);
 
-      const array = h.army.map((obj) => ({
-        text: obj.amount.toString(),
-        icon: getFlagImage(obj.nationId), // getting image from cash to avoid
-        // creating too many images
-      }));
+      const array = h.army.flatMap((obj) => {
+        const icon = getFlagImage(obj.nationId);
+
+        return icon
+          ? [
+              {
+                text: obj.amount.toString(),
+                icon, // getting image from cash to avoid
+                // creating too many images}
+              },
+            ]
+          : [];
+      });
       drawLabelArray(runtime.canvas.mainContext, array, mapCenterX + x, mapCenterY + y);
     }
   }
