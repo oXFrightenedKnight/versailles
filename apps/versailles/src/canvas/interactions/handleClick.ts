@@ -99,7 +99,7 @@ export function handleCanvasClick({
   commands.selectHex(hex);
   if (snapshot.playerNation) {
     const playerArmy = getNationArmyInHex(hex, snapshot.playerNation.id);
-    commands.setBarValue(Math.max(0, playerArmy / 2));
+    commands.setBarValue(Math.max(0, Math.round(playerArmy / 2)));
   }
 }
 

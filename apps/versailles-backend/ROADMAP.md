@@ -4,6 +4,7 @@
 SHARED PACKAGE TO DIST **
 
 list of changes to make next: 
+5. Fix drag bar by rounding fractions
 6. Add level label for building icons in roman numerals in economy map mode
 7. Update road rendering to draw roads like straight white lines / dashed lines 
 8. Hide province info side bar if no hex selected 

@@ -98,7 +98,7 @@ export function renderEconomyMap(
   const buildingMap = getBuildingsByIdMap(snapshot.buildings);
 
   drawAllRoads({
-    ctx: runtime.canvas.hitContext,
+    ctx: runtime.canvas.mainContext,
     mapHexes: snapshot.mapHexes,
     tempRoad: runtime.road.draft,
     roads: snapshot.roads,

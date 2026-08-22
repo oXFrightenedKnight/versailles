@@ -3,222 +3,24 @@ import { hexToPixel } from "../render";
 import { Hex } from "@repo/shared/data/hex_map";
 import { RenderRoad } from "@/lib/UI/mergeData/roads(belongs render)/types";
 
-export function mergeRoads(r1: RoadDraft, r2: RoadDraft, key: string) {
-  const isStart1 = `${r1.points[0].q},${r1.points[0].r}` === key;
-  const isStart2 = `${r2.points[0].q},${r2.points[0].r}` === key;
-
-  const p1 = isStart1 ? [...r1.points].reverse() : [...r1.points];
-
-  const p2 = !isStart2 ? [...r2.points].reverse() : [...r2.points];
-
-  return {
-    ...r1,
-    id: `${r1.id}_${r2.id}_merged`,
-    points: [...p1, ...p2.slice(1)],
-  };
-}
-
-// check if both roads intersect on endpoints
-function isEnd(road: RoadDraft, key: string) {
-  const first = road.points[0];
-  const last = road.points[road.points.length - 1];
-
-  return `${first.q},${first.r}` === key || `${last.q},${last.r}` === key;
-}
-
-export function buildMergedRoadsIterative(
-  roads: RoadDraft[],
-  buildRoadsByPoint: (roads: RoadDraft[]) => Map<string, RoadDraft[]>
-) {
-  let current = roads;
-  let changed = true;
-
-  while (changed) {
-    changed = false;
-
-    // going in this iteration means we have already merged roads before,
-    // so we need to build new road map
-    const roadsByPoint = buildRoadsByPoint(current);
-
-    const used = new Set<string>();
-    const next: RoadDraft[] = [];
-
-    for (const [key, roadsHere] of roadsByPoint) {
-      if (roadsHere.length !== 2) continue;
-
-      const [r1, r2] = roadsHere;
-
-      if (used.has(r1.id) || used.has(r2.id)) continue;
-
-      if (r1.id === r2.id) continue;
-
-      if (!isEnd(r1, key) || !isEnd(r2, key)) continue;
-
-      const merged = mergeRoads(r1, r2, key);
-
-      used.add(r1.id);
-      used.add(r2.id);
-
-      next.push(merged);
-      changed = true;
-    }
-
-    for (const r of current) {
-      if (!used.has(r.id)) {
-        next.push(r);
-      }
-    }
-
-    current = next;
-  }
-
-  return current;
-}
-
-export function buildRoadsByPoint(roads: RoadDraft[]) {
-  const map = new Map<string, RoadDraft[]>();
-
-  for (const road of roads) {
-    for (const point of road.points) {
-      const key = `${point.q},${point.r}`;
-
-      if (!map.has(key)) {
-        map.set(key, []);
-      }
-
-      map.get(key)!.push(road);
-    }
-  }
-
-  return map;
-}
-
-// draw road segment
-function drawRoad({
+function traceDashedLine({
   ctx,
   x1,
   y1,
   x2,
   y2,
-  cenX,
-  cenY,
-  d1,
-  d2,
-  opacity = 1,
-  roadWidth = 2,
-  color,
 }: {
   ctx: CanvasRenderingContext2D;
   x1: number;
   y1: number;
   x2: number;
   y2: number;
-  cenX?: number;
-  cenY?: number;
-  d1: number;
-  d2: number;
-  opacity?: number;
-  roadWidth?: number;
-  color?: string;
 }) {
-  const baseColor = color ?? "#8C6A46";
-  const glowColor = color ?? "#c9a97a";
+  ctx.beginPath();
+  ctx.setLineDash([12, 2]);
 
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const length = Math.hypot(dx, dy);
-  if (length === 0) return;
-
-  // Если центра нет — просто одна мягкая cubic-кривая
-  if (cenX === undefined || cenY === undefined) {
-    const ux = dx / length;
-    const uy = dy / length;
-
-    const px = uy;
-    const py = -ux;
-
-    const handleLen = length * 0.28;
-
-    const c1x = x1 + ux * handleLen + px * d1;
-    const c1y = y1 + uy * handleLen + py * d1;
-
-    const c2x = x2 - ux * handleLen - px * d2;
-    const c2y = y2 - uy * handleLen - py * d2;
-
-    strokeRoadPath({
-      ctx,
-      opacity,
-      roadWidth,
-      baseColor,
-      glowColor,
-      draw: () => {
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.bezierCurveTo(c1x, c1y, c2x, c2y, x2, y2);
-      },
-    });
-
-    return;
-  }
-
-  const tdx = x2 - x1;
-  const tdy = y2 - y1;
-  const tLen = Math.hypot(tdx, tdy);
-  if (tLen === 0) return;
-
-  const tux = tdx / tLen;
-  const tuy = tdy / tLen;
-
-  const tpx = tuy;
-  const tpy = -tux;
-
-  const distStartToCenter = Math.hypot(cenX - x1, cenY - y1);
-  const distCenterToEnd = Math.hypot(x2 - cenX, y2 - cenY);
-
-  const h1 = Math.min(distStartToCenter * 0.45, 18);
-  const h2 = Math.min(distCenterToEnd * 0.45, 18);
-
-  const centerInX = cenX - tux * h1;
-  const centerInY = cenY - tuy * h1;
-
-  const centerOutX = cenX + tux * h2;
-  const centerOutY = cenY + tuy * h2;
-
-  const sdx = cenX - x1;
-  const sdy = cenY - y1;
-  const sLen = Math.hypot(sdx, sdy) || 1;
-  const sux = sdx / sLen;
-  const suy = sdy / sLen;
-
-  const startHandleLen = Math.min(distStartToCenter * 0.35, 16);
-  const c1x = x1 + sux * startHandleLen + tpx * d1;
-  const c1y = y1 + suy * startHandleLen + tpy * d1;
-
-  const edx = cenX - x2;
-  const edy = cenY - y2;
-  const eLen = Math.hypot(edx, edy) || 1;
-  const eux = edx / eLen;
-  const euy = edy / eLen;
-
-  const endHandleLen = Math.min(distCenterToEnd * 0.35, 16);
-  const c4x = x2 + eux * endHandleLen - tpx * d2;
-  const c4y = y2 + euy * endHandleLen - tpy * d2;
-
-  strokeRoadPath({
-    ctx,
-    opacity,
-    roadWidth,
-    baseColor,
-    glowColor,
-    draw: () => {
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-
-      ctx.bezierCurveTo(c1x, c1y, centerInX, centerInY, cenX, cenY);
-
-      ctx.bezierCurveTo(centerOutX, centerOutY, c4x, c4y, x2, y2);
-    },
-  });
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
 }
 
 function strokeRoadPath({
@@ -238,7 +40,7 @@ function strokeRoadPath({
 }) {
   ctx.save();
   ctx.globalAlpha = opacity * 0.5;
-  ctx.lineWidth = roadWidth * 3;
+  ctx.lineWidth = roadWidth * 2;
   ctx.strokeStyle = glowColor;
   ctx.shadowColor = glowColor;
   ctx.shadowBlur = 12;
@@ -270,7 +72,7 @@ export function drawAllRoads({
 }) {
   // DRAW TEMPORARY ROAD
   if (tempRoad) {
-    callDrawRoad({ roads: [tempRoad], ctx, opacity: 1, color: "white" });
+    drawSegments({ roads: [tempRoad], ctx, opacity: 1, color: "white" });
   }
 
   // DRAW MERGED ROADS
@@ -311,26 +113,26 @@ export function drawAllRoads({
   }));
 
   // draw road parts in progress
-  callDrawRoad({ roads: roadsInProgress, ctx, opacity: 0.7 });
+  drawSegments({ roads: roadsInProgress, ctx, opacity: 0.7 });
 
   // draw finished parts
-  callDrawRoad({ roads: finishedRoadParts, ctx, opacity: 1 });
+  drawSegments({ roads: finishedRoadParts, ctx, opacity: 1 });
 }
 
-function callDrawRoad({
+function drawSegments({
   roads,
   ctx,
   opacity,
-  color,
+  color = "#cfcfcf",
+  thickness = 3,
 }: {
   roads: RoadDraft[];
   ctx: CanvasRenderingContext2D;
   opacity: number;
   color?: string;
+  thickness?: number;
 }) {
-  const renderRoads = buildMergedRoadsIterative(roads, buildRoadsByPoint);
-
-  for (const draft of renderRoads) {
+  for (const draft of roads) {
     if (!draft.points || !draft) continue;
     // change to hexes with roads (df to remove duplicates)
     const points: { q: number; r: number; d1: number; d2: number }[] = [];
@@ -339,74 +141,23 @@ function callDrawRoad({
 
     for (let idx = 0; idx < points.length; idx++) {
       const point = points[idx];
-      const d1 = point.d1;
-      const d2 = point.d2;
       const nextPoint = points[idx + 1];
-      const prevPoint = points[idx - 1];
 
-      if (idx !== 0 && idx !== points.length - 1) {
-        if (!nextPoint || !prevPoint) continue;
+      if (idx === points.length - 1 || !nextPoint || !point) continue;
 
-        const { x: x2, y: y2 } = hexToPixel(point.q, point.r);
-        const { x: x3, y: y3 } = hexToPixel(nextPoint.q, nextPoint.r);
-        const { x: x1, y: y1 } = hexToPixel(prevPoint.q, prevPoint.r);
+      const { x: x1, y: y1 } = hexToPixel(point.q, point.r);
+      const { x: x2, y: y2 } = hexToPixel(nextPoint.q, nextPoint.r);
 
-        const midX1 = (x2 + x1) / 2;
-        const midY1 = (y2 + y1) / 2;
+      const draw = () => traceDashedLine({ ctx, x1, y1, x2, y2 });
 
-        const midX2 = (x3 + x2) / 2;
-        const midY2 = (y3 + y2) / 2;
-
-        drawRoad({
-          ctx,
-          x1: midX1,
-          y1: midY1,
-          x2: midX2,
-          y2: midY2,
-          cenX: x2,
-          cenY: y2,
-          d1,
-          d2,
-          opacity: opacity,
-          color,
-        });
-      } else if (idx === 0) {
-        const { x: x1, y: y1 } = hexToPixel(point.q, point.r);
-        const { x: x2, y: y2 } = hexToPixel(nextPoint.q, nextPoint.r);
-
-        const midX = (x2 + x1) / 2;
-        const midY = (y2 + y1) / 2;
-
-        drawRoad({
-          ctx,
-          x1,
-          y1,
-          x2: midX,
-          y2: midY,
-          d1,
-          d2,
-          opacity: opacity,
-          color,
-        });
-      } else if (idx === points.length - 1) {
-        const { x: x2, y: y2 } = hexToPixel(point.q, point.r);
-        const { x: x1, y: y1 } = hexToPixel(prevPoint.q, prevPoint.r);
-
-        const midX = (x2 + x1) / 2;
-        const midY = (y2 + y1) / 2;
-
-        drawRoad({
-          ctx,
-          x1: midX,
-          y1: midY,
-          x2,
-          y2,
-          d1,
-          d2,
-          opacity: opacity,
-          color,
-        });
-      }
+      strokeRoadPath({
+        ctx,
+        opacity,
+        roadWidth: thickness,
+        baseColor: color,
+        glowColor: "#ffffff",
+        draw,
+      });
     }
   }
 }
