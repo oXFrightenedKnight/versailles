@@ -1,7 +1,9 @@
-import { generateNations } from "#services/genNations.js";
-import { filterPlayerLogic, getPlayerNation } from "#services/player.js";
-import { generateHexMap } from "../services/map.js";
+import { populateWorld } from "../simulation/game.js";
+import { getPlayerNation } from "../simulation/player.js";
+import { and, desc, eq } from "drizzle-orm";
+import { gameSaveTable } from "../db/schema.js";
 import { GameCtx } from "../trpc/index.js";
+import { db } from "../db/index.js";
 
 type GameSave = {
   id: string;
@@ -13,7 +15,7 @@ type GameSave = {
   data: GameCtx;
 };
 
-type GameMetadata = {
+export type GameMetadata = {
   createdAt: string;
   updatedAt: string;
   turn: number;
@@ -25,22 +27,21 @@ export const memoryStore = {
   maps: new Map<string, GameSave>(), // key has to be gameId
 };
 
-export function getSaveData({ userId, gameId }: { userId: string; gameId?: string }) {
-  let playerMap = getGame({ userId, gameId });
-  if (!playerMap) return null;
+export async function getGame({ userId, gameId }: { userId: string; gameId?: string }) {
+  if (!gameId) return null;
 
-  return playerMap;
-}
+  const [game] = await db
+    .select()
+    .from(gameSaveTable)
+    .where(and(eq(gameSaveTable.userId, userId), eq(gameSaveTable.id, gameId)))
+    .limit(1);
 
-function getGame({ userId, gameId }: { userId: string; gameId?: string }) {
-  const game = gameId ? memoryStore.maps.get(gameId) : null;
   if (!game) return null;
-  if (game.userId !== userId) return null;
 
   return game;
 }
 
-export function createNewGame(userId: string) {
+export async function createNewGame(userId: string) {
   const id = crypto.randomUUID();
   const ctx: GameCtx = {
     mapHexes: [],
@@ -76,16 +77,15 @@ export function createNewGame(userId: string) {
     data: ctx,
   };
 
-  memoryStore.maps.set(id, game);
-  return game;
+  const [result] = await db
+    .insert(gameSaveTable)
+    .values({ ...game })
+    .returning();
+
+  return { gameId: result.id, metadata: result.metadata };
 }
 
-function populateWorld(ctx: GameCtx) {
-  generateHexMap(ctx);
-  generateNations(ctx);
-}
-
-export function updateStore({
+export async function updateGameSave({
   gameId,
   userId,
   gameCtx,
@@ -96,23 +96,28 @@ export function updateStore({
   gameCtx: GameCtx;
   currVersion: number;
 }) {
-  const game = memoryStore.maps.get(gameId);
+  const game = await getGame({ userId, gameId });
   if (!game) return;
-  if (game?.userId !== userId) return;
-
-  // do not update if game versions don't match
-  if (currVersion !== game.version) return;
 
   const newMetadata = updateMetadata(gameCtx, game.metadata);
 
-  const obj = {
+  const obj: GameSave = {
     ...game,
     version: game.version + 1,
     data: gameCtx,
     metadata: newMetadata,
   };
 
-  memoryStore.maps.set(game.id, obj);
+  await db
+    .update(gameSaveTable)
+    .set({ ...obj, updatedAt: new Date() })
+    .where(
+      and(
+        eq(gameSaveTable.id, gameId),
+        eq(gameSaveTable.userId, userId),
+        eq(gameSaveTable.version, currVersion)
+      )
+    );
 }
 
 function updateMetadata(ctx: GameCtx, metadata: GameMetadata) {
@@ -125,13 +130,16 @@ function updateMetadata(ctx: GameCtx, metadata: GameMetadata) {
   } as GameMetadata;
 }
 
-export function getPlayerSaves(userId: string) {
-  return [...memoryStore.maps.entries()]
-    .filter(([_, save]) => save.userId === userId)
-    .map((save) => ({
-      id: save[1].id,
-      userId: save[1].userId,
-      version: save[1].version,
-      metadata: save[1].metadata,
-    }));
+export async function getPlayerSaves(userId: string) {
+  const saves = await db
+    .select({
+      id: gameSaveTable.id,
+      userId: gameSaveTable.userId,
+      metadata: gameSaveTable.metadata,
+      version: gameSaveTable.version,
+    })
+    .from(gameSaveTable)
+    .where(eq(gameSaveTable.userId, userId))
+    .orderBy(desc(gameSaveTable.updatedAt));
+  return saves;
 }

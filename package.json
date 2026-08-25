@@ -3,8 +3,5 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ],
-  "dependencies": {
-    "@tailwindcss/postcss": "^4.2.4"
-  }
+  ]
 }

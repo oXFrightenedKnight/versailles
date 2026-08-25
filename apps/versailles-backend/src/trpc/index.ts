@@ -1,3 +1,4 @@
+import { runGameSimulation } from "../simulation/game.js";
 import {
   ArmyTrainingObject,
   Building,
@@ -9,15 +10,13 @@ import {
   Road,
   SupplyContract,
 } from "@repo/shared";
-
 import { inferProcedureInput, TRPCError } from "@trpc/server";
 import z from "zod";
-import { createNewGame, getPlayerSaves, getSaveData, updateStore } from "../server/memoryStore.js";
-
-import { runGameSimulation } from "#services/game.js";
-import { MemoryCtx } from "../services/ai/memory/types.js";
-import { filterPlayerLogic } from "../services/player.js";
+import { createNewGame, getGame, getPlayerSaves, updateGameSave } from "../server/memoryStore.js";
+import { MemoryCtx } from "../simulation/ai/memory/types.js";
+import { filterPlayerLogic } from "../simulation/player.js";
 import { authedProcedure, router } from "./trpc.js";
+import { getOrCreateUser } from "#services/user.js";
 
 export type GameCtx = {
   mapHexes: Hex[];
@@ -50,12 +49,13 @@ export const appRouter = router({
     .query(async ({ input, ctx: reqCtx }) => {
       const gameId = input.gameId;
 
-      const saveData = getSaveData({ gameId, userId: reqCtx.clerkId });
-      const ctx = saveData?.data;
-      if (!ctx) throw new TRPCError({ code: "NOT_FOUND" });
+      const user = await getOrCreateUser(reqCtx.clerkId);
+
+      const saveData = await getGame({ gameId, userId: user.id });
+      if (!saveData || !saveData.data) throw new TRPCError({ code: "NOT_FOUND" });
 
       // FILTERING/FOG OF WAR LOGIC
-      const data = filterPlayerLogic(ctx);
+      const data = filterPlayerLogic(saveData.data);
 
       return data;
     }),
@@ -69,15 +69,18 @@ export const appRouter = router({
     .mutation(async ({ input, ctx }) => {
       // create gameCtx
       const gameId = input.gameId;
-      const saveData = getSaveData({ userId: ctx.clerkId, gameId });
+
+      const user = await getOrCreateUser(ctx.clerkId);
+
+      const saveData = await getGame({ userId: user.id, gameId });
       const gameCtx = saveData?.data;
-      if (!gameCtx) throw new TRPCError({ code: "NOT_FOUND" });
+      if (!saveData || !gameCtx) throw new TRPCError({ code: "NOT_FOUND" });
 
       // start game simulation
       runGameSimulation(gameCtx, input);
 
-      // update store / db
-      updateStore({ gameId, userId: ctx.clerkId, gameCtx, currVersion: saveData.version });
+      // update db
+      updateGameSave({ gameId, userId: user.id, gameCtx, currVersion: saveData.version });
 
       // filter world state for player
       const data = filterPlayerLogic(gameCtx);
@@ -85,25 +88,15 @@ export const appRouter = router({
       return data;
     }),
   createNewGame: authedProcedure.mutation(async ({ ctx }) => {
-    const game = createNewGame(ctx.clerkId);
+    const user = await getOrCreateUser(ctx.clerkId);
 
-    // dev: run simulation for 300 turns
-    for (let i = 0; i < 300; i++) {
-      runGameSimulation(game.data, { gameId: game.id, actions: [] });
-    }
+    const { gameId, metadata } = await createNewGame(user.id);
 
-    // update store / db
-    updateStore({
-      gameId: game.id,
-      userId: ctx.clerkId,
-      gameCtx: game.data,
-      currVersion: game.version,
-    });
-
-    return { id: game.id, metadata: game.metadata };
+    return { id: gameId, metadata: metadata };
   }),
   loadPlayerGames: authedProcedure.query(async ({ ctx }) => {
-    return getPlayerSaves(ctx.clerkId);
+    const user = await getOrCreateUser(ctx.clerkId);
+    return await getPlayerSaves(user.id);
   }),
 });
 // Export type router type signature,

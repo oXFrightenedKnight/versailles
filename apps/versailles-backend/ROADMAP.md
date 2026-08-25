@@ -4,7 +4,6 @@
 SHARED PACKAGE TO DIST **
 
 list of changes to make next: 
-10. setup a database ( or redis ) 
 12. bug fixes + ui polishment, clean up architecture 
 13. Music, sound effects, reusable components 
 14. deploy
@@ -35,5 +34,6 @@ list of changes to make next:
 15. Add mobile support
 16. Rethink training progression system. Training the same amount of manpower at different levels with the same supply
     should not be radically different in their speed (which is controlled by efficiency)
+17. Setup redis to allow anonymous short-lived sessions
 
 <!-- prettier-ignore-end -->
