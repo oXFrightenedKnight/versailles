@@ -27,6 +27,7 @@ export type GameCanvasProps = {
   barRef: RefObject<HTMLDivElement | null>;
 
   openMenu: OpenMenus;
+  setOpenMenu: Dispatch<React.SetStateAction<OpenMenus>>;
 };
 
 export type CanvasSnapshot = {
@@ -110,6 +111,8 @@ export type CanvasCommands = {
   updateGameAction: StoreType["updateGameAction"];
 
   setPopup: SetStateAction<Popup | null>;
+
+  setOpenMenu: (menu: OpenMenus) => void;
 };
 
 export type CanvasEngine = {

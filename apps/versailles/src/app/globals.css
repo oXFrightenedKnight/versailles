@@ -45,11 +45,8 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
-  /* Цвета (создаст text-gold-1, bg-gold-1, border-gold-1 и т.д.) */
   --color-gold-1: #e2c27a;
   --color-gold-2: #b8964a;
-
-  /* Градиенты (создаст bg-gold-gradient) */
   --background-image-gold-gradient: linear-gradient(145deg, #ead28b 0%, #c9a96a 40%, #a8873f 100%);
 }
 
@@ -166,9 +163,43 @@
   }
 }
 
+@keyframes slideIn {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
 .animate-popup {
   animation-name: popupFade;
   animation-duration: 8.5s;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+.slide-in {
+  animation-name: slideIn;
+  animation-duration: 0.15s;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+
+.slide-out {
+  animation-name: slideOut;
+  animation-duration: 0.15s;
   animation-timing-function: ease-out;
   animation-fill-mode: forwards;
 }

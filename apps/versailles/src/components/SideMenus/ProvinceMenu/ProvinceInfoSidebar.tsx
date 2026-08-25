@@ -1,26 +1,28 @@
 "use client";
 
 import BuildingMenu from "@/components/buildingConfig/buildingMenu";
+import { CloseButton } from "@/components/GameComponents/buttons";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { getNationFlagURL, OpenMenus } from "@/lib/data";
 import { getNationName } from "@/lib/helpers/nations";
+import { useGameStore } from "@/lib/stores/gameStore";
+import { useIntentStore } from "@/lib/stores/intentStore";
+import { selectBuildings } from "@/lib/UI/mergeData/buildings/selectors";
 import { Hex } from "@repo/shared/data/hex_map";
 import { getBuilding, getBuildingName } from "@repo/shared/helpers/buildings";
-import { X } from "lucide-react";
 import Image from "next/image";
 import NoBuilding from "../../buildingConfig/noBuilding";
-import { useGameStore } from "@/lib/stores/gameStore";
-import { selectBuildings } from "@/lib/UI/mergeData/buildings/selectors";
-import { useIntentStore } from "@/lib/stores/intentStore";
-import { getNationFlagURL } from "@/lib/data";
 
 export default function ProvinceInfoSidebar({
   selectedHex,
   isContractSelected,
   setIsContractSelected,
+  setOpenMenu,
 }: {
   selectedHex: Hex | null;
   isContractSelected: boolean;
   setIsContractSelected: React.Dispatch<React.SetStateAction<boolean>>;
+  setOpenMenu: React.Dispatch<React.SetStateAction<OpenMenus>>;
 }) {
   const serverBuildings = useGameStore((s) => s.buildings);
 
@@ -48,8 +50,10 @@ export default function ProvinceInfoSidebar({
     );
   }
 
+  if (!selectedHex) return null;
+
   return (
-    <div className="h-[90%] w-full absolute left-0 bottom-0 p-2">
+    <div className="h-[90%] w-full absolute left-0 bottom-0 p-2 slide-in">
       <div className="flex flex-col justify-between items-center h-full w-full bg-gray-800 rounded-xl pointer-events-auto p-2 gap-2">
         <div className="flex flex-col w-full justify-between bg-gray-900 rounded-lg shadow-md shadow-black">
           <div className="flex w-full justify-between items-start">
@@ -62,9 +66,11 @@ export default function ProvinceInfoSidebar({
                 className="w-full h-full p-px rounded-xl"
               ></Image>
             </div>
-            <div className="flex justify-center items-center p-1 border-gray-700 border rounded-xl m-2 bg-gray-900 shadow-md shadow-black">
-              <X className="w-10 h-10 text-amber-200 "></X>
-            </div>
+            <CloseButton
+              onClose={() => {
+                setOpenMenu("none");
+              }}
+            ></CloseButton>
           </div>
 
           <p className="text-2xl text-white flex items-center justify-start p-2 w-full">

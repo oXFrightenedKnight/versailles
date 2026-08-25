@@ -6,6 +6,7 @@ import { useGameStore } from "@/lib/stores/gameStore";
 import { OpenMenus } from "@/lib/data";
 import { useState } from "react";
 import NationInfo from "./NationBlock";
+import { CloseButton } from "@/components/GameComponents/buttons";
 
 export default function DiplomacyMenu({
   setOpenMenu,
@@ -20,19 +21,16 @@ export default function DiplomacyMenu({
   const opposing = playerNation ? nations.filter((n) => n.id !== playerNation.id) : [];
   return (
     <>
-      <div className="h-[90%] w-full absolute left-0 bottom-0 p-2">
+      <div className="h-[90%] w-full absolute left-0 bottom-0 p-2 slide-in">
         <div className="flex flex-col items-center h-full w-full bg-gray-800 rounded-xl pointer-events-auto p-2 gap-2">
           <div className="w-full flex justify-between items-center bg-gray-900 shadow-md shadow-black rounded-[8px] pl-2">
             <p className="text-white text-2xl">Diplomacy</p>
-            <div
-              className="flex justify-center items-center p-1 border-gray-700 border rounded-[8px] m-2 bg-gray-900 shadow-md shadow-black"
-              onClick={() => {
+            <CloseButton
+              onClose={() => {
                 setOpenMenu("none");
                 setChosenNation(null);
               }}
-            >
-              <X className="w-10 h-10 text-gold-1"></X>
-            </div>
+            ></CloseButton>
           </div>
 
           {/* MAIN CHOOSING MENU */}

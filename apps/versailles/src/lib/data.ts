@@ -75,7 +75,7 @@ export const Descriptions: Record<string, string> = {
 
 export const FALLBACK_POPULATION = 1000; // displayed when no hex is selected
 
-export type OpenMenus = "none" | "build" | "diplo";
+export type OpenMenus = "none" | "build" | "diplo" | "info";
 
 export type MailText = {
   header: string;

@@ -4,11 +4,6 @@
 SHARED PACKAGE TO DIST **
 
 list of changes to make next: 
-5. Fix drag bar by rounding fractions
-6. Add level label for building icons in roman numerals in economy map mode
-7. Update road rendering to draw roads like straight white lines / dashed lines 
-8. Hide province info side bar if no hex selected 
-9. Create 2 map modes: diplomatic and building 
 10. setup a database ( or redis ) 
 12. bug fixes + ui polishment, clean up architecture 
 13. Music, sound effects, reusable components 

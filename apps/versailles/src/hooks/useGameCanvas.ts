@@ -98,6 +98,10 @@ export function useGameCanvas(props: GameCanvasProps) {
         setPopup(value) {
           useUIStore.getState().setPopup(value);
         },
+
+        setOpenMenu(menu) {
+          props.setOpenMenu(menu);
+        },
       };
     }
   }, []);

@@ -22,6 +22,7 @@ import React, { useCallback } from "react";
 import ConstructingBuilding from "./ConstructingBuilding";
 import ConstructingRoad from "./RoadConstructing";
 import ToggleBuilding from "./ToggleBuilding";
+import { CloseButton } from "@/components/GameComponents/buttons";
 
 export default function BuildMenu({
   setOpenMenu,
@@ -77,19 +78,16 @@ export default function BuildMenu({
 
   return (
     <>
-      <div className="h-[90%] w-full left-0 absolute bottom-0 p-2">
+      <div className="h-[90%] w-full left-0 absolute bottom-0 p-2 slide-in">
         <div className="flex flex-col items-center h-full w-full bg-gray-800 rounded-xl pointer-events-auto p-2 gap-2">
           <div className="w-full flex justify-between items-center bg-gray-900 shadow-md shadow-black rounded-[8px] pl-2">
             <p className="text-white text-2xl">Build</p>
-            <div
-              className="flex justify-center items-center p-1 border-gray-700 border rounded-[8px] m-2 bg-gray-900 shadow-md shadow-black"
-              onClick={() => {
+            <CloseButton
+              onClose={() => {
                 setOpenMenu("none");
                 setBuildMode("none");
               }}
-            >
-              <X className="w-10 h-10 text-gold-1"></X>
-            </div>
+            ></CloseButton>
           </div>
           <div className="w-full flex justify-between items-center bg-gray-900 shadow-md shadow-black rounded-[8px]">
             <div className="grid grid-cols-3 w-full">

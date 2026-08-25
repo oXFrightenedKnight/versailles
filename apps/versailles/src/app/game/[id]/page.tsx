@@ -88,10 +88,6 @@ export default function Home() {
     cleanAndUpdateData(mapData.data);
   }, [mapData.data, mapData.error?.message, router]);
 
-  useEffect(() => {
-    console.log(selectedHex);
-  }, [selectedHex]);
-
   return (
     <>
       <div className="relative w-screen h-screen select-none">
@@ -109,6 +105,7 @@ export default function Home() {
             setBarValue,
             barRef,
             openMenu,
+            setOpenMenu,
           }}
         ></GameCanvas>
 
@@ -128,11 +125,6 @@ export default function Home() {
             {/* LEFT-MENUS */}
             <div className="w-[300px] max-w-[300px] h-full absolute left-0 border">
               <div className="w-full h-full relative">
-                <ProvinceInfoSidebar
-                  selectedHex={selectedHex}
-                  setIsContractSelected={setIsContractSelected}
-                  isContractSelected={isContractSelected}
-                ></ProvinceInfoSidebar>
                 {openMenu === "build" ? (
                   <BuildMenu
                     setOpenMenu={setOpenMenu}
@@ -141,6 +133,13 @@ export default function Home() {
                   ></BuildMenu>
                 ) : openMenu === "diplo" ? (
                   <DiplomacyMenu setOpenMenu={setOpenMenu}></DiplomacyMenu>
+                ) : openMenu === "info" ? (
+                  <ProvinceInfoSidebar
+                    selectedHex={selectedHex}
+                    setOpenMenu={setOpenMenu}
+                    setIsContractSelected={setIsContractSelected}
+                    isContractSelected={isContractSelected}
+                  ></ProvinceInfoSidebar>
                 ) : null}
               </div>
             </div>
