@@ -1,15 +1,10 @@
 import { PendingAction } from "@/lib/types/actions";
-import {
-  calculateRoadCost,
-  getHexAxialMap,
-  Hex,
-  invertResourceTable,
-  NationResourceTable,
-  Road,
-  RoadPoint,
-} from "@repo/shared";
 import { RoadConstructionProjection } from "./types";
 import { StoreType } from "@/lib/stores/intentStore";
+import { Hex } from "@repo/shared";
+import { getHexAxialMap } from "@repo/shared/map";
+import { NationResourceTable, invertResourceTable } from "@repo/shared/resources";
+import { Road, calculateRoadCost, RoadPoint } from "@repo/shared/roads";
 
 export function selectRoadConstructions(
   hexes: Hex[],

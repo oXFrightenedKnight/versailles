@@ -1,20 +1,22 @@
-import { GameCtx, NextTurnType } from "#trpc/index.js";
+import { categorizeActions, ActionBuckets } from "@repo/shared/actions";
 import { TRPCError } from "@trpc/server";
 import { runAIPipeline } from "./ai/main";
-import { calcWars, peaceCountdown } from "./army/war";
 import { giveProgressBuilding } from "./buildings/construction";
 import { runBuildingsSystem } from "./buildings/production";
-import { recalculateContractsAmounts } from "./contracts";
-import { addBaseNationGold, generateNations } from "./genNations";
-import { runAIDiplomacy, runNationDiplomacy } from "./intents/diplomacyIntents";
+import { calcWars } from "./combat/calculateHexWar";
+import { recalculateContractsAmounts } from "./contracts/calculation";
+import { peaceCountdown } from "./diplomacy/peace";
+import { runNationDiplomacy, runAIDiplomacy } from "./intents/diplomacyIntents";
 import { runIntentForEachNation } from "./intents/executeIntents";
-import { mailsExpire } from "./mails";
+import { mailsExpire } from "./mails/lifecycle";
+import { addBaseNationGold } from "./nations/economy";
 import { getPlayerNation, updatePlayerUI } from "./player";
 import { nationsUpdateManpower } from "./resources/manpower";
-import { ActionBuckets, categorizeActions } from "@repo/shared";
-import { progressRoadConstruction } from "./road";
-import { revalidateTraining } from "./army/training";
-import { generateHexMap } from "./map";
+import { progressRoadConstruction } from "./roads/construction";
+import { revalidateTraining } from "./training/validation";
+import { generateHexMap } from "./world/generation/generateMap";
+import { generateNations } from "./world/generation/generateNations";
+import { GameCtx, NextTurnType } from "#trpc";
 
 export function runGameSimulation(gameCtx: GameCtx, input: NextTurnType) {
   const playerNation = getPlayerNation(gameCtx);

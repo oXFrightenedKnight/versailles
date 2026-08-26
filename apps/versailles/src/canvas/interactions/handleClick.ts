@@ -15,24 +15,20 @@ import {
 } from "@/lib/UI/mergeData/construction/selectors";
 import { createContract } from "@/lib/UI/mergeData/contracts/selectors";
 import { RenderRoad } from "@/lib/UI/mergeData/roads(belongs render)/types";
-import {
-  calculateRoadCost,
-  findNeighbors,
-  generateRoadDs,
-  getAvailableResources,
-  getBuilding,
-  getBuildingConfig,
-  getHexByAxial,
-  getNationArmyInHex,
-  hasSegment,
-  Hex,
-  HEX_DIRECTIONS,
-  startDijkstrasAlgo,
-  topLevelsByCategory,
-} from "@repo/shared";
 import { eventToWorldPoint } from "../coordinates";
 import { pixelToHex } from "../render/render";
 import { CanvasCommands, CanvasRuntime, CanvasSnapshot } from "../types";
+import { Hex } from "@repo/shared";
+import { getBuilding, topLevelsByCategory, getBuildingConfig } from "@repo/shared/buildings";
+import { getAvailableResources } from "@repo/shared/contracts";
+import {
+  getNationArmyInHex,
+  HEX_DIRECTIONS,
+  findNeighbors,
+  getHexByAxial,
+  startDijkstrasAlgo,
+} from "@repo/shared/map";
+import { hasSegment, generateRoadDs, calculateRoadCost } from "@repo/shared/roads";
 
 export function handleCanvasClick({
   event,

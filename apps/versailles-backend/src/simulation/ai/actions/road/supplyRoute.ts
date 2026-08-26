@@ -1,8 +1,9 @@
-import { GameCtx } from "#trpc/index.js";
-import { Hex, BASE_RESOURCE } from "@repo/shared";
-import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { BuildingConsumptionNode, BuildingProductionNode } from "./types";
 import { bfs, reconstructPath } from "../../../algorithms/bfs.js";
+import { GameCtx } from "#trpc";
+import { Hex } from "@repo/shared";
+import { BASE_RESOURCE } from "@repo/shared/resources";
+import { typedEntries } from "@repo/shared/utils";
 
 // returns path to reachable closest buildings that produce any shortage resource of this build
 export function producingBuildsPath(

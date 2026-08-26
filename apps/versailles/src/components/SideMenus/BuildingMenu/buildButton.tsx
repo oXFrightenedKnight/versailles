@@ -1,5 +1,6 @@
 "use client";
 
+import { CloseButton } from "@/components/GameComponents/buttons";
 import { BuildingDescriptions, BuildingIcons, OpenMenus } from "@/lib/data";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
@@ -16,13 +17,11 @@ import {
   BuildingConstructionProjection,
   RoadConstructionProjection,
 } from "@/lib/UI/mergeData/construction/types";
-import { ALL_BUILDING_CATEGORIES, BUILDINGS_CATEGORY } from "@repo/shared/data/buildings";
-import { X } from "lucide-react";
+import { ALL_BUILDING_CATEGORIES, BUILDINGS_CATEGORY } from "@repo/shared/buildings";
 import React, { useCallback } from "react";
 import ConstructingBuilding from "./ConstructingBuilding";
 import ConstructingRoad from "./RoadConstructing";
 import ToggleBuilding from "./ToggleBuilding";
-import { CloseButton } from "@/components/GameComponents/buttons";
 
 export default function BuildMenu({
   setOpenMenu,

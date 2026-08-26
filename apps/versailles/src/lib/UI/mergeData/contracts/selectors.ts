@@ -1,7 +1,9 @@
 import { StoreType } from "@/lib/stores/intentStore";
 import { PendingAction } from "@/lib/types/actions";
-import { ActionOfType, BASE_RESOURCE, SupplyContract } from "@repo/shared";
 import { ContractProjection } from "./types";
+import { SupplyContract } from "@repo/shared";
+import { ActionOfType } from "@repo/shared/actions";
+import { BASE_RESOURCE } from "@repo/shared/resources";
 
 export function selectContracts(
   contracts: SupplyContract[],

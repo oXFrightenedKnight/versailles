@@ -1,15 +1,21 @@
 {
   "name": "@repo/shared",
   "version": "1.0.0",
-  "main": "src/index.ts",
+  "main": "./src/index.ts",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./data/*": "./src/data/*.ts",
-    "./helpers/*": "./src/helpers/*.ts"
-  },
-  "imports": {
-    "#data/*": "./src/data/*.ts"
+    "./actions": "./src/actions/index.ts",
+    "./buildings": "./src/buildings/index.ts",
+    "./contracts": "./src/contracts/index.ts",
+    "./mails": "./src/mails/index.ts",
+    "./map": "./src/map/index.ts",
+    "./modifiers": "./src/modifiers/index.ts",
+    "./nations": "./src/nations/index.ts",
+    "./resources": "./src/resources/index.ts",
+    "./roads": "./src/roads/index.ts",
+    "./training": "./src/training/index.ts",
+    "./utils": "./src/utils/index.ts"
   },
   "dependencies": {
     "zod": "^4.4.3"

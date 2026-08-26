@@ -1,6 +1,6 @@
 import { getNationFlagURL } from "@/lib/data";
 import { getNationName } from "@/lib/helpers/nations";
-import { Nation } from "@repo/shared/data/nations";
+import { Nation } from "@repo/shared";
 import Image from "next/image";
 
 export default function NationCol({

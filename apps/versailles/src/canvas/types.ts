@@ -5,7 +5,8 @@ import { PendingAction } from "@/lib/types/actions";
 import { BuildModeType, RoadDraft } from "@/lib/types/game";
 import { RenderRoad } from "@/lib/UI/mergeData/roads(belongs render)/types";
 import { ContractPrediction } from "@/lib/UI/predictions/contracts/types";
-import { Building, Hex, Nation, NationResourceTable } from "@repo/shared";
+import { Building, Hex, Nation } from "@repo/shared";
+import { NationResourceTable } from "@repo/shared/resources";
 import { Dispatch, RefObject } from "react";
 
 export type GameCanvasProps = {

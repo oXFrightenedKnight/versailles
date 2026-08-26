@@ -15,11 +15,6 @@
 
     "types": ["node"],
 
-    "paths": {
-      "@repo/shared": ["../../packages/shared/src/index.ts"],
-      "@repo/shared/*": ["../../packages/shared/src/*"]
-    },
-
     "moduleDetection": "force"
   },
   "include": ["src", "drizzle.config.ts"],

@@ -1,8 +1,10 @@
-import { Point, pointKey } from "../road.js";
-import { findNeighbors, getHexAxialMap, getHexIdMap, Hex, Nation } from "@repo/shared";
-import { GameCtx } from "#trpc/index.js";
-import { getNationBorderHexes, getAllowedArmyWalk } from "../map.js";
-import { BFSResult } from "./types";
+import { BFSResult } from "#simulation/algorithms/types";
+import { pointKey } from "#simulation/roads/geometry";
+import { getNationBorderHexes, getAllowedArmyWalk } from "#simulation/world/map/queries";
+import { GameCtx } from "#trpc";
+import { Hex, Nation } from "@repo/shared";
+import { getHexIdMap, getHexAxialMap, findNeighbors } from "@repo/shared/map";
+import { Point } from "@repo/shared/roads";
 
 export function bfs({
   ctx,

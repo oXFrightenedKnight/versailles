@@ -1,12 +1,11 @@
 "use client";
 
-import { X } from "lucide-react";
-import NationCol from "./NationCol";
-import { useGameStore } from "@/lib/stores/gameStore";
+import { CloseButton } from "@/components/GameComponents/buttons";
 import { OpenMenus } from "@/lib/data";
+import { useGameStore } from "@/lib/stores/gameStore";
 import { useState } from "react";
 import NationInfo from "./NationBlock";
-import { CloseButton } from "@/components/GameComponents/buttons";
+import NationCol from "./NationCol";
 
 export default function DiplomacyMenu({
   setOpenMenu,

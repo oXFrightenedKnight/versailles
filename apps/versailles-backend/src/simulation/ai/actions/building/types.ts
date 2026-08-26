@@ -1,5 +1,6 @@
+import { BUILDINGS_CATEGORY } from "@repo/shared/buildings";
+import { NationResourceTable } from "@repo/shared/resources";
 import { AIScoreReasons } from "../../intents/types.js";
-import { BUILDINGS_CATEGORY, NATION_RESOURCE, NationResourceTable } from "@repo/shared";
 
 export type ScoredIntent = {
   category: BUILDINGS_CATEGORY;

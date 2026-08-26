@@ -1,10 +1,11 @@
-import { GameCtx } from "#trpc/index.js";
-import { calculateRoadCost, getHexAxialMap, getHexIdMap, Nation } from "@repo/shared";
-import { getProducingBuildings } from "../world/resources";
-import { getBuildingsShortage } from "./resources";
-import { producingBuildsPath } from "../actions/road/supplyRoute";
-import { typedEntries } from "@repo/shared/helpers/tsHelpers";
-import { getNationById } from "../../genNations.js";
+import { producingBuildsPath } from "#simulation/ai/actions/road/supplyRoute";
+import { getBuildingsShortage } from "#simulation/ai/analysis/resources";
+import { getProducingBuildings } from "#simulation/ai/world/resources";
+import { getNationById } from "#simulation/nations/queries";
+import { GameCtx } from "#trpc";
+import { getHexIdMap, getHexAxialMap } from "@repo/shared/map";
+import { calculateRoadCost } from "@repo/shared/roads";
+import { typedEntries } from "@repo/shared/utils";
 
 export function calcNeededRoadCost(ctx: GameCtx, nationId: string) {
   const nation = getNationById(ctx, nationId);

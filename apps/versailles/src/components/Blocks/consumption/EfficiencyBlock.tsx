@@ -1,13 +1,15 @@
 "use client";
 
+import EfficiencyComponent from "@/components/Blocks/consumption/EfficiencyComponent";
 import { getResourceEfficiencyMap } from "@/lib/helpers/buildings";
 import { getOptimisticImportedResources } from "@/lib/helpers/contracts";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
 import { selectBuildings } from "@/lib/UI/mergeData/buildings/selectors";
 import { selectContractPredictions } from "@/lib/UI/predictions/contracts/selectors";
-import { Building, getBuildingConfig, typedEntries } from "@repo/shared";
-import EfficiencyComponent from "./EfficiencyComponent";
+import { Building } from "@repo/shared";
+import { getBuildingConfig } from "@repo/shared/buildings";
+import { typedEntries } from "@repo/shared/utils";
 
 export default function EfficiencyBlock({ building }: { building: Building }) {
   // gather optimistic contracts from store

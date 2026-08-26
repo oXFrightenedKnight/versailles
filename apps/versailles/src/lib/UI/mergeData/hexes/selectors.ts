@@ -1,5 +1,6 @@
 import { PendingAction } from "@/lib/types/actions";
-import { Hex, HexArmy } from "@repo/shared";
+import { Hex } from "@repo/shared";
+import { HexArmy } from "@repo/shared/map";
 
 export function selectHexes(hexes: Hex[], pendingActions: PendingAction[]): Hex[] {
   const deletedBuildingMap = new Set(

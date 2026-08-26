@@ -1,21 +1,18 @@
-import { newBuildings } from "../genNations.js";
-import { getHexById } from "../map.js";
-import { GameCtx } from "#trpc/index.js";
+import { getHexById } from "#simulation/world/map/queries";
+import { GameCtx } from "#trpc";
+import { Building, Hex, Nation } from "@repo/shared";
+import { ActionOfType } from "@repo/shared/actions";
 import {
-  ActionOfType,
-  Building,
-  building_categoires,
+  buildingCategories,
   BUILDINGS,
   BUILDINGS_CATEGORY,
   getBuilding,
   getBuildingName,
-  getHexIdMap,
-  Hex,
-  Nation,
   topLevelsByCategory,
-} from "@repo/shared";
+} from "@repo/shared/buildings";
+import { getHexIdMap } from "@repo/shared/map";
+import { trySpendNationResource } from "../resources/production.js";
 import { ValidationResult, ValidBuildIntentData } from "./types";
-import { adjustNationResource, trySpendNationResource } from "../resources/production.js";
 
 // Function is used to execute player intent to build new building (subtracts gold)
 export function BuildBuilding({
@@ -133,7 +130,7 @@ function validateBuildIntent(
   successfulIds: Set<number>
 ): ValidationResult<ValidBuildIntentData> {
   // skip if intent's category does not exist
-  if (!building_categoires.includes(intent.buildingType)) {
+  if (!buildingCategories.includes(intent.buildingType)) {
     return {
       ok: false,
       issue: `Invalid building type for hex ${intent.hexId} of ${intent.buildingType} from ${nation.id}`,

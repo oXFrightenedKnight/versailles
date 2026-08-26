@@ -1,16 +1,15 @@
+import { GOLD_WEIGHT, BUILDING_WEIGHT } from "#simulation/ai/analysis/policy";
+import { EconomyRatio } from "#simulation/ai/analysis/types";
+import { getNationNeighbors } from "#simulation/ai/world/nations";
+import { getNationBuildingCount } from "#simulation/buildings/queries";
+import { GameCtx } from "#trpc";
+import { Nation } from "@repo/shared";
 import {
-  BUILDINGS,
-  BUILDINGS_CATEGORY,
   BuildingsByCategoryAndLevel,
   getBuildingConfig,
-  getNationResource,
-  Nation,
-} from "@repo/shared";
-import { getNationNeighbors } from "../world/nations";
-import { BUILDING_WEIGHT, GOLD_WEIGHT } from "./policy";
-import { EconomyRatio } from "./types";
-import { getNationBuildingCount } from "../../buildings/queries.js";
-import { GameCtx } from "#trpc/index.js";
+  BUILDINGS_CATEGORY,
+} from "@repo/shared/buildings";
+import { getNationResource } from "@repo/shared/resources";
 
 export function getNeighborEconomyRatio(ctx: GameCtx, nation: Nation) {
   const nationIdMap = new Map(ctx.nations.map((n) => [n.id, n]));

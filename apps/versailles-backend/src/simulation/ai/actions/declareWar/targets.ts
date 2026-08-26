@@ -2,8 +2,6 @@
 
 import { AIPlanningState } from "../../planning/types.js";
 import { getNationNeighbors } from "../../world/nations.js";
-import { getNationArmy } from "../../../genNations.js";
-import { GameCtx } from "#trpc/index.js";
 import { Nation } from "@repo/shared";
 import { getWarInitiationChance, CANCEL_RATIO, WAR_CONSIDERATION_RATIO } from "./policy";
 import {
@@ -11,6 +9,8 @@ import {
   deleteAttackTarget,
   hasAttackTarget,
 } from "../../planning/goals/attackTargets.js";
+import { getNationArmy } from "#simulation/nations/queries";
+import { GameCtx } from "#trpc";
 
 export function createTargets(ctx: GameCtx, planning: AIPlanningState, nation: Nation) {
   const nationIdMap = new Map(ctx.nations.map((n) => [n.id, n]));

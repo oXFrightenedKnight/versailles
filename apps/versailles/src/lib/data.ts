@@ -1,7 +1,3 @@
-import { PRODUCIBLE_RESOURCE } from "@repo/shared";
-import { BUILDINGS, BUILDINGS_CATEGORY } from "@repo/shared/data/buildings";
-import { Biome } from "@repo/shared/data/hex_map";
-import { PeaceOfferMail, PeaceSignedMail, WarEventMail } from "@repo/shared/data/mail";
 import {
   Axe,
   BrickWallShield,
@@ -12,6 +8,10 @@ import {
   Wheat,
 } from "lucide-react";
 import { nationText } from "./helpers/mails";
+import { Biome } from "@repo/shared";
+import { BUILDINGS, BUILDINGS_CATEGORY } from "@repo/shared/buildings";
+import { WarEventMail, PeaceOfferMail, PeaceSignedMail } from "@repo/shared/mails";
+import { PRODUCIBLE_RESOURCE } from "@repo/shared/resources";
 export type BuildingNames = keyof typeof BUILDINGS;
 
 export const BuildingIcons: Record<"road" | BUILDINGS_CATEGORY, LucideIcon> = {

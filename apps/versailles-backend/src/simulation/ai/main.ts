@@ -1,5 +1,6 @@
-import { GameCtx } from "#trpc/index.js";
-import { ActionBuckets, Nation } from "@repo/shared";
+import { GameCtx } from "#trpc";
+import { Nation } from "@repo/shared";
+import { ActionBuckets } from "@repo/shared/actions";
 import { AIWorldAnalysis } from "./analysis/analyzeWorld";
 import { getCandidates } from "./generateCandidates";
 import {

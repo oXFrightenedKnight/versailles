@@ -1,5 +1,6 @@
-import { BUILDINGS_CATEGORY, NATION_RESOURCE, NationResourceTable } from "@repo/shared";
-import { typedEntries } from "@repo/shared/helpers/tsHelpers";
+import { BUILDINGS_CATEGORY } from "@repo/shared/buildings";
+import { NATION_RESOURCE, NationResourceTable } from "@repo/shared/resources";
+import { typedEntries } from "@repo/shared/utils";
 import { AIPlanningState, BuildSavingGoalType } from "../types";
 
 export function deleteBuildSaving(planning: AIPlanningState, hexId: number) {

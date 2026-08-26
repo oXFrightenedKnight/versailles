@@ -1,19 +1,18 @@
+import { AIPlanningState } from "#simulation/ai/planning/types";
+import { GameCtx } from "#trpc";
+import { Nation } from "@repo/shared";
+import { getBuildingsByIdMap, getBuildingConfig } from "@repo/shared/buildings";
+import {
+  BASE_RESOURCE,
+  PRODUCIBLE_RESOURCE,
+  NATION_RESOURCE,
+  isResource,
+  isNationResource,
+} from "@repo/shared/resources";
+import { typedEntries } from "@repo/shared/utils";
 import { BuildingProductionNode } from "../../actions/road/types.js";
 import { WorldAnalysis } from "../../analysis/types.js";
 import { getProducingBuildings } from "../../world/resources.js";
-import { GameCtx } from "#trpc/index.js";
-import {
-  BASE_RESOURCE,
-  getBuildingConfig,
-  getBuildingsByIdMap,
-  isNationResource,
-  isResource,
-  Nation,
-  NATION_RESOURCE,
-  PRODUCIBLE_RESOURCE,
-} from "@repo/shared";
-import { typedEntries } from "@repo/shared/helpers/tsHelpers";
-import { AIPlanningState } from "../types";
 
 // returns estimated producible resource production and consumption
 export function getResourcePrediction(

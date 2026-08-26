@@ -2,15 +2,16 @@
 // AI should analyze imbalances in power where enemy's hex army is much lower than one of the armies in another hex.
 // after that it should split defense army based on how many hexes it wants to attack from this hex and how many hexes it wants to defend from
 
+import { getNationWarSet, isAtWar } from "#simulation/diplomacy/queries";
+import { getHostileArmyHex } from "#simulation/nations/queries";
+import { getBorderHexes } from "#simulation/world/map/queries";
+import { GameCtx } from "#trpc";
+import { Nation } from "@repo/shared";
+import { getHexAxialMap, findNeighbors, getHexIdMap } from "@repo/shared/map";
 import { totalHexAttacking } from "../../planning/queries/army.js";
 import { getAvailableArmyForCategory } from "../../planning/reservations/armyReserve.js";
 import { AIPlanningState } from "../../planning/types.js";
 import { avgEnemyArmyInHexes } from "../../world/armies.js";
-import { getNationWarSet, isAtWar } from "../../../army/war.js";
-import { getHostileArmyHex } from "../../../genNations.js";
-import { getBorderHexes } from "../../../map.js";
-import { GameCtx } from "#trpc/index.js";
-import { Nation, findNeighbors, getHexAxialMap, getHexIdMap } from "@repo/shared";
 import { AllocateMap } from "./policy";
 import { getWarDefenseTarget } from "./reinforcement";
 import { ProposalArmyMove } from "./types";

@@ -1,16 +1,14 @@
 import { StoreType } from "@/lib/stores/intentStore";
 import { PendingAction } from "@/lib/types/actions";
-import {
-  Building,
-  BUILDINGS_CATEGORY,
-  calcTotalBuildingCost,
-  getBuildingsByIdMap,
-  getConstructionProgress,
-  Hex,
-  invertResourceTable,
-  NationResourceTable,
-} from "@repo/shared";
 import { BuildingConstructionProjection } from "./types";
+import { Hex, Building } from "@repo/shared";
+import {
+  getBuildingsByIdMap,
+  calcTotalBuildingCost,
+  getConstructionProgress,
+  BUILDINGS_CATEGORY,
+} from "@repo/shared/buildings";
+import { NationResourceTable, invertResourceTable } from "@repo/shared/resources";
 
 export function selectBuildingConstructions(
   hexes: Hex[],

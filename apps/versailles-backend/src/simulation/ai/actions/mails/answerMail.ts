@@ -1,11 +1,11 @@
+import { PEACE_TARGET_RATIO } from "#simulation/ai/actions/mails/policy";
+import { getNationWarSet, isAtWar } from "#simulation/diplomacy/queries";
+import { getNationArmy } from "#simulation/nations/queries";
+import { getBorderHexes } from "#simulation/world/map/queries";
+import { GameCtx } from "#trpc";
+import { Nation } from "@repo/shared";
 import { AnswerMail } from "../../intents/types.js";
 import { getNationPeaceReqMails } from "../../world/mails.js";
-import { getNationWarSet, isAtWar } from "../../../army/war.js";
-import { getNationArmy } from "../../../genNations.js";
-import { GameCtx } from "#trpc/index.js";
-import { Nation } from "@repo/shared";
-import { PEACE_TARGET_RATIO } from "./policy";
-import { getBorderHexes } from "../../../map.js";
 
 // generate peace request mails
 export function generateAnswerPeaceReqCandidates(ctx: GameCtx, nation: Nation): AnswerMail[] {

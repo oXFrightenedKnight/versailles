@@ -1,16 +1,17 @@
 "use client";
 
+import ContractComponent from "@/components/Blocks/contracts/ContractComponent";
 import { getAvailableResourcesByContract } from "@/lib/helpers/contracts";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
-import { cancelContract, updateContract } from "@/lib/UI/mergeData/contracts/selectors";
+import { updateContract, cancelContract } from "@/lib/UI/mergeData/contracts/selectors";
 import { ContractProjection } from "@/lib/UI/mergeData/contracts/types";
+import { selectHexes } from "@/lib/UI/mergeData/hexes/selectors";
 import { selectContractPredictions } from "@/lib/UI/predictions/contracts/selectors";
-import { ActionOfType, Building } from "@repo/shared";
+import { Building } from "@repo/shared";
+import { ActionOfType } from "@repo/shared/actions";
 import { SquarePen } from "lucide-react";
 import { useCallback } from "react";
-import ContractComponent from "./ContractComponent";
-import { selectHexes } from "@/lib/UI/mergeData/hexes/selectors";
 
 export default function ContractBlock({
   isContractSelected,

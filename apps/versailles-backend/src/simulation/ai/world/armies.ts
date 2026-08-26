@@ -1,10 +1,10 @@
-import { GameCtx } from "#trpc/index.js";
-import { Hex, Nation } from "@repo/shared";
-import { getNationNeighbors } from "./nations";
-import { NeighborArmy } from "../analysis/types";
-import { getNationArmy } from "../../genNations.js";
-import { getNationArmyFromHex } from "../../map.js";
-import { getNationWarSet, isAtWar } from "../../army/war.js";
+import { NeighborArmy } from "#simulation/ai/analysis/types";
+import { getNationNeighbors } from "#simulation/ai/world/nations";
+import { getNationWarSet, isAtWar } from "#simulation/diplomacy/queries";
+import { getNationArmy } from "#simulation/nations/queries";
+import { getNationArmyFromHex } from "#simulation/world/map/queries";
+import { GameCtx } from "#trpc";
+import { Nation, Hex } from "@repo/shared";
 
 export function getNeighborArmies(ctx: GameCtx, nation: Nation): NeighborArmy[] {
   const neighbors = getNationNeighbors(ctx, nation);

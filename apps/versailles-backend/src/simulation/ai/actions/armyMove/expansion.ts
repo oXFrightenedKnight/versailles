@@ -1,8 +1,9 @@
+import { getBorderHexes } from "#simulation/world/map/queries";
+import { GameCtx } from "#trpc";
+import { Nation, Hex } from "@repo/shared";
+import { getHexAxialMap, findNeighbors } from "@repo/shared/map";
 import { getAvailableArmyForCategory } from "../../planning/reservations/armyReserve.js";
 import { AIPlanningState } from "../../planning/types.js";
-import { getBorderHexes } from "../../../map.js";
-import { GameCtx } from "#trpc/index.js";
-import { Nation, Hex, findNeighbors, getHexAxialMap } from "@repo/shared";
 import { ProposalArmyMove } from "./types";
 
 export function getExpansionProposals(ctx: GameCtx, planning: AIPlanningState, nation: Nation) {

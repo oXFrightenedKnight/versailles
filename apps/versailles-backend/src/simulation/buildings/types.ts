@@ -1,4 +1,5 @@
-import { BASE_RESOURCE, Building, Hex, Nation } from "@repo/shared";
+import { Hex, Building, Nation } from "@repo/shared";
+import { BASE_RESOURCE } from "@repo/shared/resources";
 
 export type ValidationResult<T> = { ok: true; data: T } | { ok: false; issue: string };
 

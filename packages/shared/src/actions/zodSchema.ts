@@ -1,6 +1,6 @@
-import { building_categoires } from "#data/buildings";
-import { baseResources } from "#data/resources";
 import z from "zod";
+import { buildingCategories } from "../buildings/config";
+import { baseResources } from "../resources/config";
 
 const actionIdSchema = z.uuid();
 
@@ -9,7 +9,7 @@ const buildBuildingActionSchema = z.object({
   type: z.literal("building.build"),
 
   hexId: z.int(),
-  buildingType: z.enum(building_categoires),
+  buildingType: z.enum(buildingCategories),
   levelsToUpgrade: z.int().min(1),
 });
 const armyTrainActionSchema = z.object({

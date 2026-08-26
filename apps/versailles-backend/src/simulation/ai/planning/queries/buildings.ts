@@ -1,8 +1,12 @@
+import { GameCtx } from "#trpc";
+import {
+  buildingCategories,
+  BUILDINGS_CATEGORY,
+  getBuildingsByIdMap,
+} from "@repo/shared/buildings";
 import { EARLY_BUILDING_TARGET_SCHEMA } from "../../actions/building/policy.js";
 import { OpeningTarget } from "../../actions/building/types.js";
 import { WorldAnalysis } from "../../analysis/types.js";
-import { GameCtx } from "#trpc/index.js";
-import { building_categoires, BUILDINGS_CATEGORY, getBuildingsByIdMap } from "@repo/shared";
 import { AIPlanningState } from "../types";
 
 export function getOptimisticCategoryLevels(
@@ -76,7 +80,7 @@ export function getOptimisticBuildingCounts(
     countMap.set(category, existingCategoryCount);
   }
 
-  for (const category of building_categoires) {
+  for (const category of buildingCategories) {
     if (!countMap.has(category)) {
       countMap.set(category, new Map());
     }

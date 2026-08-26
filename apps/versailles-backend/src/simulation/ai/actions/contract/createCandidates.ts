@@ -1,13 +1,15 @@
 import { getBuildingsShortage } from "../../analysis/resources.js";
 import { ContractIntent } from "../../intents/types.js";
 import { getProducingBuildings } from "../../world/resources.js";
-import { hasContract } from "../../../contracts.js";
-import { getNationRoads } from "../../../road.js";
-import { GameCtx } from "#trpc/index.js";
-import { Nation, BASE_RESOURCE, getHexIdMap, getHexAxialMap } from "@repo/shared";
-import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import { producingBuildsPath } from "../road/supplyRoute";
 import { buildRoadGraph, hasRoadPath } from "../../../algorithms/bfs.js";
+import { hasContract } from "#simulation/contracts/queries";
+import { getNationRoads } from "#simulation/roads/queries";
+import { GameCtx } from "#trpc";
+import { Nation } from "@repo/shared";
+import { getHexIdMap, getHexAxialMap } from "@repo/shared/map";
+import { BASE_RESOURCE } from "@repo/shared/resources";
+import { typedEntries } from "@repo/shared/utils";
 
 export function generateContractCandidates(ctx: GameCtx, nation: Nation): ContractIntent[] {
   const contractIntents: ContractIntent[] = [];

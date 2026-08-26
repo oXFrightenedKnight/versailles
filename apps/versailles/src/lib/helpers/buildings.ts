@@ -1,12 +1,13 @@
+import { BuildModeType } from "@/lib/types/game";
+import { Building, Hex } from "@repo/shared";
 import {
-  Building,
-  building_categoires,
   BUILDINGS_CATEGORY,
+  getBuildingConfig,
   ConsumedResource,
-} from "@repo/shared/data/buildings";
-import { Hex } from "@repo/shared/data/hex_map";
-import { BuildModeType } from "../types/game";
-import { BASE_RESOURCE, getBuildingConfig, typedEntries } from "@repo/shared";
+  buildingCategories,
+} from "@repo/shared/buildings";
+import { BASE_RESOURCE } from "@repo/shared/resources";
+import { typedEntries } from "@repo/shared/utils";
 import { ContractProjection } from "../UI/mergeData/contracts/types";
 
 // allows to additionally filter by nationId if provided with nationId and hexes
@@ -20,7 +21,7 @@ export function allBuildingsPerCategory(
     mapHexes?.map((h) => [`${h.buildingId},${h.owner}`, h])
   );
 
-  return building_categoires.map((c) => {
+  return buildingCategories.map((c) => {
     const category_buildings = buildings.filter((b) => {
       if (b.category === c) {
         if (nationId && mapHexes) {
@@ -37,7 +38,7 @@ export function allBuildingsPerCategory(
 }
 
 export function isBuildingCategory(value: BuildModeType): value is BUILDINGS_CATEGORY {
-  return building_categoires.includes(value as BUILDINGS_CATEGORY);
+  return buildingCategories.includes(value as BUILDINGS_CATEGORY);
 }
 
 export function getBuildingCost(type: BUILDINGS_CATEGORY, level: number) {

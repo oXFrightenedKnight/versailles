@@ -1,4 +1,4 @@
-import { BUILDINGS_CATEGORY } from "@repo/shared";
+import { BUILDINGS_CATEGORY } from "@repo/shared/buildings";
 import { LucideIcon } from "lucide-react";
 
 export default function BuildingCount({

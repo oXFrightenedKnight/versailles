@@ -10,7 +10,6 @@ import {
 import { planArmyMove } from "../../planning/mutations/army.js";
 import { reserveBorderArmy } from "../../planning/reservations/armyReserve.js";
 import { AIPlanningState } from "../../planning/types.js";
-import { GameCtx } from "#trpc/index.js";
 import { Nation } from "@repo/shared";
 import { getAttackProposals } from "./attack";
 import { getExpansionProposals } from "./expansion";
@@ -19,6 +18,7 @@ import { getReinforcementProposals } from "./reinforcement";
 import { ProposalArmyMove } from "./types";
 import { executeMoveGoal, revalidateMoveGoalDeficit } from "./goals";
 import { getBorderBFSMap } from "../../../algorithms/bfs.js";
+import { GameCtx } from "#trpc";
 
 export function generateArmyMoveCandidates(
   ctx: GameCtx,

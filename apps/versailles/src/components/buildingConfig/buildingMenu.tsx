@@ -1,12 +1,13 @@
 import { numberConverter } from "@/lib/utils";
-import { baseResources, getBuildingConfig } from "@repo/shared";
-import { Building } from "@repo/shared/data/buildings";
 import EfficiencyBlock from "../Blocks/consumption/EfficiencyBlock";
 import ContractBlock from "../Blocks/contracts/ContractBlock";
 import InfoBlock from "../Blocks/info/InfoBlock";
 import { Info } from "../Blocks/info/InfoComponent";
 import TrainingBlock from "../Blocks/training/TrainingBlock";
 import AvailableBlock from "../Blocks/production/AvailableBlock";
+import { Building } from "@repo/shared";
+import { getBuildingConfig } from "@repo/shared/buildings";
+import { baseResources } from "@repo/shared/resources";
 
 export default function BuildingMenu({
   building,

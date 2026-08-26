@@ -1,7 +1,8 @@
+import { getBuildingContractsMap } from "#simulation/contracts/queries";
+import { GameCtx } from "#trpc";
+import { Nation, Building } from "@repo/shared";
+import { BASE_RESOURCE, baseResources } from "@repo/shared/resources";
 import { getBuildingHexMap, getNationBuildings } from "../../buildings/queries.js";
-import { getBuildingContractsMap } from "../../contracts.js";
-import { GameCtx } from "#trpc/index.js";
-import { BASE_RESOURCE, baseResources, Building, Nation } from "@repo/shared";
 
 // returns available building-owned resource in producing buildings
 export function getProducingBuildings(ctx: GameCtx, nation: Nation) {

@@ -14,23 +14,6 @@ import {
 import { AIPlanningState, BuildSavingGoalType } from "../../planning/types.js";
 import { getHexesBuildings } from "../../world/buildings.js";
 import { getHexesWithRoads } from "../../world/map.js";
-import { GameCtx } from "#trpc/index.js";
-import {
-  building_categoires,
-  BUILDINGS_CATEGORY,
-  findNeighbors,
-  getBuildingConfig,
-  getBuildingsByIdMap,
-  getHexAxialMap,
-  getHexIdMap,
-  getNationResource,
-  getTopCategoryLevel,
-  isBaseResource,
-  Nation,
-  NATION_RESOURCE,
-  NationResourceTable,
-} from "@repo/shared";
-import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 import {
   BuildingScoreTable,
   BIOME_SCORE_MULT,
@@ -44,6 +27,23 @@ import { revalidateBuildSaving } from "./buildSaving";
 import { createPlanningBuildIntent } from "../../planning/mutations/buildings.js";
 import { selectClosestOpeningHexes } from "./foundation";
 import { getOptimisticBuildInHex } from "../../../buildings/queries.js";
+import { GameCtx } from "#trpc";
+import { Nation } from "@repo/shared";
+import {
+  BUILDINGS_CATEGORY,
+  getBuildingsByIdMap,
+  getTopCategoryLevel,
+  getBuildingConfig,
+  buildingCategories,
+} from "@repo/shared/buildings";
+import { getHexAxialMap, getHexIdMap, findNeighbors } from "@repo/shared/map";
+import {
+  NATION_RESOURCE,
+  NationResourceTable,
+  isBaseResource,
+  getNationResource,
+} from "@repo/shared/resources";
+import { typedEntries } from "@repo/shared/utils";
 
 type SubmissionStatus = "FAILED" | "SAVING" | "QUEUED";
 
@@ -97,7 +97,7 @@ export function generateBuildCandidates(
     const isMax = expectedBuilding !== null && expectedBuilding.level === maxLevel;
     if (isMax) continue;
 
-    for (const category of building_categoires) {
+    for (const category of buildingCategories) {
       if (expectedBuilding && expectedBuilding.category !== category) continue;
 
       // --- VALIDATION ---

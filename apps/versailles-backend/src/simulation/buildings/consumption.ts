@@ -1,5 +1,7 @@
-import { Building, BUILDINGS, getBuildingName, PRODUCIBLE_RESOURCE } from "@repo/shared";
-import { typedEntries } from "@repo/shared/helpers/tsHelpers";
+import { Building } from "@repo/shared";
+import { getBuildingName, BUILDINGS } from "@repo/shared/buildings";
+import { PRODUCIBLE_RESOURCE } from "@repo/shared/resources";
+import { typedEntries } from "@repo/shared/utils";
 import { AllocatedContractResources } from "./types";
 
 export function calculateEfficiency(

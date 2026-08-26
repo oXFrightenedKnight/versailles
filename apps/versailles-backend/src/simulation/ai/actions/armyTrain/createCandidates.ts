@@ -6,20 +6,14 @@ import { ArmyTrain } from "../../intents/types.js";
 import { calcOptimisticDeficit } from "../../planning/queries/army.js";
 import { AIPlanningState } from "../../planning/types.js";
 import { reconstructPath } from "../../../algorithms/bfs.js";
-import { GameCtx } from "#trpc/index.js";
-import {
-  Hex,
-  NATION_RESOURCE,
-  Nation,
-  NationResourceTable,
-  getArmyTrainCost,
-  getBuildingConfig,
-  getBuildingsByIdMap,
-  getTrainingResourceCost,
-} from "@repo/shared";
-import { typedEntries } from "@repo/shared/helpers/tsHelpers";
-import { proposalPriority } from "../armyMove/policy";
-import { getMaxAffordableAmount } from "#lib/helpers.js";
+import { getMaxAffordableAmount } from "#lib/helpers";
+import { proposalPriority } from "#simulation/ai/actions/armyMove/policy";
+import { GameCtx } from "#trpc";
+import { Nation, Hex } from "@repo/shared";
+import { getBuildingsByIdMap, getBuildingConfig } from "@repo/shared/buildings";
+import { NATION_RESOURCE } from "@repo/shared/resources";
+import { getArmyTrainCost, getTrainingResourceCost } from "@repo/shared/training";
+import { typedEntries } from "@repo/shared/utils";
 
 export function generateArmyTrainCandidates(
   ctx: GameCtx,

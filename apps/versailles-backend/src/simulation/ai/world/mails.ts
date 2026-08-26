@@ -1,4 +1,4 @@
-import { Mail, PeaceOfferMail } from "@repo/shared";
+import { Mail, PeaceOfferMail } from "@repo/shared/mails";
 
 // returns all peace request mails sent to this nation
 export function getNationPeaceReqMails(mails: Mail[], nationId: string) {

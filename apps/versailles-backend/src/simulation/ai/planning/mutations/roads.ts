@@ -1,4 +1,4 @@
-import { Point } from "../../../road.js";
+import { Point } from "@repo/shared/roads";
 import { AIPlanningState } from "../types";
 
 export function createPlanningRoadIntent(planning: AIPlanningState, path: Point[]) {

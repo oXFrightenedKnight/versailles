@@ -1,5 +1,5 @@
-import { GameCtx } from "#trpc/index.js";
-import { NATION_RESOURCE } from "@repo/shared";
+import { GameCtx } from "#trpc";
+import { NATION_RESOURCE } from "@repo/shared/resources";
 
 export type AIBudgetCtx = {
   ctx: GameCtx;

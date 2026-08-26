@@ -1,7 +1,5 @@
-import { useIntentStore } from "@/lib/stores/intentStore";
-import { getNationArmyInHex } from "@repo/shared";
-import { Hex } from "@repo/shared/data/hex_map";
-import { Nation } from "@repo/shared/data/nations";
+import { Hex, Nation } from "@repo/shared";
+import { getNationArmyInHex } from "@repo/shared/map";
 import { RefObject } from "react";
 
 export default function DragBar({

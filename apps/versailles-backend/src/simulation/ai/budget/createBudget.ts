@@ -1,6 +1,4 @@
 import { getNationBuildingCount } from "../../buildings/queries.js";
-import { GameCtx } from "#trpc/index.js";
-import { getNationResource, Nation } from "@repo/shared";
 import { analyzeAIPressure } from "../analysis/pressure";
 import { calcNeededRoadCost } from "../analysis/roads";
 import { WorldAnalysis } from "../analysis/types";
@@ -10,6 +8,9 @@ import { calcGoldBudget } from "./allocation/gold";
 import { GOLD_ALLOCATION_PRIORITY } from "./policy";
 import { BudgetAllocationRequest } from "./types";
 import { calcManpowerBudget } from "./allocation/manpower";
+import { GameCtx } from "#trpc";
+import { Nation } from "@repo/shared";
+import { getNationResource } from "@repo/shared/resources";
 
 export function createAIBudget(
   ctx: GameCtx,

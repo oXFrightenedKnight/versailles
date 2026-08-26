@@ -1,6 +1,6 @@
 import { getNationName } from "./nations";
 import { MailText, MailTexts } from "../data";
-import { Mail } from "@repo/shared/data/mail";
+import { Mail } from "@repo/shared/mails";
 
 export type NationTextObject = {
   subject: string;

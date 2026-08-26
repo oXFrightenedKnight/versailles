@@ -1,6 +1,6 @@
+import { BUILDINGS_CATEGORY, topLevelsByCategory } from "@repo/shared/buildings";
 import { deleteBuildSaving } from "../../planning/goals/buildSaving.js";
 import { AIPlanningState } from "../../planning/types.js";
-import { BUILDINGS_CATEGORY, topLevelsByCategory } from "@repo/shared";
 import { isTopIntent } from "./createCandidates";
 import { ScoredIntent } from "./types";
 

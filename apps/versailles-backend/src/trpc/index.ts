@@ -1,22 +1,17 @@
-import { runGameSimulation } from "../simulation/game.js";
-import {
-  ArmyTrainingObject,
-  Building,
-  gameActionSchema,
-  Hex,
-  Mail,
-  MODIFIER,
-  Nation,
-  Road,
-  SupplyContract,
-} from "@repo/shared";
 import { inferProcedureInput, TRPCError } from "@trpc/server";
 import z from "zod";
-import { createNewGame, getGame, getPlayerSaves, updateGameSave } from "../server/memoryStore.js";
-import { MemoryCtx } from "../simulation/ai/memory/types.js";
-import { filterPlayerLogic } from "../simulation/player.js";
-import { authedProcedure, router } from "./trpc.js";
-import { getOrCreateUser } from "#services/user.js";
+import { getGame, updateGameSave, createNewGame, getPlayerSaves } from "../server/memoryStore";
+import { MemoryCtx } from "../simulation/ai/memory/types";
+import { router, authedProcedure } from "./trpc";
+import { runGameSimulation } from "../simulation/game";
+import { getOrCreateUser } from "#services/user";
+import { Hex, Nation, Building, SupplyContract } from "@repo/shared";
+import { gameActionSchema } from "@repo/shared/actions";
+import { Mail } from "@repo/shared/mails";
+import { MODIFIER } from "@repo/shared/modifiers";
+import { Road } from "@repo/shared/roads";
+import { ArmyTrainingObject } from "@repo/shared/training";
+import { filterPlayerLogic } from "../server/projections/playerGameState";
 
 export type GameCtx = {
   mapHexes: Hex[];

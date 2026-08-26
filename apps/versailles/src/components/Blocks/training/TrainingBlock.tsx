@@ -11,13 +11,13 @@ import {
 } from "@/lib/UI/mergeData/training/selectors";
 import { TrainingProjection } from "@/lib/UI/mergeData/training/types";
 import { numberConverter } from "@/lib/utils";
-import { getArmyTrainCost } from "@repo/shared";
-import { Building } from "@repo/shared/data/buildings";
 import { CircleMinus, CirclePlus, Cog } from "lucide-react";
 import { useCallback, useState } from "react";
 import TrainingComponent from "./TrainingComponent";
 import { useOptimisticResources } from "@/hooks/useOptimisticResources";
 import { selectHexes } from "@/lib/UI/mergeData/hexes/selectors";
+import { Building } from "@repo/shared";
+import { getArmyTrainCost } from "@repo/shared/training";
 
 export default function TrainingBlock({ building }: { building: Building }) {
   const [amount, setAmount] = useState<number>(0);

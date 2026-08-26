@@ -1,12 +1,9 @@
+import { GameCtx } from "#trpc";
+import { Nation } from "@repo/shared";
+import { ActionOfType } from "@repo/shared/actions";
+import { getBuildingName, BUILDINGS } from "@repo/shared/buildings";
+import { BASE_HEX_POPULATION } from "@repo/shared/map";
 import { adjustNationResource } from "../resources/production.js";
-import { GameCtx } from "#trpc/index.js";
-import {
-  Nation,
-  BUILDINGS,
-  BASE_HEX_POPULATION,
-  getBuildingName,
-  ActionOfType,
-} from "@repo/shared";
 
 export function cancelBuilding(
   ctx: GameCtx,

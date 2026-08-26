@@ -1,4 +1,4 @@
-import { BASE_RESOURCE } from "@repo/shared";
+import { BASE_RESOURCE } from "@repo/shared/resources";
 
 export type ContractBase = {
   key: string;

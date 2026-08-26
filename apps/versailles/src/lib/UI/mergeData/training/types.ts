@@ -1,4 +1,4 @@
-import { NationResourceTable } from "@repo/shared";
+import { NationResourceTable } from "@repo/shared/resources";
 
 export type BaseTrainingProjection = {
   key: string;

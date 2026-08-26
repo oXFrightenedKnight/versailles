@@ -1,3 +1,8 @@
+import { getNationWarSet, isAtWar, isNationAtWar } from "#simulation/diplomacy/queries";
+import { getNationArmyFromHex } from "#simulation/world/map/queries";
+import { GameCtx } from "#trpc";
+import { Nation } from "@repo/shared";
+import { getHexIdMap, getHexAxialMap, findNeighbors } from "@repo/shared/map";
 import { MIN_EXPANSION_RESERVE, proposalPriority } from "../../actions/armyMove/policy.js";
 import {
   getReinforcementAmount,
@@ -5,10 +10,6 @@ import {
 } from "../../actions/armyMove/reinforcement.js";
 import { AIPlanningState } from "../../planning/types.js";
 import { avgEnemyArmyInHexes } from "../../world/armies.js";
-import { getNationWarSet, isAtWar, isNationAtWar } from "../../../army/war.js";
-import { getNationArmyFromHex } from "../../../map.js";
-import { GameCtx } from "#trpc/index.js";
-import { Nation, findNeighbors, getHexAxialMap, getHexIdMap } from "@repo/shared";
 import { WorldAnalysis } from "../types";
 import { BorderNeed } from "./types";
 

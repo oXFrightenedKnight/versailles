@@ -14,8 +14,8 @@ import TotalArmy from "./Info/army";
 import GoldAmount from "./Info/gold";
 import BuildingCount from "./Info/buildingCount";
 import { ArrowLeft } from "lucide-react";
-import { getNationResource } from "@repo/shared";
 import { selectBuildings } from "@/lib/UI/mergeData/buildings/selectors";
+import { getNationResource } from "@repo/shared/resources";
 
 export default function NationInfo({
   nationId,

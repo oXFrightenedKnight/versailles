@@ -1,7 +1,7 @@
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { getResourceImage } from "@/lib/data";
-import { BASE_RESOURCE } from "@repo/shared";
+import { BASE_RESOURCE } from "@repo/shared/resources";
 import Image from "next/image";
 
 export default function AvailableComponent({

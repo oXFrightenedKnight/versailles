@@ -1,5 +1,5 @@
-import { MODIFIER, MODIFIER_CATEGORIES } from "@repo/shared";
-import { GameCtx } from "../trpc/index.js";
+import { GameCtx } from "#trpc";
+import { MODIFIER_CATEGORIES, MODIFIER } from "@repo/shared/modifiers";
 
 export function calculateModifiers({
   category,

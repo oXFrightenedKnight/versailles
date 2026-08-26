@@ -1,10 +1,6 @@
-import {
-  BUILDINGS,
-  getNationResource,
-  Nation,
-  NATION_RESOURCE,
-  PRODUCIBLE_RESOURCE,
-} from "@repo/shared";
+import { Nation } from "@repo/shared";
+import { BUILDINGS } from "@repo/shared/buildings";
+import { PRODUCIBLE_RESOURCE, NATION_RESOURCE, getNationResource } from "@repo/shared/resources";
 
 export function calculateResourceOutput(
   resource: PRODUCIBLE_RESOURCE,

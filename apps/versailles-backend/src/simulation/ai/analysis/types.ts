@@ -1,5 +1,6 @@
+import { Hex } from "@repo/shared";
+import { BuildingsByCategoryAndLevel, BUILDINGS_CATEGORY } from "@repo/shared/buildings";
 import { BFSResult } from "../../algorithms/types.js";
-import { BUILDINGS_CATEGORY, BuildingsByCategoryAndLevel, Hex } from "@repo/shared";
 
 export type WorldAnalysis = {
   // world data

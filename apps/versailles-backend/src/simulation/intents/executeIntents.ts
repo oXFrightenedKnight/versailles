@@ -1,11 +1,16 @@
-import { cancelArmyTraining, queueArmyTraining } from "../army/training.js";
-import { executeArmyMoveActions } from "../army/units.js";
-import { buildNewIntentBuildings } from "../buildings/construction.js";
-import { cancelBuilding, deleteBuilding } from "../buildings/mutations.js";
-import { ActionBuckets, getActions, Nation } from "@repo/shared";
-import { GameCtx } from "../../trpc";
-import { submitDeleteContracts, submitNewContracts, updateContracts } from "../contracts";
-import { buildNationRoads, cancelRoadBuild } from "../road";
+import { executeArmyMoveActions } from "#simulation/army/commands";
+import { buildNewIntentBuildings } from "#simulation/buildings/construction";
+import { cancelBuilding, deleteBuilding } from "#simulation/buildings/mutations";
+import {
+  submitDeleteContracts,
+  updateContracts,
+  submitNewContracts,
+} from "#simulation/contracts/commands";
+import { cancelRoadBuild, buildNationRoads } from "#simulation/roads/construction";
+import { cancelArmyTraining, queueArmyTraining } from "#simulation/training/commands";
+import { GameCtx } from "#trpc";
+import { Nation } from "@repo/shared";
+import { ActionBuckets, getActions } from "@repo/shared/actions";
 
 export function executeIntents(ctx: GameCtx, nation: Nation, actions: ActionBuckets) {
   if (nation.isDefeated) return;

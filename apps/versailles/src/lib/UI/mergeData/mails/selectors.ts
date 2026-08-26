@@ -1,7 +1,7 @@
 import { PendingAction } from "@/lib/types/actions";
-import { Mail } from "@repo/shared";
 import { MailProjection } from "./types";
 import { StoreType } from "@/lib/stores/intentStore";
+import { Mail } from "@repo/shared/mails";
 
 export function selectMails(mails: Mail[], pendingActions: PendingAction[]) {
   const byMailId = new Map<string, MailProjection>();

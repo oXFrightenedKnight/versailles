@@ -1,4 +1,5 @@
-import { Hex, Nation, NATION_NAMES } from "@repo/shared";
+import { Hex, Nation } from "@repo/shared";
+import { NATION_NAMES } from "@repo/shared/nations";
 
 export function getNationName({ id }: { id: string }) {
   const entry = Object.entries(NATION_NAMES).find(([_, value]) => value === id);

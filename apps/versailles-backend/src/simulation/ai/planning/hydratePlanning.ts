@@ -1,6 +1,6 @@
+import { GameCtx } from "#trpc";
 import { reconstructPath } from "../../algorithms/bfs.js";
 import { BFSResult } from "../../algorithms/types.js";
-import { GameCtx } from "#trpc/index.js";
 import { AIMemory } from "../memory/types";
 import { getAvailableArmy } from "../world/armies";
 import { AIPlanningState, ArmyMoveGoal, AttackTargetPlanning, BuildSavePlanning } from "./types";

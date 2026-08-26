@@ -1,7 +1,7 @@
 import { RoadDraft } from "@/lib/types/game";
 import { hexToPixel } from "../render";
-import { Hex } from "@repo/shared/data/hex_map";
 import { RenderRoad } from "@/lib/UI/mergeData/roads(belongs render)/types";
+import { Hex } from "@repo/shared";
 
 function traceDashedLine({
   ctx,

@@ -1,6 +1,6 @@
-import { ActionOfType, ActionType } from "@repo/shared";
 import { create } from "zustand";
 import { PendingAction } from "../types/actions";
+import { ActionType, ActionOfType } from "@repo/shared/actions";
 
 // custom react-like setState function type for zustland store
 export type SetStateAction<T> = (value: T | ((prev: T) => T)) => void;

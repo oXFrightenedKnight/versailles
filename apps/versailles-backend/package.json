@@ -27,8 +27,10 @@
     "typescript": "^5.8.3"
   },
   "imports": {
-    "#trpc/*": "./src/trpc/*",
-    "#services/*": "./src/services/*",
-    "#lib/*": "./src/lib/*"
+    "#trpc": "./src/trpc/index.ts",
+    "#trpc/*": "./src/trpc/*.ts",
+    "#services/*": "./src/services/*.ts",
+    "#lib/*": "./src/lib/*.ts",
+    "#simulation/*": "./src/simulation/*.ts"
   }
 }

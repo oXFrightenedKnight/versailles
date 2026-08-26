@@ -1,11 +1,9 @@
-import { Hex } from "@repo/shared/data/hex_map";
-import { create } from "zustand";
-import { Nation } from "@repo/shared/data/nations";
-import { Road } from "@repo/shared/data/roads";
-import { Building } from "@repo/shared/data/buildings";
-import { Mail } from "@repo/shared/data/mail";
-import { ArmyTrainingObject, SupplyContract } from "@repo/shared";
 import { GameData } from "@/app/_trpc/client";
+import { Hex, Nation, Building, SupplyContract } from "@repo/shared";
+import { Mail } from "@repo/shared/mails";
+import { Road } from "@repo/shared/roads";
+import { ArmyTrainingObject } from "@repo/shared/training";
+import { create } from "zustand";
 
 export type StoreType = {
   mapHexes: Hex[];

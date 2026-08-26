@@ -1,4 +1,5 @@
-import { BUILDINGS_CATEGORY, NationResourceTable } from "@repo/shared";
+import { BUILDINGS_CATEGORY } from "@repo/shared/buildings";
+import { NationResourceTable } from "@repo/shared/resources";
 
 export type BuildingConstructionProjection = {
   key: string;

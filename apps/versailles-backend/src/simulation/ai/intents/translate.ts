@@ -1,6 +1,8 @@
-import { getDeltaAxial } from "../../map.js";
-import { GameCtx } from "#trpc/index.js";
-import { ActionOfType, generateRoadDs, getHexIdMap } from "@repo/shared";
+import { getDeltaAxial } from "#simulation/world/map/geometry";
+import { GameCtx } from "#trpc";
+import { ActionOfType } from "@repo/shared/actions";
+import { getHexIdMap } from "@repo/shared/map";
+import { generateRoadDs } from "@repo/shared/roads";
 import {
   BuildIntent,
   MoveArmy,

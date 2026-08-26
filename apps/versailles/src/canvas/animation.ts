@@ -1,4 +1,3 @@
-import { selectArmyMoves } from "@/lib/UI/mergeData/armyMove/selectors";
 import { renderMap } from "./render/render";
 import { CanvasRuntime, CanvasSnapshot } from "./types";
 

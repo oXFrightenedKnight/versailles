@@ -1,5 +1,5 @@
-import { getBorderHexes } from "../../map.js";
-import { GameCtx } from "#trpc/index.js";
+import { getBorderHexes } from "#simulation/world/map/queries";
+import { GameCtx } from "#trpc";
 import { Nation } from "@repo/shared";
 
 export function getNationsAtWar(ctx: GameCtx) {

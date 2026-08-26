@@ -1,7 +1,8 @@
-import { GameCtx } from "#trpc/index.js";
-import { axialToCube, cubeDistance, Hex, Nation } from "@repo/shared";
-import { Frontline } from "../analysis/types";
-import { getBorderHexes } from "../../map.js";
+import { Frontline } from "#simulation/ai/analysis/types";
+import { getBorderHexes } from "#simulation/world/map/queries";
+import { GameCtx } from "#trpc";
+import { Nation, Hex } from "@repo/shared";
+import { axialToCube, cubeDistance } from "@repo/shared/map";
 
 export function getFrontlines(ctx: GameCtx, nation: Nation) {
   const nationIdsAtWar = new Set(nation.atWar);

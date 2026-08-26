@@ -6,17 +6,14 @@ import { availableResourcesInBuildings } from "../../planning/queries/resources.
 import { AIPlanningState } from "../../planning/types.js";
 import { uniqueRoadSegments } from "../../world/roads.js";
 import { buildRoadGraph, hasRoadPath } from "../../../algorithms/bfs.js";
-import { Point, getNationRoads } from "../../../road.js";
-import { GameCtx } from "#trpc/index.js";
-import {
-  NATION_RESOURCE,
-  Nation,
-  calculateRoadCost,
-  getHexAxialMap,
-  getHexIdMap,
-} from "@repo/shared";
-import { typedEntries } from "@repo/shared/helpers/tsHelpers";
-import { hasShortageResource, producingBuildsPath } from "./supplyRoute";
+import { producingBuildsPath, hasShortageResource } from "#simulation/ai/actions/road/supplyRoute";
+import { getNationRoads } from "#simulation/roads/queries";
+import { GameCtx } from "#trpc";
+import { Nation } from "@repo/shared";
+import { getHexIdMap, getHexAxialMap } from "@repo/shared/map";
+import { NATION_RESOURCE } from "@repo/shared/resources";
+import { Point, calculateRoadCost } from "@repo/shared/roads";
+import { typedEntries } from "@repo/shared/utils";
 
 // Make sure to add guardrails so ai doesn't build a road if it already exists
 export function generateBuildRoadCandidates(

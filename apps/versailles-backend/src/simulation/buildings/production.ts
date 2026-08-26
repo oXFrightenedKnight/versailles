@@ -1,21 +1,19 @@
-import { runBuildingTraining } from "../army/training.js";
-import { calculatePopulationChange } from "../map.js";
-import { adjustNationResource, calculateResourceOutput } from "../resources/production.js";
-import { GameCtx } from "#trpc/index.js";
+import { calculateEfficiency } from "#simulation/buildings/consumption";
+import { getBuildingHexMap } from "#simulation/buildings/queries";
+import { runContractExecutor } from "#simulation/contracts/execution";
+import { calculateResourceOutput, adjustNationResource } from "#simulation/resources/production";
+import { runBuildingTraining } from "#simulation/training/progress";
+import { calculatePopulationChange } from "#simulation/world/map/population";
+import { GameCtx } from "#trpc";
+import { Building, Nation } from "@repo/shared";
+import { getBuildingName, BUILDINGS } from "@repo/shared/buildings";
 import {
-  BASE_RESOURCE,
-  Building,
-  BUILDINGS,
-  getBuildingName,
   isBaseResource,
   isNationResource,
-  Nation,
+  BASE_RESOURCE,
   PRODUCIBLE_RESOURCE,
-} from "@repo/shared";
-import { typedEntries } from "@repo/shared/helpers/tsHelpers";
-import { calculateEfficiency } from "./consumption";
-import { getContractCalculation, runContractExecutor } from "../contracts.js";
-import { getBuildingHexMap } from "./queries";
+} from "@repo/shared/resources";
+import { typedEntries } from "@repo/shared/utils";
 
 // calculates building efficiency and updates production/available resources
 export function runBuildingsSystem(gameCtx: GameCtx) {

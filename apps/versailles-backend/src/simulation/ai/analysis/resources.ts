@@ -1,8 +1,10 @@
+import { getBuildingContractsMap } from "#simulation/contracts/queries";
+import { GameCtx } from "#trpc";
+import { Nation } from "@repo/shared";
+import { getBuildingConfig } from "@repo/shared/buildings";
+import { BASE_RESOURCE } from "@repo/shared/resources";
+import { typedEntries } from "@repo/shared/utils";
 import { getNationBuildings } from "../../buildings/queries.js";
-import { getBuildingContractsMap } from "../../contracts.js";
-import { GameCtx } from "#trpc/index.js";
-import { BASE_RESOURCE, getBuildingConfig, Nation } from "@repo/shared";
-import { typedEntries } from "@repo/shared/helpers/tsHelpers";
 
 // return all buildings of nation with resource shortage object
 export function getBuildingsShortage(ctx: GameCtx, nation: Nation) {

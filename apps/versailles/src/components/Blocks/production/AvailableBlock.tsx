@@ -3,11 +3,13 @@
 import { getOptimisticExportedResources } from "@/lib/helpers/contracts";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
-import { selectContracts } from "@/lib/UI/mergeData/contracts/selectors";
-import { Building, getBuildingConfig, isBaseResource, typedEntries } from "@repo/shared";
-import AvailableComponent from "./AvailableComponent";
 import { selectBuildings } from "@/lib/UI/mergeData/buildings/selectors";
 import { selectContractPredictions } from "@/lib/UI/predictions/contracts/selectors";
+import { Building } from "@repo/shared";
+import AvailableComponent from "./AvailableComponent";
+import { isBaseResource } from "@repo/shared/resources";
+import { getBuildingConfig } from "@repo/shared/buildings";
+import { typedEntries } from "@repo/shared/utils";
 
 export default function AvailableBlock({ building }: { building: Building }) {
   // gather optimistic contracts from store

@@ -1,11 +1,11 @@
 import { Trash2 } from "lucide-react";
 import InfoComponent, { Info } from "./InfoComponent";
 import { useGameStore } from "@/lib/stores/gameStore";
-import { Building, BUILDINGS } from "@repo/shared/data/buildings";
-import { getBuildingName } from "@repo/shared";
 import { deleteBuilding } from "@/lib/UI/mergeData/buildings/selectors";
 import { useIntentStore } from "@/lib/stores/intentStore";
 import { selectHexes } from "@/lib/UI/mergeData/hexes/selectors";
+import { Building } from "@repo/shared";
+import { BUILDINGS, getBuildingName } from "@repo/shared/buildings";
 
 export default function InfoBlock({ info, building }: { info: Info; building: Building }) {
   const serverHexes = useGameStore((s) => s.mapHexes);

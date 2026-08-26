@@ -1,6 +1,6 @@
-import { GameCtx } from "#trpc/index.js";
 import { Nation } from "@repo/shared";
 import { AIMemory } from "./types";
+import { GameCtx } from "#trpc";
 
 export function createNationMemo(ctx: GameCtx, nation: Nation) {
   const memo = ctx.aiMemory[nation.id];

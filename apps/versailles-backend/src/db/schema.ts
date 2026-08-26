@@ -1,4 +1,3 @@
-import { GameCtx } from "#trpc/index.js";
 import {
   integer,
   jsonb,
@@ -10,6 +9,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { GameMetadata } from "../server/memoryStore";
+import { GameCtx } from "#trpc";
 
 export const usersTable = pgTable("users", {
   id: uuid().primaryKey().defaultRandom(),

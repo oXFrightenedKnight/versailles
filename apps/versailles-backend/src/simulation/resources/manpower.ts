@@ -1,7 +1,9 @@
-import { calculateModifiers } from "../modifiers.js";
-import { GameCtx } from "#trpc/index.js";
-import { getNationResource, MANPOWER_RATE, Nation } from "@repo/shared";
-import { adjustNationResource } from "./production";
+import { calculateModifiers } from "#simulation/modifiers";
+import { adjustNationResource } from "#simulation/resources/production";
+import { GameCtx } from "#trpc";
+import { Nation } from "@repo/shared";
+import { getNationResource } from "@repo/shared/resources";
+import { MANPOWER_RATE } from "@repo/shared/training";
 
 export function calculateManpower({ nation, gameCtx }: { nation: Nation; gameCtx: GameCtx }) {
   const { mapHexes } = gameCtx;

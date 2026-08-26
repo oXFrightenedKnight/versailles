@@ -1,6 +1,6 @@
 import { PendingAction } from "@/lib/types/actions";
-import { Road } from "@repo/shared";
 import { RenderRoad } from "./types";
+import { Road } from "@repo/shared/roads";
 
 export function selectRenderRoads(roads: Road[], pendingActions: PendingAction[]) {
   const byRoadId = new Map<string, RenderRoad>();

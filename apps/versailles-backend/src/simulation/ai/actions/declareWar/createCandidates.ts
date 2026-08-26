@@ -1,11 +1,12 @@
 import { DeclareWarIntent } from "../../intents/types.js";
 import { AIPlanningState } from "../../planning/types.js";
-import { getNationArmyFromHex, getNationBorderHexes } from "../../../map.js";
-import { GameCtx } from "#trpc/index.js";
-import { Nation, findNeighbors, getHexIdMap } from "@repo/shared";
 import { createTargets, revalidateTargets } from "./targets";
 import { WAR_CONSIDERATION_RATIO } from "./policy";
 import { deleteAttackTarget } from "../../planning/goals/attackTargets.js";
+import { getNationBorderHexes, getNationArmyFromHex } from "#simulation/world/map/queries";
+import { GameCtx } from "#trpc";
+import { Nation } from "@repo/shared";
+import { getHexIdMap, findNeighbors } from "@repo/shared/map";
 
 export function generateDeclareWarCandidates(
   ctx: GameCtx,

@@ -1,17 +1,11 @@
-import { GameCtx } from "#trpc/index.js";
+import { GameCtx } from "#trpc";
+import { Hex, Building, Nation } from "@repo/shared";
 import {
   getBuilding,
-  Hex,
-  Building,
-  Nation,
   BuildingsByCategoryAndLevel,
-  getBuildingName,
-  BUILDINGS,
-  BUILDINGS_CATEGORY,
   getBuildingsByIdMap,
-  getHexIdMap,
-} from "@repo/shared";
-import { BuildingInfo } from "./types";
+} from "@repo/shared/buildings";
+import { getHexIdMap } from "@repo/shared/map";
 
 export function getBuildingInHex(ctx: GameCtx, hexId: number) {
   const hex = ctx.mapHexes.find((h) => h.id === hexId);

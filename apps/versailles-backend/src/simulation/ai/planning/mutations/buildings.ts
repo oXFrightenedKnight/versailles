@@ -1,4 +1,4 @@
-import { BUILDINGS_CATEGORY } from "@repo/shared";
+import { BUILDINGS_CATEGORY } from "@repo/shared/buildings";
 import { AIPlanningState } from "../types";
 
 // creates building proposal in planning

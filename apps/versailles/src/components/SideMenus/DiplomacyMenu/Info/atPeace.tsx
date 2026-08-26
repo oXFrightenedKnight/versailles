@@ -1,7 +1,7 @@
 "use client";
 
 import NationDiplomacyList from "@/components/GameComponents/NationDiploList";
-import { PeaceObj } from "@repo/shared";
+import { PeaceObj } from "@repo/shared/nations";
 
 export default function NationsAtPeace({ atPeace }: { atPeace: PeaceObj[] }) {
   const peaceIds = atPeace.map((p) => p.nationId);

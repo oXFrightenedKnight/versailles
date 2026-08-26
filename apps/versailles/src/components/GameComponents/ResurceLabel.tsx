@@ -2,7 +2,7 @@ import { Descriptions, getResourceImage } from "@/lib/data";
 import { numberConverter } from "@/lib/utils";
 import { TooltipTrigger, TooltipContent, Tooltip } from "../ui/tooltip";
 import Image from "next/image";
-import { NATION_RESOURCE } from "@repo/shared";
+import { NATION_RESOURCE } from "@repo/shared/resources";
 
 export default function ResourceLabel({
   resource,

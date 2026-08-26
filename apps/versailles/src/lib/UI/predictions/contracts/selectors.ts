@@ -1,15 +1,10 @@
-import {
-  Building,
-  calculateContracts,
-  ContractCalculationInput,
-  getAvailableByBuildingMap,
-  getRequiredByBuildingMap,
-  SupplyContract,
-} from "@repo/shared";
 import { ContractPrediction } from "./types";
 import { ContractProjection } from "../../mergeData/contracts/types";
 import { PendingAction } from "@/lib/types/actions";
 import { selectContracts } from "../../mergeData/contracts/selectors";
+import { Building, SupplyContract } from "@repo/shared";
+import { getAvailableByBuildingMap, getRequiredByBuildingMap } from "@repo/shared/buildings";
+import { calculateContracts, ContractCalculationInput } from "@repo/shared/contracts";
 
 export function selectContractPredictions(
   serverContracts: SupplyContract[],

@@ -1,12 +1,11 @@
-import { getBiomeTexture, getBuildingCategoryIcon, getTextureImage } from "@/lib/data";
+import { renderEconomyMap } from "@/canvas/render/modes/economy";
+import { renderMilitaryMap } from "@/canvas/render/modes/military";
+import { BIOME_COLOR, HEX_SIZE } from "@/canvas/render/policy";
+import { CanvasSnapshot, CanvasRuntime } from "@/canvas/types";
+import { getBiomeTexture, getTextureImage } from "@/lib/data";
 import { numberConverter } from "@/lib/utils";
-import { Biome, BIOMES, Hex } from "@repo/shared/data/hex_map";
-import { Nation } from "@repo/shared/data/nations";
-import { findNeighbors } from "@repo/shared/helpers/hex_map";
-import { CanvasRuntime, CanvasSnapshot } from "../types";
-import { renderEconomyMap } from "./modes/economy";
-import { renderMilitaryMap } from "./modes/military";
-import { BIOME_COLOR, HEX_SIZE } from "./policy";
+import { Biome, Nation, Hex } from "@repo/shared";
+import { BIOMES, findNeighbors } from "@repo/shared/map";
 
 const biomePatterns: Partial<Record<Biome, CanvasPattern>> = {};
 const texturePatterns: Partial<Record<string, CanvasPattern>> = {};

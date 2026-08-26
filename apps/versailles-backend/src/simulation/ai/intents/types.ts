@@ -1,5 +1,6 @@
-import { Point } from "../../road.js";
-import { BASE_RESOURCE, Biome, BUILDINGS_CATEGORY } from "@repo/shared";
+import { BUILDINGS_CATEGORY } from "@repo/shared/buildings";
+import { BASE_RESOURCE } from "@repo/shared/resources";
+import { Point } from "@repo/shared/roads";
 
 export type AIScoreIntentCategory =
   | "buildIntent"

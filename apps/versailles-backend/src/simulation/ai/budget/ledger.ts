@@ -1,5 +1,5 @@
-import { NATION_RESOURCE, NationResourceTable } from "@repo/shared";
-import { typedEntries } from "@repo/shared/helpers/tsHelpers";
+import { NATION_RESOURCE, NationResourceTable } from "@repo/shared/resources";
+import { typedEntries } from "@repo/shared/utils";
 
 export function trySpendBudget(
   buildingBudget: Map<NATION_RESOURCE, number>,

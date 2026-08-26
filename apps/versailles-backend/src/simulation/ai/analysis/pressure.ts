@@ -1,11 +1,11 @@
 // pressure is generally used in for budget calculation
 // maybe move it there later
 
-import { clamp } from "#lib/helpers.js";
-import { getNationArmy } from "../../genNations.js";
-import { GameCtx } from "#trpc/index.js";
 import { Nation } from "@repo/shared";
 import { WorldAnalysis, AIPressure } from "./types";
+import { clamp } from "#lib/helpers";
+import { getNationArmy } from "#simulation/nations/queries";
+import { GameCtx } from "#trpc";
 
 // calculates total enemy army
 function calcEnemyStrengthPressure(ctx: GameCtx, analysis: WorldAnalysis, nation: Nation) {

@@ -1,4 +1,4 @@
-import { BUILDINGS_CATEGORY } from "@repo/shared";
+import { BUILDINGS_CATEGORY } from "@repo/shared/buildings";
 import { BuildSavingGoalType } from "../planning/types";
 
 export type AIMemory = {

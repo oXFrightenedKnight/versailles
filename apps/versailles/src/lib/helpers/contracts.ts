@@ -1,10 +1,7 @@
-import {
-  BASE_RESOURCE,
-  Building,
-  getAvailableResources,
-  getBuildingConfig,
-  getBuildingsByIdMap,
-} from "@repo/shared";
+import { Building } from "@repo/shared";
+import { getBuildingsByIdMap, getBuildingConfig } from "@repo/shared/buildings";
+import { getAvailableResources } from "@repo/shared/contracts";
+import { BASE_RESOURCE } from "@repo/shared/resources";
 import { ContractProjection } from "../UI/mergeData/contracts/types";
 import { ContractPrediction } from "../UI/predictions/contracts/types";
 

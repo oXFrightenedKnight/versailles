@@ -1,12 +1,12 @@
-import { SignPeaceReqIntent } from "../../intents/types.js";
-import { getNationWarSet, isAtWar } from "../../../army/war.js";
-import { getNationArmy } from "../../../genNations.js";
-import { hasExistingPeaceRequest } from "../../../mails.js";
-import { GameCtx } from "#trpc/index.js";
+import { MAX_RESIST_ARMY_RATIO } from "#simulation/ai/actions/peaceRequest/policy";
+import { getSortedEnemyArmies } from "#simulation/ai/world/armies";
+import { getNationWarSet, isAtWar } from "#simulation/diplomacy/queries";
+import { hasExistingPeaceRequest } from "#simulation/mails/queries";
+import { getNationArmy } from "#simulation/nations/queries";
+import { getBorderHexes } from "#simulation/world/map/queries";
+import { GameCtx } from "#trpc";
 import { Nation } from "@repo/shared";
-import { MAX_RESIST_ARMY_RATIO } from "./policy";
-import { getSortedEnemyArmies } from "../../world/armies.js";
-import { getBorderHexes } from "../../../map.js";
+import { SignPeaceReqIntent } from "../../intents/types.js";
 
 // generate peace request mails
 export function generatePeaceReqCandidates(ctx: GameCtx, nation: Nation): SignPeaceReqIntent[] {

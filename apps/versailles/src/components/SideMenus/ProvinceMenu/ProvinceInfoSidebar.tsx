@@ -8,10 +8,10 @@ import { getNationName } from "@/lib/helpers/nations";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
 import { selectBuildings } from "@/lib/UI/mergeData/buildings/selectors";
-import { Hex } from "@repo/shared/data/hex_map";
-import { getBuilding, getBuildingName } from "@repo/shared/helpers/buildings";
 import Image from "next/image";
 import NoBuilding from "../../buildingConfig/noBuilding";
+import { Hex } from "@repo/shared";
+import { getBuilding, getBuildingName } from "@repo/shared/buildings";
 
 export default function ProvinceInfoSidebar({
   selectedHex,

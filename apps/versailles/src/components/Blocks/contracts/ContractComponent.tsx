@@ -1,22 +1,23 @@
 "use client";
 
+import { DropdownItem, Dropdown } from "@/components/GameComponents/dropdown";
+import { TooltipTrigger, TooltipContent, Tooltip } from "@/components/ui/tooltip";
 import { getResourceImage } from "@/lib/data";
 import { ContractProjection } from "@/lib/UI/mergeData/contracts/types";
 import { ContractPrediction } from "@/lib/UI/predictions/contracts/types";
 import { numberConverter } from "@/lib/utils";
-import { ActionOfType, BASE_RESOURCE } from "@repo/shared";
+import { ActionOfType } from "@repo/shared/actions";
+import { BASE_RESOURCE } from "@repo/shared/resources";
 import {
-  Calculator,
-  Check,
-  ChevronDown,
+  Trash2,
   CircleMinus,
   CirclePlus,
-  Trash2,
-  TriangleAlert,
+  Calculator,
   X,
+  Check,
+  ChevronDown,
+  TriangleAlert,
 } from "lucide-react";
-import { Dropdown, DropdownItem } from "../../GameComponents/dropdown";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
 
 export default function ContractComponent({
   contract,

@@ -1,5 +1,5 @@
-import { gameActionSchema } from "@repo/shared";
 import z from "zod";
+import { gameActionSchema } from "./zodSchema";
 
 export type ActionMap = {
   [Action in GameAction as Action["type"]]: Omit<Action, "type">;

@@ -1,7 +1,9 @@
-import { ActionBuckets, ActionOfType, getActions, Nation } from "@repo/shared";
-import { GameCtx } from "../../trpc";
-import { addMail, createPeaceOfferMail, executeMailsAnswers } from "../mails";
-import { declareWar } from "../army/war.js";
+import { declareWar } from "#simulation/diplomacy/war";
+import { executeMailsAnswers, addMail } from "#simulation/mails/commands";
+import { createPeaceOfferMail } from "#simulation/mails/creation";
+import { GameCtx } from "#trpc";
+import { Nation } from "@repo/shared";
+import { ActionBuckets, getActions, ActionOfType } from "@repo/shared/actions";
 
 export function runNationDiplomacy(ctx: GameCtx, nation: Nation, actions: ActionBuckets) {
   if (nation.isDefeated) return;

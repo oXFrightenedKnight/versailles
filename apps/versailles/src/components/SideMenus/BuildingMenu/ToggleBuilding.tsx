@@ -1,7 +1,7 @@
 import { LucideIcon } from "lucide-react";
 import { BuildModeType } from "@/lib/types/game";
-import { BUILDINGS_CATEGORY } from "@repo/shared/data/buildings";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { BUILDINGS_CATEGORY } from "@repo/shared/buildings";
 
 export default function ToggleBuilding({
   handleModeChange,

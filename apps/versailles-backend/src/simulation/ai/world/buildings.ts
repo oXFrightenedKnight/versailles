@@ -1,6 +1,6 @@
-import { GameCtx } from "#trpc/index.js";
 import { Building, Hex, Nation } from "@repo/shared";
 import { Constructing } from "../analysis/types";
+import { GameCtx } from "#trpc";
 
 export function getConstructing(ctx: GameCtx, nation: Nation): Constructing[] {
   return ctx.mapHexes

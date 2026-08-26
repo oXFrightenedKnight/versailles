@@ -1,4 +1,4 @@
-import { Point, getSharedRoadEdges, getSlicedRoadSegments } from "../../road.js";
+import { getSharedRoadEdges, getSlicedRoadSegments, Point } from "#simulation/roads/geometry";
 import { Hex } from "@repo/shared";
 
 // returns non-overlapping road segments

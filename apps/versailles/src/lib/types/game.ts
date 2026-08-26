@@ -1,5 +1,5 @@
-import { BUILDINGS_CATEGORY } from "@repo/shared/data/buildings";
-import { ActionOfType } from "@repo/shared";
+import { ActionOfType } from "@repo/shared/actions";
+import { BUILDINGS_CATEGORY } from "@repo/shared/buildings";
 
 export type BuildModeType = "road" | "none" | BUILDINGS_CATEGORY;
 

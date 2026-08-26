@@ -1,7 +1,8 @@
 import { PendingAction } from "@/lib/types/actions";
-import { ArmyTrainingObject, getArmyTrainCost, invertResourceTable } from "@repo/shared";
 import { TrainingProjection } from "./types";
 import { StoreType } from "@/lib/stores/intentStore";
+import { ArmyTrainingObject, getArmyTrainCost } from "@repo/shared/training";
+import { invertResourceTable } from "@repo/shared/resources";
 
 export function selectTrainings(
   armyTraining: ArmyTrainingObject[],

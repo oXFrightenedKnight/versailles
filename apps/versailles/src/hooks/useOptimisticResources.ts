@@ -1,6 +1,7 @@
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
-import { nationResources, NationResourceTable, typedEntries } from "@repo/shared";
+import { NationResourceTable, nationResources } from "@repo/shared/resources";
+import { typedEntries } from "@repo/shared/utils";
 
 // returns optimistic nation resources
 export function useOptimisticResources() {

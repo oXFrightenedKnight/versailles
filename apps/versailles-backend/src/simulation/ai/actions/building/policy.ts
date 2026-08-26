@@ -1,4 +1,5 @@
-import { Biome, BUILDINGS_CATEGORY } from "@repo/shared";
+import { Biome } from "@repo/shared";
+import { BUILDINGS_CATEGORY } from "@repo/shared/buildings";
 
 export const BIOME_SCORE_MULT: Record<Biome, number> = {
   plains: 1,
