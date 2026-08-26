@@ -17,6 +17,7 @@ import { CircleMinus, CirclePlus, Cog } from "lucide-react";
 import { useCallback, useState } from "react";
 import TrainingComponent from "./TrainingComponent";
 import { useOptimisticResources } from "@/hooks/useOptimisticResources";
+import { selectHexes } from "@/lib/UI/mergeData/hexes/selectors";
 
 export default function TrainingBlock({ building }: { building: Building }) {
   const [amount, setAmount] = useState<number>(0);
@@ -29,6 +30,7 @@ export default function TrainingBlock({ building }: { building: Building }) {
 
   const playerNation = useGameStore((s) => s.playerNation);
   const serverArmyTraining = useGameStore((s) => s.armyTraining);
+  const serverHexes = useGameStore((s) => s.mapHexes);
 
   const gameActions = useIntentStore((s) => s.gameActions);
   const createGameAction = useIntentStore((s) => s.createGameAction);
@@ -36,6 +38,10 @@ export default function TrainingBlock({ building }: { building: Building }) {
 
   const training = selectTrainings(serverArmyTraining, gameActions);
   const buildingTrainings = training.filter((t) => t.barrackId === building.id);
+
+  const hexes = selectHexes(serverHexes, gameActions);
+  const hexOfBuilding = hexes.find((h) => h.buildingId === building.id);
+  const isOwnedByPlayer = hexOfBuilding?.owner ? hexOfBuilding.owner === playerNation?.id : false;
 
   const handleArmyTraining = useCallback(
     (barrackId: string, amount: number) => {
@@ -55,7 +61,9 @@ export default function TrainingBlock({ building }: { building: Building }) {
     <div className="w-full bg-gray-800 rounded-xl overflow-hidden shrink-0">
       <div className="flex flex-col w-full justify-between bg-gray-700 p-2 gap-1">
         <p>Army Training</p>
-        <div className="flex w-full items-center justify-center gap-1">
+        <div
+          className={`${!isOwnedByPlayer && "invisible"} flex w-full items-center justify-center gap-1`}
+        >
           {/* Subtract */}
           <div
             className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
@@ -116,6 +124,7 @@ export default function TrainingBlock({ building }: { building: Building }) {
                 key={p.key}
                 projection={p}
                 cancelTraining={handleCancelTraining}
+                isOwnedByPlayer={isOwnedByPlayer}
               ></TrainingComponent>
             ))}
           </div>

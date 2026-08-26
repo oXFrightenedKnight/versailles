@@ -7,6 +7,7 @@ import { Button } from "../ui/button";
 import { Dispatch, SetStateAction } from "react";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useOptimisticResources } from "@/hooks/useOptimisticResources";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export default function GameNavbar({
   openMenu,
@@ -37,13 +38,20 @@ export default function GameNavbar({
     <div className="absolute left-0 top-0 pointer-events-auto h-[10%] w-full">
       <div className="flex justify-start items-center h-full bg-gray-800">
         <div className="flex justify-between items-center w-full h-full p-1">
-          <Image
-            src={getNationFlagURL(playerNation?.id)}
-            alt="nation flag"
-            width={1463}
-            height={962}
-            className="w-auto h-full p-[1px] rounded-[8px]"
-          ></Image>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Image
+                src={getNationFlagURL(playerNation?.id)}
+                alt="nation flag"
+                width={1463}
+                height={962}
+                className="w-auto h-full p-[1px] rounded-[8px]"
+              ></Image>
+            </TooltipTrigger>
+            <TooltipContent>
+              <span>Playing as: {playerNation?.id ?? "Unknown"}</span>
+            </TooltipContent>
+          </Tooltip>
           <div className="w-full h-full flex justify-between items-center">
             <div className="m-2 flex justify-start items-center gap-2 h-full w-auto max-w-[50%] p-1.5 pb-2">
               {typedEntries(effectiveResources).map(([resource, amount]) =>
@@ -52,8 +60,8 @@ export default function GameNavbar({
                 ) : null
               )}
             </div>
-            <div className="h-full flex items-center justify-center border">
-              <div className="flex items-center justify-center border mr-2 gap-2">
+            <div className="h-full flex items-center justify-center">
+              <div className="flex items-center justify-center mr-2 gap-2">
                 <Button onClick={() => handleMenuToggle("diplo")}>Diplomacy</Button>
                 <Button onClick={() => handleMenuToggle("build")}>Build</Button>
                 <Button onClick={() => handleSettingsToggle()}>

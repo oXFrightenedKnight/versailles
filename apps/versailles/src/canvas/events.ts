@@ -2,6 +2,7 @@ import { RefObject } from "react";
 import { resizeCanvas } from "./animation";
 import { CanvasRuntime, CanvasSnapshot, CanvasCommands } from "./types";
 import { handleBarDrag, handleCanvasClick, handleRoadDrag } from "./interactions/handleClick";
+import { clamp } from "@/lib/utils";
 
 type AttachCanvasEventsOptions = {
   runtime: CanvasRuntime;
@@ -201,8 +202,12 @@ export function updateCameraDrag(runtime: CanvasRuntime, event: MouseEvent) {
   const lastX = runtime.pointer.lastX;
   const lastY = runtime.pointer.lastY;
   const camera = runtime.camera;
-  camera.x += (event.clientX - lastX) / camera.zoom;
-  camera.y += (event.clientY - lastY) / camera.zoom;
+
+  const dx = (event.clientX - lastX) / camera.zoom;
+  const dy = (event.clientY - lastY) / camera.zoom;
+
+  camera.x = clamp(camera.x + dx, -1000, 1000);
+  camera.y = clamp(camera.y + dy, -1000, 1000);
 
   runtime.pointer.lastX = event.clientX;
   runtime.pointer.lastY = event.clientY;

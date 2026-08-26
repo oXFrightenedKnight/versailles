@@ -28,7 +28,7 @@ export default function SettingDialog({
         setOpen(!open);
       }}
     >
-      <DialogContent className="sm:max-w-[300px] bg-gray-900 p-4" showCloseButton={false}>
+      <DialogContent className="sm:max-w-[300px] bg-gray-900 p-4 border-0" showCloseButton={false}>
         <div className="w-full bg-gray-800 rounded-md p-2 flex flex-col justify-center items-center gap-2">
           <DialogHeader>
             <DialogTitle className="text-white">Settings</DialogTitle>

@@ -5,11 +5,17 @@ import { CanvasRuntime, CanvasSnapshot } from "./types";
 export function resizeCanvas(runtime: CanvasRuntime) {
   const { main, hit } = runtime.canvas;
 
-  main.width = window.innerWidth;
-  main.height = window.innerHeight;
+  const parent = main.parentElement;
+  if (!parent) return;
 
-  hit.width = window.innerWidth;
-  hit.height = window.innerHeight;
+  const width = Math.max(1280, parent.clientWidth);
+  const height = Math.max(720, parent.clientHeight);
+
+  main.width = width;
+  main.height = height;
+
+  hit.width = width;
+  hit.height = height;
 }
 
 export function drawFrame(runtime: CanvasRuntime, snapshot: CanvasSnapshot) {

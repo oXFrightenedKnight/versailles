@@ -55,15 +55,15 @@ export default function ProvinceInfoSidebar({
   return (
     <div className="h-[90%] w-full absolute left-0 bottom-0 p-2 slide-in">
       <div className="flex flex-col justify-between items-center h-full w-full bg-gray-800 rounded-xl pointer-events-auto p-2 gap-2">
-        <div className="flex flex-col w-full justify-between bg-gray-900 rounded-lg shadow-md shadow-black">
-          <div className="flex w-full justify-between items-start">
-            <div className="w-[50%] h-auto bg-amber-200 m-2 rounded-[5px]">
+        <div className="flex flex-col w-full h-[30%] min-h-20 justify-between bg-gray-900 rounded-lg shadow-md shadow-black">
+          <div className="flex w-full min-w-0 flex-1 justify-between items-start">
+            <div className="w-[50%] min-w-0 min-h-0 shrink bg-amber-200 m-2 rounded-[5px] overflow-hidden">
               <Image
                 src={getNationFlagURL(selectedHex?.owner ?? "tribes")}
                 alt="nation flag"
                 width={1463}
                 height={962}
-                className="w-full h-full p-px rounded-xl"
+                className="w-full h-auto p-px rounded-xl object-contain"
               ></Image>
             </div>
             <CloseButton
@@ -77,7 +77,7 @@ export default function ProvinceInfoSidebar({
             {getNationName({ id: selectedHex?.owner ?? "tribes" })}
           </p>
         </div>
-        <div className="w-full h-[70%] min-h-0">
+        <div className="w-full h-[70%] min-h-20">
           <div className="w-full h-full flex flex-col justify-center gap-2">
             <div className="bg-gray-900 shadow-md shadow-black rounded-lg text-white h-full flex justify-center items-center text-md w-full">
               <div className="w-full h-full flex flex-col justify-start p-2 gap-2">
@@ -89,35 +89,37 @@ export default function ProvinceInfoSidebar({
             </div>
           </div>
         </div>
-        <div className="w-full h-[40%]">
+        <div className="w-full h-[20%] min-h-15">
           <div className="w-full h-full flex flex-col justify-center gap-2">
-            <div className="bg-gray-900 shadow-md shadow-black rounded-lg text-white h-full flex justify-center items-center text-2xl w-full">
+            <div className="bg-gray-900 shadow-md shadow-black rounded-lg text-white h-full flex justify-around items-center text-2xl w-full">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="w-[50%] h-auto p-2 group relative">
-                    <Image
-                      src={`/urban/${buildingName}.png`}
-                      alt="urban type"
-                      width={1482}
-                      height={972}
-                      className="w-full h-full"
-                    ></Image>
+                  <div className="w-[50%] h-full p-2 flex justify-center items-center">
+                    <div className="rounded-md bg-gray-800 text-white flex justify-center items-center gap-0 text-2xl w-full h-full">
+                      <span>{selectedHex?.population ?? 999}</span>
+                      <Image
+                        src="/icons/population.png"
+                        alt="population icon"
+                        width={48}
+                        height={32}
+                        className="w-9 h-7"
+                      ></Image>
+                    </div>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <span>{`Urban Type: ${buildingName}`} </span>
+                  <span>{`Hex population: ${selectedHex?.population ?? 999}`}</span>
                 </TooltipContent>
               </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="w-[50%] h-auto p-2 group relative">
+                  <div className="flex-1 min-w-0 h-full min-h-0 p-2 group relative">
                     <Image
                       src={`/biome_type/${selectedHex ? selectedHex.biome : "plains"}.png`}
                       alt="biome type"
-                      width={1482}
-                      height={972}
-                      className="w-full h-full"
+                      fill
+                      className=" object-contain p-2"
                     ></Image>
                   </div>
                 </TooltipTrigger>
@@ -125,16 +127,6 @@ export default function ProvinceInfoSidebar({
                   <span>{`Biome: ${selectedHex?.biome}`}</span>
                 </TooltipContent>
               </Tooltip>
-            </div>
-            <div className="bg-gray-900 shadow-md shadow-black rounded-lg text-white h-full flex justify-center items-center text-2xl">
-              {selectedHex?.population ?? 999}
-              <Image
-                src="/icons/population.png"
-                alt="population icon"
-                width={48}
-                height={32}
-                className="w-9 h-7"
-              ></Image>
             </div>
           </div>
         </div>

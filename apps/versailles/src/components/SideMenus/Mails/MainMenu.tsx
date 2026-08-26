@@ -75,7 +75,7 @@ export default function MailMenu() {
   }, [mailOpen, mails, createGameAction]);
 
   return (
-    <div className="absolute w-full h-[50%] flex flex-col justify-start items-end right-0 p-1 gap-1 top-[10%] text-white border border-red-500">
+    <div className="absolute w-full h-[50%] flex flex-col justify-start items-end right-0 p-1 gap-1 top-[10%] text-white">
       <div
         className="pointer-events-auto flex justify-center items-center bg-gray-800 border-gray-600 p-2 rounded-md cursor-pointer relative"
         onClick={() => setMailOpen(!mailOpen)}

@@ -6,8 +6,8 @@ export default function GameCanvas({ props }: { props: GameCanvasProps }) {
 
   return (
     <>
-      <canvas ref={hitCanvasRef} className="absolute inset-0 z-10" />
-      <canvas ref={canvasRef} className="absolute inset-0 z-0" />
+      <canvas ref={hitCanvasRef} className="absolute inset-0 z-10 w-full h-full" />
+      <canvas ref={canvasRef} className="absolute inset-0 z-0 w-full h-full" />
     </>
   );
 }

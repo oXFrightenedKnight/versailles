@@ -26,7 +26,7 @@ export default function ResourceLabel({
             <p className="text-white text-2xl">{numberConverter(amount)}</p>
           </div>
         </TooltipTrigger>
-        <TooltipContent>
+        <TooltipContent className="max-w-[120px]">
           <span>{Descriptions[resource]}</span>
         </TooltipContent>
       </Tooltip>

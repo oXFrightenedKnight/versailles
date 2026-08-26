@@ -38,3 +38,7 @@ export function numberConverter(number: number) {
 
   return `${number}`; // return unchanged if not a number
 }
+
+export function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(value, max));
+}

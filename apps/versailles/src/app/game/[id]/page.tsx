@@ -90,7 +90,7 @@ export default function Home() {
 
   return (
     <>
-      <div className="relative w-screen h-screen select-none">
+      <div className="relative w-screen h-screen min-w-[1280px] min-h-[720px] select-none">
         <GameCanvas
           props={{
             buildMode,
@@ -123,7 +123,7 @@ export default function Home() {
 
           <div className="w-full h-full relative">
             {/* LEFT-MENUS */}
-            <div className="w-[300px] max-w-[300px] h-full absolute left-0 border">
+            <div className="w-[300px] max-w-[300px] h-full absolute left-0">
               <div className="w-full h-full relative">
                 {openMenu === "build" ? (
                   <BuildMenu
@@ -145,7 +145,7 @@ export default function Home() {
             </div>
 
             {/* RIGHT-MENUS */}
-            <div className="w-[300px] max-w-[300px] h-full absolute right-0 border">
+            <div className="w-[300px] max-w-[300px] h-full absolute right-0">
               <div className="w-full h-full relative">
                 <MailMenu></MailMenu>
               </div>

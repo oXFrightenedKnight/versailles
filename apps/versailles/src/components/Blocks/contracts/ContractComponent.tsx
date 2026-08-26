@@ -2,6 +2,7 @@
 
 import { getResourceImage } from "@/lib/data";
 import { ContractProjection } from "@/lib/UI/mergeData/contracts/types";
+import { ContractPrediction } from "@/lib/UI/predictions/contracts/types";
 import { numberConverter } from "@/lib/utils";
 import { ActionOfType, BASE_RESOURCE } from "@repo/shared";
 import {
@@ -14,16 +15,15 @@ import {
   TriangleAlert,
   X,
 } from "lucide-react";
-import Image from "next/image";
 import { Dropdown, DropdownItem } from "../../GameComponents/dropdown";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
-import { ContractPrediction } from "@/lib/UI/predictions/contracts/types";
 
 export default function ContractComponent({
   contract,
   availableResources,
   deleteContract,
   updateContract,
+  isOwnedByPlayer,
 }: {
   contract: ContractPrediction;
   availableResources: BASE_RESOURCE[];
@@ -32,6 +32,7 @@ export default function ContractComponent({
     projection: ContractProjection,
     changes: ActionOfType<"contract.update">["changes"]
   ) => void;
+  isOwnedByPlayer: boolean;
 }) {
   console.log("available resources", availableResources);
   const dropdownItems: DropdownItem<typeof contract.resource>[] = availableResources.map((r) => ({
@@ -55,7 +56,8 @@ export default function ContractComponent({
       <div className="flex flex-col justify-center items-center h-full w-full gap-0.5 max-h-full">
         <div className="flex justify-center items-center bg-gray-900 p-1 rounded-md w-full gap-1 h-[50%]">
           <div
-            className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
+            inert={!isOwnedByPlayer}
+            className={`inert:opacity-50 flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black`}
             onClick={(e) => {
               updateContract(contract, { autoAdjust: false });
 
@@ -88,7 +90,8 @@ export default function ContractComponent({
 
           {/* Addition */}
           <div
-            className="flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black"
+            inert={!isOwnedByPlayer}
+            className={`inert:opacity-50 flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black`}
             onClick={(e) => {
               updateContract(contract, { autoAdjust: false });
 
@@ -105,7 +108,8 @@ export default function ContractComponent({
           <Tooltip>
             <TooltipTrigger asChild>
               <div
-                className={`flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black`}
+                inert={!isOwnedByPlayer}
+                className={`inert:opacity-50 flex justify-center items-center p-1 border-gray-700 border rounded-md bg-gray-900 shadow-md shadow-black`}
                 onClick={() => {
                   updateContract(contract, { autoAdjust: !contract.autoAdjust });
                 }}
@@ -125,7 +129,7 @@ export default function ContractComponent({
             </TooltipContent>
           </Tooltip>
 
-          <div>
+          <div inert={!isOwnedByPlayer} className={`inert:opacity-50`}>
             {dropdownItems && (
               <Dropdown
                 items={dropdownItems}

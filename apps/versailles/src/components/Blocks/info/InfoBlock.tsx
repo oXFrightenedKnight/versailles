@@ -30,7 +30,7 @@ export default function InfoBlock({ info, building }: { info: Info; building: Bu
 
         {!isCapital && isOwnerOfHex && (
           <div
-            className="flex bg-gray-900 border border-gray-600 p-1 gap-1 rounded-md text-red-400 h-full justify-center items-center"
+            className={`flex bg-gray-900 border border-gray-600 p-1 gap-1 rounded-md text-red-400 h-full justify-center items-center`}
             onClick={() => {
               deleteBuilding(building.id, createGameAction);
             }}

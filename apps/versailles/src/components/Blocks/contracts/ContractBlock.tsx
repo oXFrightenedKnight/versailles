@@ -1,22 +1,16 @@
 "use client";
 
+import { getAvailableResourcesByContract } from "@/lib/helpers/contracts";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
-import {
-  cancelContract,
-  selectContracts,
-  updateContract,
-} from "@/lib/UI/mergeData/contracts/selectors";
+import { cancelContract, updateContract } from "@/lib/UI/mergeData/contracts/selectors";
 import { ContractProjection } from "@/lib/UI/mergeData/contracts/types";
+import { selectContractPredictions } from "@/lib/UI/predictions/contracts/selectors";
 import { ActionOfType, Building } from "@repo/shared";
 import { SquarePen } from "lucide-react";
 import { useCallback } from "react";
 import ContractComponent from "./ContractComponent";
-import { getAvailableResourcesByContract } from "@/lib/helpers/contracts";
-import {
-  projectionToContractInput,
-  selectContractPredictions,
-} from "@/lib/UI/predictions/contracts/selectors";
+import { selectHexes } from "@/lib/UI/mergeData/hexes/selectors";
 
 export default function ContractBlock({
   isContractSelected,
@@ -29,6 +23,8 @@ export default function ContractBlock({
 }) {
   const serverContracts = useGameStore((s) => s.contracts);
   const buildings = useGameStore((s) => s.buildings);
+  const serverHexes = useGameStore((s) => s.mapHexes);
+  const playerNation = useGameStore((s) => s.playerNation);
 
   const gameActions = useIntentStore((s) => s.gameActions);
   const updateGameAction = useIntentStore((s) => s.updateGameAction);
@@ -39,6 +35,10 @@ export default function ContractBlock({
   const buildingContracts = contracts
     .filter((c) => c.fromBuildingId === building.id)
     .sort((a, b) => a.executionOrder - b.executionOrder);
+
+  const hexes = selectHexes(serverHexes, gameActions);
+  const hexOfBuilding = hexes.find((h) => h.buildingId === building.id);
+  const isOwnedByPlayer = hexOfBuilding?.owner ? hexOfBuilding.owner === playerNation?.id : false;
 
   const availableResourcesMap = getAvailableResourcesByContract(contracts, buildings);
 
@@ -60,8 +60,9 @@ export default function ContractBlock({
     <div className="w-full bg-gray-800 rounded-xl overflow-hidden shrink-0">
       <div className="flex w-full justify-between items-center bg-gray-700 p-2">
         <p>Contracts</p>
+
         <div
-          className={`flex justify-center items-center p-2 border-gray-700 border rounded-xl 
+          className={`${isOwnedByPlayer ? "visible" : "invisible"} flex justify-center items-center p-2 border-gray-700 border rounded-xl 
                           ${isContractSelected ? "bg-gray-900/60" : "bg-gray-900"} shadow-md shadow-black`}
           onClick={() => setIsContractSelected(!isContractSelected)}
         >
@@ -81,6 +82,7 @@ export default function ContractBlock({
                   availableResources={[...availableResources]}
                   deleteContract={handleContractDelete}
                   updateContract={handleContractUpdate}
+                  isOwnedByPlayer={isOwnedByPlayer}
                 ></ContractComponent>
               );
             })}

@@ -9,9 +9,11 @@ import { getResourceImage } from "@/lib/data";
 export default function TrainingComponent({
   projection,
   cancelTraining,
+  isOwnedByPlayer,
 }: {
   projection: TrainingProjection;
   cancelTraining: (projection: TrainingProjection) => void;
+  isOwnedByPlayer: boolean;
 }) {
   const progress = projection.source === "server" ? projection.progress : 0;
   const value = Math.round((progress / projection.amount) * 100);
@@ -37,7 +39,8 @@ export default function TrainingComponent({
           <Progress value={value} className="w-[50%] bg-gray-600"></Progress>
         </Field>
         <div
-          className="flex bg-gray-800 border border-gray-600 p-1 gap-1 rounded-md text-amber-200 h-full justify-center items-center"
+          inert={!isOwnedByPlayer}
+          className="inert:opacity-50 flex bg-gray-800 border border-gray-600 p-1 gap-1 rounded-md text-amber-200 h-full justify-center items-center"
           onClick={() => {
             cancelTraining(projection);
           }}
