@@ -1,12 +1,12 @@
 "use client";
 
 import GameCanvas from "@/canvas/GameCanvas";
-import DragBar from "@/components/GameComponents/DragBar";
-import BuildMenu from "@/components/SideMenus/BuildingMenu/buildButton";
-import DiplomacyMenu from "@/components/SideMenus/DiplomacyMenu/MainMenu";
-import MailMenu from "@/components/SideMenus/Mails/MainMenu";
-import PopupContainer from "@/components/SideMenus/Popups/PopupContainer";
-import ProvinceInfoSidebar from "@/components/SideMenus/ProvinceMenu/ProvinceInfoSidebar";
+import DragBar from "@/components/game/ui/DragBar";
+import BuildMenu from "@/components/game/construction/buildButton";
+import DiplomacyMenu from "@/components/game/diplomacy/MainMenu";
+import MailMenu from "@/components/game/mails/MainMenu";
+import PopupContainer from "@/components/game/ui/PopupContainer";
+import ProvinceInfoSidebar from "@/components/game/hex/ProvinceInfoSidebar";
 import { Button } from "@/components/ui/button";
 import { OpenMenus } from "@/lib/data";
 import { useGameStore } from "@/lib/stores/gameStore";
@@ -15,9 +15,9 @@ import { BuildModeType } from "@/lib/types/game";
 import { selectHexes } from "@/lib/UI/mergeData/hexes/selectors";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import SettingDialog from "../../../components/GameComponents/settingDialog";
+import SettingDialog from "../../../components/game/settingDialog";
 import { GameData, trpc } from "../../_trpc/client";
-import GameNavbar from "@/components/navbar/GameNavbar";
+import GameNavbar from "@/components/game/GameNavbar";
 
 export default function Home() {
   const router = useRouter();

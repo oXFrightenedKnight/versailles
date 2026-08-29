@@ -4,6 +4,7 @@
 SHARED PACKAGE TO DIST **
 
 list of changes to make next: 
+9. Separate footer and wrap the rest of the app in shaded container in page.tsx
 10. Update and clean up file structure
 11. Update home page and save loading page
 12. Write small readme and guide
@@ -38,5 +39,6 @@ list of changes to make next:
     should not be radically different in their speed (which is controlled by efficiency)
 17. Setup redis to allow anonymous short-lived sessions
 18. Add music and sound effects with an ability to disable in settings
+19. Add water animation and zoom scale
 
 <!-- prettier-ignore-end -->

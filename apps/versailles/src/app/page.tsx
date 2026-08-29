@@ -1,12 +1,37 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { SignedIn, SignedOut } from "@clerk/clerk-react";
-import { redirect } from "next/navigation";
+import Footer from "@/components/site/footer";
+import AISection from "@/components/site/landing/AISection";
+import ContactSection from "@/components/site/landing/contactSection";
+import ProjectShowcase from "@/components/site/landing/description";
+import GuideSection from "@/components/site/landing/guideSection";
+import HeroSection from "@/components/site/landing/heroSection";
+import Navbar from "@/components/site/navbar";
+import ShadedContainer from "@/components/site/ui/ShadedContainer";
 
 export default function Home() {
   return (
-    <div className="w-full h-screen flex justify-center items-center border">
+    <>
+      <div className="relative">
+        <Navbar></Navbar>
+        <ShadedContainer className="before:from-black/50 after:from-black/50 after:h-40 before:h-40">
+          <div className="w-full h-auto">
+            <HeroSection></HeroSection>
+            <ProjectShowcase></ProjectShowcase>
+            <AISection></AISection>
+            <GuideSection></GuideSection>
+            <ContactSection></ContactSection>
+          </div>
+        </ShadedContainer>
+        <Footer></Footer>
+      </div>
+    </>
+  );
+}
+
+{
+  /* 
+  <div className="w-full h-screen flex justify-center items-center border">
       <div className="flex flex-col items-center justify-center p-20 gap-10 border-red-500 border">
         <p className="text-9xl">Versailles</p>
         <SignedOut>
@@ -42,6 +67,5 @@ export default function Home() {
           </div>
         </SignedIn>
       </div>
-    </div>
-  );
+    </div> */
 }
