@@ -29,8 +29,8 @@ export default function ProjectShowcase() {
           <div className="w-full">
             <div className="w-full py-10 flex justify-end items-center">
               {/** description */}
-              <div className="py-40 border md:max-w-[50%] max-w-full">
-                <div className="w-full flex flex-col jutify-center items-center text-end p-6 md:pr-20 gap-5 border">
+              <div className="py-40 md:max-w-[50%] max-w-full">
+                <div className="w-full flex flex-col jutify-center items-center text-end p-6 md:pr-20 gap-5">
                   <div className="w-full gap-2 flex flex-col justify-center items-end">
                     <h1 className="text-4xl text-primary font-bold text-balance">
                       Experience Epic Turn-Based Simulation

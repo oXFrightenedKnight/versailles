@@ -19,7 +19,7 @@ export default function GuideSection() {
 
         {/* Content */}
         <MaxWidthWrapper className="relative z-20">
-          <div className="relative w-full flex flex-col justify-center items-center border border-blue-500">
+          <div className="relative w-full flex flex-col justify-center items-center">
             <div className="w-full justify-center items-center flex flex-col mt-24">
               {/* Header */}
               <div className="flex flex-col justify-center items-center text-balance text-center gap-2">
@@ -28,7 +28,7 @@ export default function GuideSection() {
               </div>
 
               {/* Guide link */}
-              <div className="w-full flex flex-col gap-5 border items-center justify-center md:px-40 px-10 py-10">
+              <div className="w-full flex flex-col gap-5 items-center justify-center md:px-20 lg:px-40 py-10">
                 <ShadedContainer className="p-10 border-y border-card">
                   <div className=" w-full flex flex-col md:grid md:grid-cols-[3fr_3fr] bg-card rounded-xl overflow-hidden border border-foreground cursor-pointer">
                     {/* Text */}

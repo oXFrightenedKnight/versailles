@@ -20,9 +20,9 @@ export default function HeroSection() {
           className="pointer-events-none select-none z-0 object-cover blur-sm"
         />
         <MaxWidthWrapper className="h-full">
-          <div className="border h-full w-full border-green-500 flex flex-col items-center justify-center text-center gap-10 select-none">
+          <div className=" h-full w-full flex flex-col items-center justify-center text-center gap-10 select-none">
             {/* Logo */}
-            <div className="w-1/2 relative aspect-3/1">
+            <div className="md:w-1/2 w-full relative aspect-3/1">
               <Image
                 draggable={false}
                 fill
@@ -34,7 +34,7 @@ export default function HeroSection() {
 
             {/* Sub-text */}
             <div
-              className="border-y border-primary relative pr-5 pl-5 pb-3 pt-3 text-primary text-2xl
+              className="border-y border-primary relative px-5 py-3 text-primary text-xl md:text-2xl
             before:pointer-events-none
             before:absolute before:inset-x-0 before:top-0
             before:h-4

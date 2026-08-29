@@ -21,14 +21,14 @@ export default function ContactSection() {
             pointer-events-none
             absolute inset-x-0 top-0 z-10 h-100
             bg-linear-to-b
-            from-background/90 to-transparent"
+            from-background to-transparent"
         />
 
         <MaxWidthWrapper className="relative z-20">
-          <div className=" flex justify-center items-center border p-10">
-            <div className="flex flex-col justify-center items-center gap-5 md:w-[50%] w-full p-10 border border-green-500">
+          <div className=" flex justify-center items-center md:p-10 py-10">
+            <div className="flex flex-col justify-center items-center gap-5 md:w-[50%] w-full p-10">
               <div className="flex flex-col justify-center items-center gap-2">
-                <span className="text-primary text-4xl font-bold">Got Questions?</span>
+                <span className="text-primary text-4xl font-bold text-center">Got Questions?</span>
                 <span className="text-secondary text-2xl">Contact Us</span>
               </div>
 

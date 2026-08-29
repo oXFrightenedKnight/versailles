@@ -29,8 +29,8 @@ export default function AISection() {
           <div className="w-full">
             <div className="w-full py-10 flex justify-start items-center">
               {/** description */}
-              <div className="py-40 border max-w-full md:max-w-[50%]">
-                <div className="w-full flex flex-col jutify-center items-center text-start p-6 md:pl-20 gap-5 border">
+              <div className="py-40 max-w-full md:max-w-[50%]">
+                <div className="w-full flex flex-col jutify-center items-center text-start p-6 md:pl-20 gap-5">
                   <div className="w-full gap-2 flex flex-col justify-center items-start">
                     <h1 className="text-4xl text-primary font-bold text-balance">
                       Defend Your Nation From Complex AI

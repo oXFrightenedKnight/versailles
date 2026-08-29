@@ -8,7 +8,7 @@ export default function Footer() {
         <MaxWidthWrapper>
           <div className="w-full flex flex-col justify-center items-center md:px-20 gap-3 text-muted-foreground">
             {/* Contents */}
-            <div className="flex border border-red-500 justify-between items-start p-5 gap-20 text-sm">
+            <div className="flex  justify-between items-start p-5 gap-20 text-sm">
               {/* Game */}
               <div className="flex flex-col gap-2 text-muted-foreground">
                 <h1 className="font-bold text-card-foreground">Game</h1>
