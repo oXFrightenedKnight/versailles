@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { GameSave } from "../_trpc/client";
+import { GameSave } from "../../../app/_trpc/client";
 import { Button } from "@/components/ui/button";
 import { redirect } from "next/navigation";
 import Image from "next/image";
@@ -24,13 +24,13 @@ export default function GameSaveBlock({ save, idx }: { save: GameSave; idx: numb
 
   return (
     <div
-      className="w-[300px] max-w-[300px] p-2 border"
+      className="w-[300px] max-w-[300px] p-2"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
-      <div className="w-full flex flex-col justify-center items-center border border-green-500 bg-gray-800">
+      <div className="w-full flex flex-col justify-center items-center bg-card rounded-xl border border-transparent hover:border-primary hover:scale-105 transition-all cursor-pointer">
         {/* Image + Id */}
-        <div className="w-full flex flex-col justify-center items-center p-2 gap-2 border">
+        <div className="w-full flex flex-col justify-center items-center p-2 gap-2 border-b border-foreground/50">
           <Image
             src={src}
             alt="game save nation flag"
@@ -42,7 +42,7 @@ export default function GameSaveBlock({ save, idx }: { save: GameSave; idx: numb
         </div>
 
         {/* Metadata */}
-        <div className="w-full flex-1 border p-2">
+        <div className="w-full flex-1 p-2">
           <div className="w-full flex-col items-center justify-center bg-gray-900 rounded-md p-2">
             {metadata.map((obj) => {
               return (
@@ -60,10 +60,10 @@ export default function GameSaveBlock({ save, idx }: { save: GameSave; idx: numb
 
         {/* Load button (appears on hover) */}
         <div
-          className={`${isHovering ? "" : "invisible"} w-full h-auto flex justify-center items-center p-2`}
+          className={` w-full h-auto flex justify-center items-center p-2 border-t border-foreground/50 `}
         >
           <Button
-            className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
+            className="p-2 text-primary-foreground rounded-md cursor-pointer"
             onClick={() => {
               redirect(`/game/${save.id}`);
             }}

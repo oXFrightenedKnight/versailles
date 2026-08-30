@@ -59,7 +59,7 @@ export default function RootLayout({
     <ClerkClientProvider publishableKey={PUBLISHABLE_KEY}>
       <html lang="en">
         <body
-          className={`min-h-screen ${geistSans.variable} ${geistMono.variable} ${trajanPro.variable} ${smeltex.variable} font-sans antialiased`}
+          className={`min-h-dvh ${geistSans.variable} ${geistMono.variable} ${trajanPro.variable} ${smeltex.variable} font-sans antialiased`}
         >
           <Providers>
             <TooltipProvider>{children}</TooltipProvider>

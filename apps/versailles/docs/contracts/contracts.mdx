@@ -1,0 +1,39 @@
+---
+title: "Contracts"
+description: "In this section you will learn how contracts work in Versailles."
+---
+
+## What is a Contract?
+
+A contract is an mutual agreement between two buildings that describes what resource
+and in what amounts building A will export to building B each turn. A contact between
+two buildings can be created if:
+
+1. **Exporting** building produces at least one resource type required by **Receiving** building AND a contract
+   with that resource does not already exist between these two buildings.
+2. **Exporting** and **Importing** building share a valid road path.
+
+## How it works?
+
+All contracts go through one algorithm, that decides which contracts will or will not get executed.
+If a contract is going to be unseccessful, you are going to see a red sign next to it.
+All contracts are assigned an increasing order index, which is used by the algorithm to determine
+which contracts will get executed first. All contracts are divided into two categories: **flexible** and **fixed**.
+
+### Flexible
+
+Flexible contracts are updated each turn. They are automatically calculated by the algorithm and adjusted based
+on required missing amount. These contracts reduce micromanagement, but take away control.
+
+### Fixed
+
+The main difference from **flexible** contracts is that **fixed** contracts are never updated by the server. They work
+for as long as their exported amount is not higher than their owner building has available. If a contract excceds building's available amount,
+the contract will become **unactive** and will not be executed until this condition is met.
+
+**Note:** Fixed contracts are always executed first.
+To change contract type, toggle its ["Auto-Adjust"](/contracts/component) feature.
+
+## Creating new contract
+
+Please visit [Contract Component](/contracts/component) for more info.

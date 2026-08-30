@@ -65,7 +65,7 @@ export default function GameNavbar({
                 <Button onClick={() => handleMenuToggle("diplo")}>Diplomacy</Button>
                 <Button onClick={() => handleMenuToggle("build")}>Build</Button>
                 <Button onClick={() => handleSettingsToggle()}>
-                  <Menu className="w-12 h-12 text-amber-200 rounded-xs shrink-0"></Menu>
+                  <Menu className="w-12 h-12 text-primary-foreground rounded-xs shrink-0"></Menu>
                 </Button>
               </div>
             </div>

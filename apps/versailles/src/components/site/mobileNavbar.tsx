@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { SheetTrigger, SheetContent, Sheet } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
-import router from "next/router";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function MobileNavbar() {
+  const router = useRouter();
+
   const [open, setOpen] = useState<boolean>();
   return (
     <>
