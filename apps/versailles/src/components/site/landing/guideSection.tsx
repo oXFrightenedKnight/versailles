@@ -1,9 +1,13 @@
+"use client";
+
 import MaxWidthWrapper from "@/components/site/ui/MaxWidthWrapper";
 import ShadedContainer from "@/components/site/ui/ShadedContainer";
 import { ExternalLink } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function GuideSection() {
+  const router = useRouter();
   return (
     <>
       <section className="relative isolate w-full overflow-hidden">
@@ -30,7 +34,10 @@ export default function GuideSection() {
               {/* Guide link */}
               <div className="w-full flex flex-col gap-5 items-center justify-center md:px-20 lg:px-40 py-10">
                 <ShadedContainer className="p-10 border-y border-card">
-                  <div className=" w-full flex flex-col md:grid md:grid-cols-[3fr_3fr] bg-card rounded-xl overflow-hidden border border-foreground cursor-pointer">
+                  <div
+                    className=" w-full flex flex-col md:grid md:grid-cols-[3fr_3fr] bg-card rounded-xl overflow-hidden border border-foreground cursor-pointer"
+                    onClick={() => router.push("/docs")}
+                  >
                     {/* Text */}
                     <div className="w-full flex flex-col gap-3 p-10 justify-center items-start border-b md:border-b-0 md:border-r border-foreground text-balance">
                       <h1 className="text-foreground text-xl font-bold">

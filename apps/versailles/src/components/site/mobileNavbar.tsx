@@ -42,7 +42,7 @@ export default function MobileNavbar() {
                 <Button
                   className="w-auto cursor-pointer text-foreground hover:text-primary text-2xl"
                   variant={"link"}
-                  onClick={() => router.push("/guide")}
+                  onClick={() => router.push("/docs")}
                 >
                   Guide
                 </Button>

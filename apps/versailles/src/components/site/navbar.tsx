@@ -48,7 +48,7 @@ export default function Navbar() {
             <Button
               className="h-full cursor-pointer text-foreground hover:text-primary text-lg"
               variant={"link"}
-              onClick={() => router.push("/guide")}
+              onClick={() => router.push("/docs")}
             >
               Guide
             </Button>
