@@ -1,3 +1,5 @@
+// dev file for running the server locally
+
 import { serve } from "@hono/node-server";
 import app from "./app";
 
