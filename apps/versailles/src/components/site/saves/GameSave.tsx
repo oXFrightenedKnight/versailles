@@ -28,7 +28,12 @@ export default function GameSaveBlock({ save, idx }: { save: GameSave; idx: numb
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
-      <div className="w-full flex flex-col justify-center items-center bg-card rounded-xl border border-transparent hover:border-primary hover:scale-105 transition-all cursor-pointer">
+      <div
+        className="w-full flex flex-col justify-center items-center bg-card rounded-xl border border-transparent hover:border-primary hover:scale-105 transition-all cursor-pointer"
+        onClick={() => {
+          redirect(`/game/${save.id}`);
+        }}
+      >
         {/* Image + Id */}
         <div className="w-full flex flex-col justify-center items-center p-2 gap-2 border-b border-foreground/50">
           <Image
@@ -62,12 +67,7 @@ export default function GameSaveBlock({ save, idx }: { save: GameSave; idx: numb
         <div
           className={` w-full h-auto flex justify-center items-center p-2 border-t border-foreground/50 `}
         >
-          <Button
-            className="p-2 text-primary-foreground rounded-md cursor-pointer"
-            onClick={() => {
-              redirect(`/game/${save.id}`);
-            }}
-          >
+          <Button className="p-2 text-primary-foreground rounded-md cursor-pointer">
             Continue
           </Button>
         </div>
