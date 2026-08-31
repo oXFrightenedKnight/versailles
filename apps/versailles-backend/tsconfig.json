@@ -17,7 +17,7 @@
 
     "moduleDetection": "force"
   },
-  "include": ["src", "drizzle.config.ts"],
+  "include": ["src", "drizzle.config.ts", "tsup.config.ts"],
   "exclude": ["node_modules"],
   "extends": "../../tsconfig.base.json"
 }
