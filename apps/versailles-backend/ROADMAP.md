@@ -4,11 +4,8 @@
 SHARED PACKAGE TO DIST **
 
 list of changes to make next: 
-9. Separate footer and wrap the rest of the app in shaded container in page.tsx
-10. Update and clean up file structure
-11. Update home page and save loading page
-12. Write small readme and guide
-13. Fix identified bugs  
+12. Update and clean up file structure
+13. Write small readme  
 14. deploy
 
 --- NON-URGENT TASKS ---

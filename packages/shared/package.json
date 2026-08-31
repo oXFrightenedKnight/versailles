@@ -15,7 +15,8 @@
     "./resources": "./src/resources/index.ts",
     "./roads": "./src/roads/index.ts",
     "./training": "./src/training/index.ts",
-    "./utils": "./src/utils/index.ts"
+    "./utils": "./src/utils/index.ts",
+    "./schemas": "./src/schemas/index.ts"
   },
   "dependencies": {
     "zod": "^4.4.3"

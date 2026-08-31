@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { FormData, formSchema } from "@/schemas/contact";
+import { FormData, formSchema } from "@repo/shared/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { apiFetch } from "@/lib/api";
 
 export default function ContactForm() {
   const [isSending, setIsSending] = useState<boolean>(false);
@@ -25,7 +26,7 @@ export default function ContactForm() {
   const onSubmit = async (data: FormData) => {
     setIsSending(true);
     try {
-      const result = await fetch("/api/contact", {
+      const result = await apiFetch("/api/contact", {
         method: "POST",
         body: JSON.stringify(data),
         headers: { "Content-Type": "application/json" },

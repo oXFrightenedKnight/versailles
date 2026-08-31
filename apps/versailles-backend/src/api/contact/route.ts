@@ -1,17 +1,17 @@
-import { formSchema } from "@/schemas/contact";
-import { NextResponse } from "next/server";
+import { formSchema } from "@repo/shared/schemas";
+import z from "zod";
 import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
-import z from "zod";
+import { Handler } from "hono";
 
-export async function POST(req: Request) {
+export const contactHandler: Handler = async (c) => {
   try {
-    const body = await req.json();
+    const body = await c.req.json();
 
     const result = formSchema.safeParse(body);
 
     if (!result.success) {
-      return NextResponse.json(
+      return c.json(
         { error: "Invalid form data", issues: z.treeifyError(result.error) },
         { status: 400 }
       );
@@ -41,9 +41,9 @@ export async function POST(req: Request) {
       `.trim(),
     });
 
-    return NextResponse.json({ ok: true, messageId: info.messageId }, { status: 200 });
+    return c.json({ ok: true, messageId: info.messageId }, { status: 200 });
   } catch (err) {
     console.log("Contact Sending Failed For:", err);
-    return NextResponse.json({ error: "Contact form submission failed" }, { status: 500 });
+    return c.json({ error: "Contact form submission failed" }, { status: 500 });
   }
-}
+};

@@ -14,13 +14,17 @@
     "@neondatabase/serverless": "^1.1.0",
     "@repo/shared": "*",
     "@trpc/server": "^11.7.2",
+    "@upstash/redis": "^1.38.3",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^1.0.0-rc.4",
     "hono": "^4.12.0",
+    "hono-rate-limiter": "^0.5.3",
+    "nodemailer": "^9.0.6",
     "zod": "^4.1.13"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
+    "@types/nodemailer": "^8.0.1",
     "drizzle-kit": "^1.0.0-rc.4",
     "tsup": "^8.5.1",
     "tsx": "^4.23.12",
