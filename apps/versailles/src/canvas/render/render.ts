@@ -366,11 +366,9 @@ export function renderMap(
 
   switch (snapshot.openMenu) {
     case "build":
-      console.log("try to render economy map");
       renderEconomyMap(mapCenterX, mapCenterY, snapshot, runtime);
       break;
     case "diplo":
-      console.log("try to render economy map");
       renderMilitaryMap(mapCenterX, mapCenterY, snapshot, runtime);
       break;
     default:
