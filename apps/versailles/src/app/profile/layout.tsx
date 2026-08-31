@@ -1,3 +1,4 @@
+import AuthGuard from "@/components/clerk/AuthGuard";
 import Footer from "@/components/site/footer";
 import Navbar from "@/components/site/navbar";
 
@@ -7,10 +8,12 @@ export default function Layout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="w-full h-full">
-      <Navbar></Navbar>
-      {children}
-      <Footer></Footer>
-    </div>
+    <AuthGuard>
+      <div className="w-full h-full">
+        <Navbar></Navbar>
+        {children}
+        <Footer></Footer>
+      </div>
+    </AuthGuard>
   );
 }
