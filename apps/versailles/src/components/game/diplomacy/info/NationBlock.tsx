@@ -151,14 +151,14 @@ export default function NationInfo({
               <div className="w-full h-full flex flex-col justify-start items-center p-2 gap-1">
                 {playerNation && nation && isAtWar(playerNation, nation) ? (
                   <Button
-                    className="w-full bg-gray-800 border border-gray-600 cursor-pointer"
+                    className="w-full bg-card text-foreground hover:bg-foreground/80 hover:text-card border border-gray-600 cursor-pointer"
                     onClick={() => handlePeace(nationId)}
                   >
                     Send Peace Treaty
                   </Button>
                 ) : (
                   <Button
-                    className="w-full bg-gray-800 border border-gray-600 cursor-pointer"
+                    className="w-full bg-card text-foreground hover:bg-destructive border border-gray-600 cursor-pointer"
                     onClick={() => handleDeclareWar(nationId)}
                   >
                     Declare War

@@ -22,11 +22,52 @@
         "group": "Fundamentals",
         "icon": "play",
         "pages": [
-          "fundamentals/creating-new-game",
-          "fundamentals/loading-saves",
-          "fundamentals/starting-sim",
-          "fundamentals/settings"
+          "create-account",
+          "creating-new-game",
+          "loading-saves",
+          "starting-sim",
+          "settings"
         ]
+      },
+      {
+        "group": "Map",
+        "icon": "play",
+        "pages": ["navigation", "biomes", "basic-layout", "military", "economy"]
+      },
+      {
+        "group": "Resources",
+        "icon": "play",
+        "pages": ["building-resource", "nation-resource"]
+      },
+      {
+        "group": "Construction",
+        "icon": "play",
+        "pages": ["construction-menu"]
+      },
+      {
+        "group": "Buildings",
+        "icon": "play",
+        "pages": ["categories", "building-menu", "consumption-component", "available-component"]
+      },
+      {
+        "group": "Contracts",
+        "icon": "play",
+        "pages": ["contracts", "component"]
+      },
+      {
+        "group": "Roads",
+        "icon": "play",
+        "pages": ["roads"]
+      },
+      {
+        "group": "Army",
+        "icon": "play",
+        "pages": ["army-movement", "training", "combat-calculations"]
+      },
+      {
+        "group": "Diplomacy",
+        "icon": "play",
+        "pages": ["diplomacy-menu", "war-declaration", "peace-treaty"]
       }
     ]
   }
