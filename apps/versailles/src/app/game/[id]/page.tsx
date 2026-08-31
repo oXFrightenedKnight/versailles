@@ -8,7 +8,6 @@ import MailMenu from "@/components/game/mails/MainMenu";
 import PopupContainer from "@/components/game/ui/PopupContainer";
 import ProvinceInfoSidebar from "@/components/game/hex/ProvinceInfoSidebar";
 import { Button } from "@/components/ui/button";
-import { OpenMenus } from "@/lib/data";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
 import { BuildModeType } from "@/lib/types/game";
@@ -18,6 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import SettingDialog from "../../../components/game/settingDialog";
 import { GameData, trpc } from "../../_trpc/client";
 import GameNavbar from "@/components/game/GameNavbar";
+import { OpenMenus } from "@/lib/types/navigation";
 
 export default function Home() {
   const router = useRouter();

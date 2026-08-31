@@ -1,7 +1,7 @@
 import { CanvasRuntime, CanvasSnapshot } from "@/canvas/types";
 import { drawArrow, drawLabelArray, hexToPixel } from "../render";
 import { selectArmyMoves } from "@/lib/UI/mergeData/armyMove/selectors";
-import { getFlagImage } from "@/lib/helpers/imageCache/cache";
+import { getFlagImage } from "@/lib/cache/queries";
 
 export function renderMilitaryMap(
   mapCenterX: number,

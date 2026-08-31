@@ -1,6 +1,6 @@
 "use client";
 
-import { getMailText } from "@/lib/helpers/mails";
+import { getMailText } from "@/lib/mails/text";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { MailProjection } from "@/lib/UI/mergeData/mails/types";
 import { Check, X } from "lucide-react";

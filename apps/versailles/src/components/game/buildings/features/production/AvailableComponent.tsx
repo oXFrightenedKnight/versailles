@@ -1,6 +1,6 @@
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { getResourceImage } from "@/lib/data";
+import { getResourceImage } from "@/lib/assets/resources";
 import { BASE_RESOURCE } from "@repo/shared/resources";
 import Image from "next/image";
 

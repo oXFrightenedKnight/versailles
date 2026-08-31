@@ -1,7 +1,6 @@
 import { getBuildingCost, isBuildingCategory } from "@/lib/helpers/buildings";
 import { getExportedResourcesToBuilding } from "@/lib/helpers/contracts";
 import { getHexById } from "@/lib/helpers/hexes";
-import { createNewPopup } from "@/lib/helpers/popups";
 import { RoadDraft } from "@/lib/types/game";
 import {
   cancelArmyMove,
@@ -29,6 +28,7 @@ import {
   startDijkstrasAlgo,
 } from "@repo/shared/map";
 import { hasSegment, generateRoadDs, calculateRoadCost } from "@repo/shared/roads";
+import { createNewPopup } from "@/lib/popups/text";
 
 export function handleCanvasClick({
   event,

@@ -1,10 +1,10 @@
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../../../ui/tooltip";
 import Image from "next/image";
-import { getResourceImage } from "@/lib/data";
 import { Label } from "@/components/ui/label";
 import { numberConverter } from "@/lib/utils";
 import { BASE_RESOURCE } from "@repo/shared/resources";
+import { getResourceImage } from "@/lib/assets/resources";
 
 export default function EfficiencyComponent({
   resource,

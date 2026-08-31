@@ -1,8 +1,9 @@
-import { Descriptions, getResourceImage } from "@/lib/data";
 import { numberConverter } from "@/lib/utils";
 import { TooltipTrigger, TooltipContent, Tooltip } from "../../ui/tooltip";
 import Image from "next/image";
 import { NATION_RESOURCE } from "@repo/shared/resources";
+import { getResourceImage } from "@/lib/assets/resources";
+import { ResourceDescriptions } from "@/lib/resources/presentation";
 
 export default function ResourceLabel({
   resource,
@@ -27,7 +28,7 @@ export default function ResourceLabel({
           </div>
         </TooltipTrigger>
         <TooltipContent className="max-w-[120px]">
-          <span>{Descriptions[resource]}</span>
+          <span>{ResourceDescriptions[resource]}</span>
         </TooltipContent>
       </Tooltip>
     </>

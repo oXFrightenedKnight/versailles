@@ -1,6 +1,5 @@
 "use client";
 
-import { createNewPopup } from "@/lib/helpers/popups";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
 import { useUIStore } from "@/lib/stores/uiStore";
@@ -18,6 +17,7 @@ import { useOptimisticResources } from "@/hooks/useOptimisticResources";
 import { selectHexes } from "@/lib/UI/mergeData/hexes/selectors";
 import { Building } from "@repo/shared";
 import { getArmyTrainCost } from "@repo/shared/training";
+import { createNewPopup } from "@/lib/popups/text";
 
 export default function TrainingBlock({ building }: { building: Building }) {
   const [amount, setAmount] = useState<number>(0);

@@ -1,11 +1,11 @@
 "use client";
 
 import { CloseButton } from "@/components/game/ui/buttons";
-import { OpenMenus } from "@/lib/data";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useState } from "react";
 import NationInfo from "./info/NationBlock";
 import NationCol from "./NationCol";
+import { OpenMenus } from "@/lib/types/navigation";
 
 export default function DiplomacyMenu({
   setOpenMenu,

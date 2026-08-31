@@ -1,8 +1,8 @@
-import { OpenMenus } from "@/lib/data";
 import { StoreType } from "@/lib/stores/intentStore";
 import { Popup, SetStateAction } from "@/lib/stores/uiStore";
 import { PendingAction } from "@/lib/types/actions";
 import { BuildModeType, RoadDraft } from "@/lib/types/game";
+import { OpenMenus } from "@/lib/types/navigation";
 import { RenderRoad } from "@/lib/UI/mergeData/roads(belongs render)/types";
 import { ContractPrediction } from "@/lib/UI/predictions/contracts/types";
 import { Building, Hex, Nation } from "@repo/shared";

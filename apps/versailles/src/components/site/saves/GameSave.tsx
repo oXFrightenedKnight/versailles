@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { redirect } from "next/navigation";
 import Image from "next/image";
 import { format, formatDistanceToNow } from "date-fns";
-import { getNationFlagURL } from "@/lib/data";
+import { getNationFlagURL } from "@/lib/assets/nations";
 
 export default function GameSaveBlock({ save, idx }: { save: GameSave; idx: number }) {
   const [isHovering, setIsHovering] = useState<boolean>(false);

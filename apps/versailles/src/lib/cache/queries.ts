@@ -1,4 +1,6 @@
-import { getBuildingCategoryIcon, getMiscIcons, getNationFlagURL } from "@/lib/data";
+import { getBuildingCategoryIcon } from "@/lib/assets/buildings";
+import { getMiscIcons } from "@/lib/assets/misc";
+import { getNationFlagURL } from "@/lib/assets/nations";
 import { BUILDINGS_CATEGORY } from "@repo/shared/buildings";
 
 const imageCache: Partial<Record<string, HTMLImageElement>> = {};

@@ -1,4 +1,4 @@
-import { getNationFlagURL } from "@/lib/data";
+import { getNationFlagURL } from "@/lib/assets/nations";
 import { TooltipTrigger, TooltipContent, Tooltip } from "../../../ui/tooltip";
 import Image from "next/image";
 

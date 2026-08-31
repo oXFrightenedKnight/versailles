@@ -2,7 +2,7 @@
 
 import { DropdownItem, Dropdown } from "@/components/game/ui/dropdown";
 import { TooltipTrigger, TooltipContent, Tooltip } from "@/components/ui/tooltip";
-import { getResourceImage } from "@/lib/data";
+import { getResourceImage } from "@/lib/assets/resources";
 import { ContractProjection } from "@/lib/UI/mergeData/contracts/types";
 import { ContractPrediction } from "@/lib/UI/predictions/contracts/types";
 import { numberConverter } from "@/lib/utils";

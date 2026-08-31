@@ -1,7 +1,7 @@
 "use client";
 
 import { Progress } from "@/components/ui/progress";
-import { BuildingIcons } from "@/lib/data";
+import { BuildingIcons } from "@/lib/construction/presentation";
 import { RoadConstructionProjection } from "@/lib/UI/mergeData/construction/types";
 import { Hammer, Hash, X } from "lucide-react";
 

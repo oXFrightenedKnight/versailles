@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { BuildingIcons, getNationFlagURL } from "@/lib/data";
 import { allBuildingsPerCategory } from "@/lib/helpers/buildings";
 import { getNationName, isAtWar, totalNationArmy } from "@/lib/helpers/nations";
 import { useGameStore } from "@/lib/stores/gameStore";
@@ -16,6 +15,8 @@ import BuildingCount from "./buildingCount";
 import { ArrowLeft } from "lucide-react";
 import { selectBuildings } from "@/lib/UI/mergeData/buildings/selectors";
 import { getNationResource } from "@repo/shared/resources";
+import { getNationFlagURL } from "@/lib/assets/nations";
+import { BuildingIcons } from "@/lib/construction/presentation";
 
 export default function NationInfo({
   nationId,

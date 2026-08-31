@@ -1,7 +1,6 @@
 "use client";
 
 import { CloseButton } from "@/components/game/ui/buttons";
-import { BuildingDescriptions, BuildingIcons, OpenMenus } from "@/lib/data";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
 import { BuildModeType } from "@/lib/types/game";
@@ -22,6 +21,8 @@ import React, { useCallback } from "react";
 import ConstructingBuilding from "./ConstructingBuilding";
 import ConstructingRoad from "@/components/game/construction/RoadConstructing";
 import ToggleBuilding from "@/components/game/construction/ToggleBuilding";
+import { OpenMenus } from "@/lib/types/navigation";
+import { BuildingDescriptions, BuildingIcons } from "@/lib/construction/presentation";
 
 export default function BuildMenu({
   setOpenMenu,

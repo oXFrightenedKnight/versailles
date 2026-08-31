@@ -3,7 +3,6 @@
 import BuildingMenu from "@/components/game/buildings/menu/buildingMenu";
 import { CloseButton } from "@/components/game/ui/buttons";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { getMiscIcons, getNationFlagURL, OpenMenus } from "@/lib/data";
 import { getNationName } from "@/lib/helpers/nations";
 import { useGameStore } from "@/lib/stores/gameStore";
 import { useIntentStore } from "@/lib/stores/intentStore";
@@ -11,7 +10,10 @@ import { selectBuildings } from "@/lib/UI/mergeData/buildings/selectors";
 import Image from "next/image";
 import NoBuilding from "../buildings/menu/noBuilding";
 import { Hex } from "@repo/shared";
-import { getBuilding, getBuildingName } from "@repo/shared/buildings";
+import { getBuilding } from "@repo/shared/buildings";
+import { getMiscIcons } from "@/lib/assets/misc";
+import { getNationFlagURL } from "@/lib/assets/nations";
+import { OpenMenus } from "@/lib/types/navigation";
 
 export default function ProvinceInfoSidebar({
   selectedHex,

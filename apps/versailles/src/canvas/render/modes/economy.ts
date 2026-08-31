@@ -1,8 +1,8 @@
 import { CanvasRuntime, CanvasSnapshot } from "@/canvas/types";
 import { fitText, hexToPixel } from "../render";
 import { drawAllRoads } from "../roads/roads";
-import { getBuildingCategoryImage, getMiscImage } from "@/lib/helpers/imageCache/cache";
 import { getBuildingsByIdMap } from "@repo/shared/buildings";
+import { getMiscImage, getBuildingCategoryImage } from "@/lib/cache/queries";
 
 export function drawBuildingIcon(
   ctx: CanvasRenderingContext2D,

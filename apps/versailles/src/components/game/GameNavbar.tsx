@@ -1,4 +1,3 @@
-import { getNationFlagURL, OpenMenus } from "@/lib/data";
 import { Menu } from "lucide-react";
 import Image from "next/image";
 import ResourceLabel from "./resources/ResourceLabel";
@@ -8,6 +7,8 @@ import { useGameStore } from "@/lib/stores/gameStore";
 import { useOptimisticResources } from "@/hooks/useOptimisticResources";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { typedEntries } from "@repo/shared/utils";
+import { getNationFlagURL } from "@/lib/assets/nations";
+import { OpenMenus } from "@/lib/types/navigation";
 
 export default function GameNavbar({
   openMenu,

@@ -2,7 +2,7 @@ import { renderEconomyMap } from "@/canvas/render/modes/economy";
 import { renderMilitaryMap } from "@/canvas/render/modes/military";
 import { BIOME_COLOR, HEX_SIZE } from "@/canvas/render/policy";
 import { CanvasSnapshot, CanvasRuntime } from "@/canvas/types";
-import { getBiomeTexture, getTextureImage } from "@/lib/data";
+import { getBiomeTexture, getTextureImage } from "@/lib/assets/map";
 import { numberConverter } from "@/lib/utils";
 import { Biome, Nation, Hex } from "@repo/shared";
 import { BIOMES, findNeighbors } from "@repo/shared/map";

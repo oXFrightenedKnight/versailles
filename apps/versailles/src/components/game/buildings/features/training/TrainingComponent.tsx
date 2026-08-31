@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import Image from "next/image";
 import { Field, FieldLabel } from "../../../../ui/field";
 import { Progress } from "../../../../ui/progress";
-import { getResourceImage } from "@/lib/data";
+import { getResourceImage } from "@/lib/assets/resources";
 
 export default function TrainingComponent({
   projection,

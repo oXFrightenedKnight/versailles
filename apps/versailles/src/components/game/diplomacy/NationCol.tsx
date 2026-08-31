@@ -1,4 +1,4 @@
-import { getNationFlagURL } from "@/lib/data";
+import { getNationFlagURL } from "@/lib/assets/nations";
 import { getNationName } from "@/lib/helpers/nations";
 import { Nation } from "@repo/shared";
 import Image from "next/image";
